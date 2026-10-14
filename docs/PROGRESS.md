@@ -41,11 +41,12 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-14 | Product name Groundrules, repo `groundrules` | Short product-style name; "ground rules" plus "grounding" an agent. Confirmed by the owner. |
 
 ## Open questions and blockers
 Things that need the owner's input. Remove an item once it is answered, and record the answer under Implementation decisions.
 
-- Repo name not final yet. Use the current folder name until the owner confirms.
+(none)
 
 ## Session log
 One entry per working session. Format:

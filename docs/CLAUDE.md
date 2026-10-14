@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 ## Project
-unwritten-rules: an open-source reference implementation showing how a real data team turns tacit knowledge into something an AI agent can rely on. Companies should be able to read it, recognize their own mess in it, and adopt it on their existing dbt project and warehouse. The full spec is in `SPEC.md`. Read it before starting any task. Build status lives in `PROGRESS.md`.
+Groundrules (repo: `groundrules`): an open-source reference implementation showing how a real data team turns tacit knowledge into something an AI agent can rely on. Companies should be able to read it, recognize their own mess in it, and adopt it on their existing dbt project and warehouse. The full spec is in `SPEC.md`. Read it before starting any task. Build status lives in `PROGRESS.md`.
 
 Core idea: agents remove the arrangement (an analyst in the loop) that made it safe to leave business rules unwritten. So:
 - the "what" lives in the semantic model (`dbt/models/semantic/`)

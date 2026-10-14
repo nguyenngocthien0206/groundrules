@@ -1,4 +1,9 @@
-# SPEC: unwritten-rules
+# SPEC: Groundrules
+
+Repo name: `groundrules`. Tagline for the GitHub description and README header:
+"Write down the rules your senior analyst never did, so your AI agent can follow them. Semantic models, decision records, and golden questions in CI, built on dbt."
+
+The name is a deliberate double meaning: "ground rules" are the business rules everyone must follow, and "grounding" is how an AI agent is anchored to trusted definitions.
 
 ## 1. Goal
 An open-source reference implementation that a real company can adopt on its existing dbt project and warehouse to make business definitions safe for AI agents.
@@ -27,7 +32,7 @@ Build v0.1 completely before starting v0.2. Ask me before starting v0.2 or v0.3.
 
 ## 4. Repo structure (v0.1)
 ```
-unwritten-rules/
+groundrules/
   CLAUDE.md  SPEC.md  PROGRESS.md  README.md  LICENSE (Apache-2.0)  CHANGELOG.md
   Makefile  pyproject.toml
   .github/
