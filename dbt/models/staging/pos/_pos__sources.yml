@@ -1,0 +1,59 @@
+# Freshness note for the demo: the extracts stop at the extract time
+# (var extract_at), so measuring against today's clock would always fail.
+# Each loaded_at_field below adds (now - extract time), which makes dbt
+# measure freshness as if it ran at the extract. In your project, use the
+# plain timestamp column as loaded_at_field.
+sources:
+  - name: pos_a
+    description: >
+      POS vendor A, used by the older stores. One CSV per UTC day, ISO
+      timestamps in UTC, and the uploader sometimes sends a receipt twice.
+    tables:
+      - name: sales_lines
+        description: One row per receipt line, plus duplicates from upload retries.
+        config:
+          meta:
+            external_location: "read_csv('{{ env_var('GROUNDRULES_DATA_DIR', '../example/data') }}/pos_a/*.csv', header = true, all_varchar = true, filename = true)"
+          loaded_at_field: >-
+            cast(replace(substr(txn_ts, 1, 19), 'T', ' ') as timestamp)
+            + ((now() at time zone 'UTC') - (timestamp '{{ var("extract_at") }}' - interval 7 hour))
+          freshness:
+            warn_after: {count: 12, period: hour}
+            error_after: {count: 24, period: hour}
+
+  - name: pos_b
+    description: >
+      POS vendor B, used by the newer stores. One semicolon CSV per local
+      day with an Excel BOM, Vietnamese headers, dd/mm/yyyy dates in local time.
+    tables:
+      - name: sales_lines
+        description: One row per receipt line.
+        config:
+          meta:
+            external_location: "read_csv('{{ env_var('GROUNDRULES_DATA_DIR', '../example/data') }}/pos_b/*.csv', header = true, delim = ';', all_varchar = true, filename = true)"
+          loaded_at_field: >-
+            cast(substr("NgayBan", 7, 4) || '-' || substr("NgayBan", 4, 2) || '-' || substr("NgayBan", 1, 2) || ' ' || "GioBan" as timestamp)
+            + ((now() at time zone 'UTC') - (timestamp '{{ var("extract_at") }}' - interval 7 hour))
+            - interval 7 hour
+          freshness:
+            warn_after: {count: 12, period: hour}
+            error_after: {count: 24, period: hour}
+
+  - name: pos
+    description: The integration job that pulls both POS vendors into the landing area.
+    tables:
+      - name: sync_log
+        description: One row per store, last successful sync and last attempt, local time.
+        config:
+          meta:
+            external_location: "read_csv('{{ env_var('GROUNDRULES_DATA_DIR', '../example/data') }}/pos_sync_log.csv', header = true, all_varchar = true)"
+          # Freshness of the log itself says nothing about single stores: it
+          # passes while two stores are days behind. See
+          # tests/assert_store_pos_sync_is_current.sql for the per-store check.
+          loaded_at_field: >-
+            cast(last_success_at as timestamp)
+            + ((now() at time zone 'UTC') - (timestamp '{{ var("extract_at") }}' - interval 7 hour))
+            - interval 7 hour
+          freshness:
+            warn_after: {count: 12, period: hour}
+            error_after: {count: 24, period: hour}

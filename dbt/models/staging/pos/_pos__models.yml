@@ -1,0 +1,75 @@
+models:
+  - name: stg_pos_a__sales_lines
+    description: >
+      Vendor A sales lines with upload retries removed (first upload of each
+      receipt line kept), UTC moved to local time, and unit codes mapped to
+      the ERP's.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [receipt_no, line_no]
+    # Both vendors stage to the same columns; vendor B reuses this list.
+    columns: &sales_line_columns
+      - name: pos_vendor
+        description: POS vendor the line came from, A or B.
+      - name: receipt_no
+        description: Receipt number as the vendor prints it. Vendor A puts the local date in it, even though its timestamps are UTC.
+        data_tests:
+          - not_null
+      - name: line_no
+        description: Line number within the receipt. The same SKU and unit can appear on two lines of one receipt (scanned twice).
+      - name: store_code
+        description: Store code, as in the ERP.
+      - name: sku_code
+        description: ERP item number.
+      - name: uom_code
+        description: Unit sold, mapped to the ERP's codes (TAB, STRIP, BOX, BOTTLE, PIECE).
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["TAB", "STRIP", "BOX", "BOTTLE", "PIECE"]
+      - name: qty
+        description: Quantity in uom_code.
+      - name: unit_price_vnd
+        description: Shelf price of one uom_code in VND, VAT included.
+      - name: discount_vnd
+        description: Discount on the line in VND, VAT included.
+      - name: line_amount_vnd
+        description: Amount paid for the line in VND, VAT included (qty times unit price, minus discount).
+      - name: sold_at_utc
+        description: Time of sale in UTC.
+      - name: sold_at
+        description: Time of sale in local time (Asia/Ho_Chi_Minh).
+      - name: business_date
+        description: Local calendar date of the sale. Use this, not the UTC date or the file date, for anything per day.
+        data_tests:
+          - not_null
+      - name: source_file
+        description: Landing file the line was read from.
+
+  - name: stg_pos_b__sales_lines
+    description: >
+      Vendor B sales lines with Vietnamese headers renamed, dd/mm/yyyy parsed
+      as local time, and Vietnamese unit names mapped to the ERP's codes.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [receipt_no, line_no]
+    columns: *sales_line_columns
+
+  - name: stg_pos__sync_log
+    description: Last successful sync and last attempt per store, local time.
+    columns:
+      - name: store_code
+        description: Store code.
+        data_tests:
+          - unique
+          - not_null
+      - name: pos_vendor
+        description: POS vendor of the store, A or B.
+      - name: last_success_at
+        description: Last sync that worked. A sync in the early morning brings in the previous business day.
+      - name: last_attempt_at
+        description: Last time the job tried, successful or not.
+      - name: last_error
+        description: Error of the last attempt, null when it worked.
