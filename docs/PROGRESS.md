@@ -4,17 +4,17 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: 3. Verify MetricFlow on DuckDB, then semantic models and metrics
+- Current step: 4. Decision records (DR-001 to DR-009 + TEMPLATE)
 - State: not started
-- Last verified green: 2026-10-24 (`make build`: 80 dbt nodes, 1 expected warning, freshness pass; `make test`: 34 tests)
+- Last verified green: 2026-10-24 (`make build`: 87 dbt nodes, 1 expected warning, freshness pass; `make metrics`: 0 errors; `make test`: 44 tests)
 
 ## Build checklist (v0.1)
 Tick a step only when it runs end to end and its checks pass.
 
 - [x] 1. Synthetic source extracts (`example/generate.py`) + checksum test
 - [x] 2. dbt staging + marts + unit tests + data tests + freshness
-- [ ] 3. Verify MetricFlow on DuckDB (versions, spec, Python API, saved queries), then semantic models and metrics
-- [ ] 4. Decision records (DR-001 to DR-007 + TEMPLATE)
+- [x] 3. Verify MetricFlow on DuckDB (versions, spec, Python API, saved queries), then semantic models and metrics
+- [ ] 4. Decision records (DR-001 to DR-009 + TEMPLATE)
 - [ ] 5. Reference computations + golden questions + runner
 - [ ] 6. Governance lint, registry, groups, exposures, CODEOWNERS, PR template
 - [ ] 7. Demos (`make demo-conflict`, `make demo-drift`)
@@ -46,6 +46,18 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-24 | Business rules for step 3: COGS at weighted average cost per store and SKU over all receipts, not reversed for returns (DR-008); sell-through = gross units sold / units received net of transfers out (DR-009); near-expiry value includes expired stock not yet written off | Confirmed by the owner. |
+| 2026-10-24 | Semantic layer in dbt's latest YAML spec on dbt-core 1.12.6 + dbt-metricflow 0.15.0 (MetricFlow 0.213.0); each mart's properties moved to `models/semantic/<mart>.yml`, cross-model metrics in `models/semantic/metrics.yml` | dbt's recommended spec; a semantic model must share a properties file with its model, and this keeps every rule in one folder for CODEOWNERS. |
+| 2026-10-24 | Building-block metrics use `hidden: true` (stored as `is_private`), not `status: draft` | They drop out of `mf list`, the OSI document and later the agent; `draft` keeps its meaning of "not yet approved". |
+| 2026-10-24 | `semantic_model: {enabled: true}` instead of `semantic_model: true` | The v2 parser rejects the boolean form; the struct form works on both. |
+| 2026-10-24 | Time dimensions written `dimension: {type: time}` with `granularity` on the column | dbt-core 1.12.6 drops the granularity of the `dimension: time` shorthand, leaving time dimensions without a grain. |
+| 2026-10-24 | Optional inputs of derived metrics are wrapped in `coalesce(..., 0)`; no `fill_nulls_with` | dbt-core 1.12.6 does not pass `fill_nulls_with` for latest-spec metrics; without coalesce, `available_stock` was null for every store with nothing in transit. |
+| 2026-10-24 | Python access: `CLIConfiguration().setup(dbt_profiles_path=dbt, dbt_project_path=dbt)` then `cfg.mf.query(MetricFlowQueryRequest.create(...))`, with `GROUNDRULES_DUCKDB` set to an absolute path | Same engine as `mf query`; the profile path is relative to the working directory, so a relative path silently opens an empty database. |
+| 2026-10-24 | Each query filter is its own where constraint (time separate from store or district); `time_constraint_start/end` are not used | Joined into one string, or as time constraints, MetricFlow applies the time filter below `days_of_cover`'s 1-day offset and returns nothing. The step 5 runner must follow this. |
+| 2026-10-24 | Makefile exports `PYTHONUTF8=1` | MetricFlow's CLI spinner fails on emoji on a Windows console without it. |
+| 2026-10-24 | `make export-osi` uses the OSI document dbt 1.12 writes on parse (`target/osi_document.json`, OSI 0.1.1, 7 visible metrics) | Answers SPEC section 7: no custom mapping needed. |
+| 2026-10-24 | `fct_transfers` gains `snapshot_date`; `fct_sales` gains `unit_cost_excl_vat` and `cogs_excl_vat` from new `int_store_sku_costs`; daily `metricflow_time_spine` 2025 to 2027 | In-transit stock aggregates on the same date as on-hand; COGS needs a cost per line; cumulative windows need a spine. |
+| 2026-10-24 | Groups `supply_chain_ops`, `finance`, `data_platform` added in step 3 instead of step 6 | Metrics name their owner group, which must exist when they are parsed. |
 | 2026-10-24 | dbt line: dbt-core 1.12.6 + dbt-duckdb 1.11.0 (duckdb 2.0.0). The project also passes `dbt parse --use-v2-parser` (dbt-oss 2.0.8) | dbt v2's bundled DuckDB adapter may not infer schemas for CSV or JSON sources and cannot load extensions; dbt itself says to reach 1.12 before moving to v2. dbt-metricflow 0.15.0 resolves on this line. Confirmed by the owner. |
 | 2026-10-24 | Raw files are read through dbt-duckdb `external_location` with `all_varchar`, so staging does all typing; the returns source uses `formatter: template` so its `columns = {...}` type map keeps its braces | Mirrors a loader that lands strings; explicit JSON types stop DuckDB guessing the time zone. |
 | 2026-10-24 | Date parsing and UTC to local use only standard SQL and dbt cross-database macros (`dbt.concat`, `dbt.dateadd`); only the returns unnest is DuckDB syntax | Switching warehouse should not need model edits; on a warehouse, loaders deliver nested returns lines as their own table. |
@@ -73,14 +85,9 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 ## Open questions and blockers
 Things that need the owner's input. Remove an item once it is answered, and record the answer under Implementation decisions.
 
-- Which semantic YAML spec does the chosen dbt version expect (top-level `semantic_models:` or the newer spec on the model)? Verify in step 3.
-- Does MetricFlow's Python API, and `saved_queries`, work locally on DuckDB? Verify in step 3; the runner and the dashboard export depend on it.
-- Do `groups` and `meta` under `config` work on metrics and semantic models in the chosen version? Verify in step 3.
 - Approve `pyarrow` as a dependency for Parquet exports (step 8).
 - Does Power BI Desktop's built-in Parquet connector read the local export files with no extra setup? Verify in step 8.
 - Do `dbt-mcp` semantic layer tools work against local MetricFlow, or only the dbt platform? Verify before v0.2.
-- Cost method for `gross_margin`: POS lines carry no batch, so COGS needs a rule (weighted average cost per store and SKU, or FEFO). Needs a DR in step 4.
-- Does `sell_through_rate` count stock received by transfer (`SOURCE_DOC` starting with `TRF`) as "received", or only supplier deliveries (`PO`)? Needs a DR in step 4.
 
 ## Session log
 One entry per working session. Format:
@@ -92,6 +99,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-24 (step 3)
+- Done: dbt-metricflow added and verified on DuckDB (validate-configs, query, saved query, Python engine, group and meta, filter, non-additive, cumulative window, offset). Semantic models on all 7 marts; 6 certified metrics plus deprecated `revenue_v1`; 10 hidden building blocks; groups; time spine; weighted average cost; `make metrics`, `make export-osi`; 10 semantic layer smoke tests
+- Verified: `make build` green (86 pass, 1 expected warning); `make metrics` 0 errors on every level; `make test` 44 pass; v2 parser parses; `available_stock` matches a hand-written SQL total exactly (1,228,249 base units) and `days_of_cover` for NW001 matches a hand calculation (26.32 days)
+- Next: step 4, starting in plan mode: DR-001 to DR-009 and the template, each with a worked example
+- Notes: August 2026: net revenue 7.37 bn VND vs revenue_v1 7.93 bn, gross margin 2.41 bn (about 33%), sell-through 0.97. Near-expiry value at the snapshot 272.7 m. NW029 shows 38.8 days of cover because it opened on 2026-08-18 and lags 3 days: exactly the case DR-004's caveat is for. Three dbt 1.12.6 quirks are worked around (time dimension shorthand, fill_nulls_with, boolean semantic_model for v2).
 
 ### 2026-10-24 (step 2)
 - Done: dbt project on DuckDB: 10 staging models (ERP, POS A/B, sync log, returns), 2 intermediate, 7 marts with enforced contracts and documented columns; 6 unit tests; data tests; source freshness; per-store POS lag warning

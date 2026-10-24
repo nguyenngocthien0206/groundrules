@@ -50,8 +50,9 @@ groundrules/
     macros/                  # portable date parsing, schema naming, small generic tests
     models/staging/          # one model per source, cleaning, dedup, unit tests
     models/intermediate/     # both POS vendors as one, base units, VAT split, returns matched to sales
-    models/marts/            # dims and facts, contracts on marts that feed certified metrics
-    models/semantic/         # MetricFlow semantic models, metrics, saved queries, governance meta
+    models/marts/            # SQL of dims and facts, plus the MetricFlow time spine
+    models/semantic/         # one properties file per mart (contract, entities, dimensions, simple
+                             # metrics with their rule filters) + metrics.yml + saved queries
     models/groups.yml        # dbt groups = owning teams
     models/exposures.yml     # legacy dashboards and the Power BI report
     tests/                   # dbt data tests (singular)
@@ -96,8 +97,9 @@ Reproducibility: golden expected values are frozen from this output, so the gene
 
 ## 6. dbt project (`dbt/`)
 - Staging: one model per source, rename to a common vocabulary, decode status codes, dedupe POS retries, convert types, convert POS timestamps to local business time (Asia/Ho_Chi_Minh), convert quantities to the SKU base unit, split VAT out of POS amounts. Document every column.
-- Intermediate: `int_sales_lines` (both vendors in one shape, base units, amounts with and without VAT) and `int_return_lines` (base units, before VAT, original sale date when the receipt is found).
-- Marts: `dim_store` (with `opened_on`, `is_newly_opened`, `last_synced_at`, `pos_lag_days`, `is_pos_sync_lagging`), `dim_sku`, `fct_inventory_batch`, `fct_transfers`, `fct_sales`, `fct_returns`, `fct_goods_received` (stock received from suppliers or by transfer; not "receipts", which already means sales receipts here).
+- Intermediate: `int_sales_lines` (both vendors in one shape, base units, amounts with and without VAT), `int_return_lines` (base units, before VAT, original sale date when the receipt is found) and `int_store_sku_costs` (weighted average cost per store and SKU, DR-008).
+- Marts: `dim_store` (with `opened_on`, `is_newly_opened`, `last_synced_at`, `pos_lag_days`, `is_pos_sync_lagging`), `dim_sku`, `fct_inventory_batch`, `fct_transfers` (with `snapshot_date`), `fct_sales` (with `unit_cost_excl_vat` and `cogs_excl_vat`), `fct_returns`, `fct_goods_received` (stock received from suppliers or by transfer; not "receipts", which already means sales receipts here), and `metricflow_time_spine`.
+- The properties of each mart (contract, docs, tests, semantic model) live in `models/semantic/<mart>.yml`, next to its metrics (section 7).
 - Marts expose neutral facts, never business thresholds. For example `fct_inventory_batch.days_to_expiry` (computed against the snapshot date), `fct_transfers.transfer_status`, `fct_returns.return_date`. The 90-day rule, the cancelled-transfer exclusion and the return-month rule live in the semantic layer (section 7), so changing them always touches a file that CODEOWNERS protects.
 - Marts that feed a certified metric use `contract: enforced` and `access: public`. A column rename then fails the build instead of silently breaking a metric.
 - Unit tests (dbt `unit_tests`) for the logic most likely to break quietly: POS retry dedupe, status code decoding, UTC to local business day, unit of measure conversion, VAT split.
@@ -107,7 +109,11 @@ Reproducibility: golden expected values are frozen from this output, so the gene
 - `profiles.example.yml` with commented blocks for duckdb, snowflake, bigquery, databricks, postgres.
 
 ## 7. Semantic layer (`dbt/models/semantic/`)
-Use MetricFlow semantic models and metrics. First verify MetricFlow queries run against dbt-duckdb locally (for example with `mf query`), on the pinned dbt version. If they do not, tell me before choosing a fallback. Also check which semantic YAML spec that dbt version expects (top-level `semantic_models:` or the newer spec defined on the model) and use that one.
+Use MetricFlow semantic models and metrics in dbt's latest YAML spec: the semantic model sits on the model (`semantic_model: {enabled: true}`, `agg_time_dimension`), entities and dimensions sit on columns, and simple metrics with direct keys (`agg`, `expr`, `filter`, `non_additive_dimension`) replace measures. Verified on dbt-core 1.12.6 with dbt-metricflow 0.15.0 (MetricFlow 0.213.0) on DuckDB: `mf validate-configs`, `mf query`, saved queries and the Python engine all work. Quirks found and handled are listed in PROGRESS.
+
+Layout: in this spec a semantic model must sit in the same properties file as its model, so each mart's properties live in `models/semantic/<mart>.yml`, together with the simple metrics built on it. Metrics that combine several semantic models live in `models/semantic/metrics.yml`. Every business rule therefore sits in this folder.
+
+Building-block metrics (for example on-hand units, sales before VAT) are `hidden: true`. They feed the certified metrics but do not show in `mf list metrics`, in the OSI document, or to agents.
 
 Use what dbt already provides before adding custom fields:
 - Business owner: the metric's dbt `group` (defined in `models/groups.yml`, a team handle, never a person's name).
@@ -133,18 +139,18 @@ Business thresholds and exclusions are written as metric or measure filters here
 Metrics for v0.1:
 | Metric | Rule written down |
 | --- | --- |
-| `available_stock` | on hand in base units, minus outbound transfers in transit (excluding cancelled), minus batches under 90 days to expiry. Semi-additive over time: use `non_additive_dimension` on the snapshot date |
-| `near_expiry_value` | value at `unit_cost` of stock in batches expiring within 90 days |
-| `net_revenue` | gross before VAT, minus discounts, minus returns, returns counted in the month of the return |
-| `gross_margin` | net revenue minus cost of goods sold at batch `unit_cost` |
-| `sell_through_rate` | units sold over units received in the period, both in base units |
-| `days_of_cover` | available stock over average daily units sold, last 28 days |
+| `available_stock` | on hand in base units in batches with at least 90 days to expiry, minus outbound transfers in transit (cancelled ones not subtracted). Semi-additive over time: `non_additive_dimension` on the snapshot date |
+| `near_expiry_value` | cost value of stock in batches with fewer than 90 days to expiry, expired stock not yet written off included |
+| `net_revenue` | sales after discounts and before VAT by sale date, minus refunds before VAT by return date |
+| `gross_margin` | net revenue minus cost of goods sold at the store's weighted average cost for the SKU; not reversed for returns (destroyed) |
+| `sell_through_rate` | base units sold (gross of returns) over base units received net: from suppliers and other stores, minus transfers out |
+| `days_of_cover` | available stock at the snapshot over average daily base units sold in the 28 full days before it (a 28-day cumulative window offset by one day) |
 
-Also include one `deprecated` metric (for example `revenue_v1`) with `replaced_by: net_revenue`, to show the lifecycle.
+Also include one `deprecated` metric, `revenue_v1` (VAT included, by sale date, returns ignored), with `replaced_by: net_revenue`, to show the lifecycle.
 
 Saved queries: the slices the dashboard shows (section 13) are defined as dbt `saved_queries` in this folder. They are the only way a dashboard gets a number.
 
-If dbt or MetricFlow provides an OSI export, add `make export-osi`. If not, add a short mapping table in README from MetricFlow fields to OSI concepts.
+OSI: dbt 1.12 writes an Open Semantic Interchange document (`target/osi_document.json`, OSI 0.1.1) on every parse, with hidden metrics left out. `make export-osi` runs the parse and points to it.
 
 ## 8. Legacy conflict (`legacy/`)
 Three SQL files that mimic real dashboards: `finance_dashboard.sql`, `sales_dashboard.sql`, `ops_weekly_report.sql`. Each computes "net revenue" differently (returns by sale month, returns ignored, discounts ignored). `make demo-conflict` runs all three plus the certified metric for the same month and prints the four numbers side by side, with the DR that settled it. Each legacy dashboard is declared as a dbt `exposure` with an owner and `maturity: low`, the way a company would catalog what it already has.
@@ -160,6 +166,8 @@ v0.1 records:
 - DR-005: deprecate `revenue_v1` in favor of `net_revenue`.
 - DR-006: revenue metrics are reported before VAT (finance and tax view vs the shelf price store managers see).
 - DR-007: stock and sell-through are counted in the SKU base unit; boxes and strips are converted, never added as they are.
+- DR-008: cost of goods sold uses the weighted average cost per store and SKU over all its receipts, because POS lines carry no batch (store-level vs chain-level average considered). Returns are destroyed, so their cost is not reversed.
+- DR-009: sell-through divides gross units sold by units received net (suppliers plus transfers in, minus transfers out), so it is right per store and for the chain (supplier-only and supplier-plus-transfers-in considered).
 
 ## 10. Golden questions (`golden/`)
 About 30 questions, grouped by domain, covering four kinds:

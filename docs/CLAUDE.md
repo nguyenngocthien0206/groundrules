@@ -10,7 +10,8 @@ Core idea: agents remove the arrangement (an analyst in the loop) that made it s
 - ownership is enforced by Git itself (`CODEOWNERS`, PR template, CI)
 
 ## Stack
-- Python 3.11+, dbt-core, dbt-duckdb (local demo), MetricFlow (dbt Semantic Layer, open source), PyYAML, pytest
+- Python 3.11+, dbt-core, dbt-duckdb (local demo), MetricFlow (dbt Semantic Layer, open source, via dbt-metricflow), PyYAML, pytest
+- Query MetricFlow from Python through `dbt_metricflow.cli.cli_configuration.CLIConfiguration` and `MetricFlowQueryRequest`, run with the dbt folder as project and profiles dir, and pass each filter as its own where constraint (see `tests/test_semantic_layer.py`).
 - Pin exact versions in `pyproject.toml`. Record the versions you verified in `PROGRESS.md`. The dbt line is dbt-core 1.12 with dbt-duckdb 1.11 (decided in step 2, see `PROGRESS.md`); the project also parses with `dbt parse --use-v2-parser`.
 - The warehouse is swappable: the same project must run on Snowflake, BigQuery, Databricks or Postgres by changing only `profiles.yml`.
 - Optional dashboard: Power BI Desktop (Windows only, opened by hand) reading Parquet exports of saved queries. `pyarrow` for writing Parquet is pending approval.
@@ -22,7 +23,9 @@ Core idea: agents remove the arrangement (an analyst in the loop) that made it s
 - `make setup`: install dependencies
 - `make data`: generate synthetic source data
 - `make build`: dbt build (staging, marts, unit tests, data tests) + source freshness
-- `make test`: governance lint + golden questions + pytest
+- `make metrics`: `mf validate-configs` against the warehouse, then list the visible metrics
+- `make export-osi`: write the Open Semantic Interchange document (`dbt/target/osi_document.json`)
+- `make test`: governance lint + golden questions + pytest (the semantic layer tests need `make build` first)
 - `make lint`: `dbt parse`, then governance checks on `target/manifest.json` (default `--today` is the snapshot date 2026-09-15)
 - `make dashboard-data`: run saved queries through MetricFlow and write Parquet for the Power BI report (optional)
 - `make demo-drift`: change a rule silently, show golden questions failing, restore
