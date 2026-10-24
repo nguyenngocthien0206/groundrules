@@ -12,19 +12,6 @@ def _utc(ts: str) -> datetime:
 
 
 @pytest.fixture(scope="module")
-def pos_a(data_dir) -> dict[str, list[dict]]:
-    return {p.name: read_csv(p) for p in sorted((data_dir / "pos_a").glob("*.csv"))}
-
-
-@pytest.fixture(scope="module")
-def pos_b(data_dir) -> dict[str, list[dict]]:
-    return {
-        p.name: read_csv(p, delimiter=";", encoding="utf-8-sig")
-        for p in sorted((data_dir / "pos_b").glob("*.csv"))
-    }
-
-
-@pytest.fixture(scope="module")
 def stores(data_dir) -> dict[str, dict]:
     return {s["STORE_CD"]: s for s in read_csv(data_dir / "erp" / "stores.csv")}
 

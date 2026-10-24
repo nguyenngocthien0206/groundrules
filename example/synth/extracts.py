@@ -5,6 +5,7 @@ Each POS vendor and the returns system has its own format on top of that.
 """
 
 import csv
+import json
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -21,6 +22,11 @@ POS_B_UNITS = {"TAB": "Viên", "STRIP": "Vỉ", "BOX": "Hộp", "BOTTLE": "Chai"
 # later in the same file, or in the next day's file.
 RETRY_SAME_FILE_SHARE = 0.004
 RETRY_NEXT_FILE_SHARE = 0.001
+
+RETURN_RECEIPT_SHARE = 0.015
+RETURN_LAG_SHARES = (0.60, 0.25)  # within 3 days, within 30 days; the rest 31 to 60 days
+RETURN_NO_RECEIPT_SHARE = 0.05
+RETURN_ORPHAN_SHARE = 0.03
 
 
 def _ymd(d: date | None) -> str:
@@ -108,6 +114,13 @@ def _utc(local: datetime) -> datetime:
     return local - config.UTC_OFFSET
 
 
+def receipt_no(store: Store, day: date, seq: int) -> str:
+    """Receipt number as the store's POS vendor prints it."""
+    if store.pos_vendor == "A":
+        return f"A{store.number:03d}{day:%y%m%d}{seq:04d}"
+    return f"HD{store.number:03d}{day:%y%m%d}{seq:04d}"
+
+
 def write_pos_a(out: Path, world: World, seed: str) -> None:
     """Vendor A: one file per UTC day, ISO timestamps in UTC, upload retries.
 
@@ -121,7 +134,7 @@ def write_pos_a(out: Path, world: World, seed: str) -> None:
 
     for (store, day, seq), lines in _receipts([s for s in world.sales if s.store in stores]).items():
         utc = _utc(lines[0].at)
-        txn_id = f"A{stores[store].number:03d}{day:%y%m%d}{seq:04d}"
+        txn_id = receipt_no(stores[store], day, seq)
         rows = [
             [txn_id, s.line_no, store, s.item_no, POS_A_UNITS[s.uom], s.qty, s.unit_price,
              s.discount, s.amount, f"{utc:%Y-%m-%dT%H:%M:%SZ}"]
@@ -160,9 +173,8 @@ def write_pos_b(out: Path, world: World) -> None:
     for s in world.sales:
         if s.store not in stores:
             continue
-        receipt_no = f"HD{stores[s.store].number:03d}{s.day:%y%m%d}{s.receipt_seq:04d}"
         files[s.day].append(
-            [receipt_no, s.line_no, s.store, s.item_no, skus[s.item_no].name_on(s.day),
+            [receipt_no(stores[s.store], s.day, s.receipt_seq), s.line_no, s.store, s.item_no, skus[s.item_no].name_on(s.day),
              POS_B_UNITS[s.uom], s.qty, s.unit_price, s.discount, s.amount,
              f"{s.at:%d/%m/%Y}", f"{s.at:%H:%M:%S}"]
         )
@@ -191,6 +203,80 @@ def write_pos_sync_log(out: Path, world: World, seed: str) -> None:
                      f"{attempt:%Y-%m-%d %H:%M:%S}", error])
     write_csv(out / "pos_sync_log.csv",
               ["store_code", "pos_vendor", "last_success_at", "last_attempt_at", "last_error"], rows)
+
+
+def write_returns(out: Path, world: World, seed: str) -> None:
+    """Returns system: JSON Lines from its API, one return with nested lines.
+
+    Returns arrive days or weeks after the sale, so some land in a later month.
+    Some carry no receipt, and some point to receipts from before the extract
+    window, so they match no sale at all. Refunds include VAT, net of the
+    discount given at the sale. Returned medicine is destroyed, not restocked.
+    """
+    r = rng(seed, "returns")
+    stores = {s.code: s for s in world.stores}
+    extract_at = config.EXTRACT_AT
+    returns = []
+
+    def returned_at(after: datetime) -> datetime:
+        x = r.random()
+        if x < RETURN_LAG_SHARES[0]:
+            lag = r.randint(0, 3)
+        elif x < RETURN_LAG_SHARES[0] + RETURN_LAG_SHARES[1]:
+            lag = r.randint(4, 30)
+        else:
+            lag = r.randint(31, 60)
+        day = after.date() + timedelta(days=lag)
+        at = datetime.combine(day, datetime.min.time()) + timedelta(
+            hours=r.randint(8, 20), minutes=r.randrange(60), seconds=r.randrange(60))
+        return max(at, after + timedelta(minutes=10))
+
+    def line(item_no: str, uom: str, qty: int, refund: int) -> dict:
+        return {"sku": item_no, "uom": uom, "qty": qty, "refund_vnd": refund}
+
+    for (store, day, seq), lines in _receipts(world.sales).items():
+        if r.random() >= RETURN_RECEIPT_SHARE:
+            continue
+        picked = [s for s in lines if r.random() < 0.6] or [r.choice(lines)]
+        at = returned_at(lines[0].at)
+        if at > extract_at:
+            continue  # not returned yet when the extract ran
+        receipt = None if r.random() < RETURN_NO_RECEIPT_SHARE else receipt_no(stores[store], day, seq)
+        items = []
+        for s in picked:
+            qty = r.randint(1, s.qty)
+            items.append(line(s.item_no, s.uom, qty, round(s.amount * qty / s.qty)))
+        returns.append((at, store, receipt, items))
+
+    # Returns of sales made before the extract window: no sale to match.
+    open_stores = [s for s in world.stores if s.opened_on < config.SALES_START]
+    for _ in range(round(len(returns) * RETURN_ORPHAN_SHARE)):
+        st = r.choice(open_stores)
+        sold = config.SALES_START - timedelta(days=r.randint(1, 30))
+        at = returned_at(datetime.combine(sold, datetime.min.time()) + timedelta(hours=12))
+        if at.date() < config.SALES_START:
+            at = datetime.combine(config.SALES_START, at.time())
+        sku = r.choices(world.skus, weights=[s.popularity for s in world.skus])[0]
+        unit = sku.base_uom if sku.form != config.FORM_TABLET else "STRIP"
+        qty = r.randint(1, 2)
+        items = [line(sku.item_no, unit, qty, qty * sku.uom(unit).price)]
+        returns.append((at, st.code, receipt_no(st, sold, r.randint(1, 60)), items))
+
+    returns.sort(key=lambda x: (x[0], x[1]))
+    reasons = ("CHANGED_MIND", "WRONG_ITEM", "ADVERSE_REACTION", "DAMAGED_PACK", "DOCTOR_CHANGED_PRESCRIPTION")
+    path = out / "returns" / "returns.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="\n") as f:
+        for i, (at, store, receipt, items) in enumerate(returns, start=1):
+            record = {
+                "return_id": f"RT{i:07d}",
+                "store": {"code": store, "name": stores[store].name},
+                "returned_at": f"{at:%Y-%m-%dT%H:%M:%S}+07:00",
+                "original_receipt": receipt,
+                "reason": r.choice(reasons),
+                "lines": items,
+            }
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
 def write_erp_sku_uom(out: Path, skus: list[Sku]) -> None:

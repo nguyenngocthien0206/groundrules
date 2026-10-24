@@ -32,6 +32,7 @@ def generate(out: Path, seed: str = config.SEED) -> World:
     extracts.write_pos_a(out, world, seed)
     extracts.write_pos_b(out, world)
     extracts.write_pos_sync_log(out, world, seed)
+    extracts.write_returns(out, world, seed)
     return world
 
 
