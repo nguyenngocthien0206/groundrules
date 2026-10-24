@@ -1,0 +1,135 @@
+# Time dimensions are written `dimension: {type: time}`: dbt-core 1.12.6 drops
+# the column granularity when the `dimension: time` shorthand is used.
+models:
+  - name: fct_inventory_batch
+    description: >
+      Stock at the snapshot, one row per batch, in base units. On-hand still
+      includes stock reserved for transfers in transit and expired stock that
+      waits for the monthly write-off.
+    config:
+      group: data_platform
+      contract:
+        enforced: true
+    semantic_model:
+      enabled: true
+    agg_time_dimension: snapshot_date
+    columns:
+      - name: batch_id
+        data_type: varchar
+        description: ERP batch id.
+        entity:
+          type: primary
+          name: batch
+        constraints:
+          - type: not_null
+        data_tests:
+          - unique
+      - name: store_code
+        data_type: varchar
+        description: Store holding the batch.
+        entity:
+          type: foreign
+          name: store
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_store')
+                field: store_code
+      - name: sku_code
+        data_type: varchar
+        description: ERP item number.
+        entity:
+          type: foreign
+          name: sku
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_sku')
+                field: sku_code
+      - name: lot_no
+        data_type: varchar
+        description: Supplier lot number.
+        dimension: categorical
+      - name: received_on
+        data_type: date
+        description: Date the batch arrived at this store.
+      - name: expires_on
+        data_type: date
+        description: Expiry date of the lot.
+        granularity: day
+        dimension: {type: time}
+      - name: days_to_expiry
+        data_type: bigint
+        description: Days from the snapshot date to expiry. Negative when already expired.
+        dimension: categorical
+      - name: source_type
+        data_type: varchar
+        description: purchase_order or transfer.
+        dimension: categorical
+      - name: source_doc
+        data_type: varchar
+        description: Purchase order or transfer number.
+      - name: on_hand_qty_base
+        data_type: integer
+        description: Quantity on hand at the snapshot, base units.
+      - name: unit_cost_excl_vat
+        data_type: decimal(18,4)
+        description: Cost of one base unit from this batch, VND, VAT excluded.
+      - name: on_hand_value_excl_vat
+        data_type: decimal(18,4)
+        description: on_hand_qty_base times unit_cost_excl_vat.
+      - name: snapshot_date
+        data_type: date
+        description: Date the stock position refers to.
+        granularity: day
+        dimension: {type: time}
+
+    metrics:
+      # Building blocks: hidden, so agents and dashboards use the certified
+      # metrics built on them instead.
+      - name: on_hand_units
+        description: Everything on the shelf in base units, expired and reserved stock included. Not for direct use.
+        type: simple
+        agg: sum
+        expr: on_hand_qty_base
+        hidden: true
+        non_additive_dimension:
+          name: snapshot_date
+          window_agg: max
+
+      - name: available_on_hand_units
+        description: On-hand in base units in batches with at least 90 days to expiry (DR-001). Not for direct use; see available_stock.
+        type: simple
+        agg: sum
+        expr: on_hand_qty_base
+        hidden: true
+        filter: "{{ Dimension('batch__days_to_expiry') }} >= 90"
+        non_additive_dimension:
+          name: snapshot_date
+          window_agg: max
+
+      - name: near_expiry_value
+        label: Near-expiry stock value
+        description: >
+          Cost value (VND, VAT excluded) of stock in batches with fewer than 90
+          days to expiry, including expired stock not yet written off.
+        type: simple
+        agg: sum
+        expr: on_hand_value_excl_vat
+        filter: "{{ Dimension('batch__days_to_expiry') }} < 90"
+        non_additive_dimension:
+          name: snapshot_date
+          window_agg: max
+        config:
+          group: supply_chain_ops
+          meta:
+            version: 1
+            status: certified
+            certified_on: 2026-09-10
+            recertify_every_days: 180
+            decision: decisions/DR-001.md
+            replaced_by: null
+            agent_notes: >
+              Money at risk on the shelf. Includes stock that has already
+              expired but is still on hand until the monthly write-off. Use it
+              at the snapshot date; it is a stock position, not a flow.

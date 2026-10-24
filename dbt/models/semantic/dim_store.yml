@@ -1,0 +1,71 @@
+models:
+  - name: dim_store
+    description: One row per store, with its POS sync state at the snapshot.
+    config:
+      group: data_platform
+      contract:
+        enforced: true
+    semantic_model:
+      enabled: true
+    columns:
+      - name: store_code
+        data_type: varchar
+        description: Store code, for example NW001.
+        entity:
+          type: primary
+          name: store
+        constraints:
+          - type: not_null
+        data_tests:
+          - unique
+      - name: store_name
+        data_type: varchar
+        description: Store name.
+        dimension: categorical
+      - name: district_code
+        data_type: varchar
+        description: District the store belongs to.
+        dimension: categorical
+      - name: district_name
+        data_type: varchar
+        description: District name.
+        dimension: categorical
+      - name: opened_on
+        data_type: date
+        description: Date the store opened.
+      - name: days_open
+        data_type: bigint
+        description: Days between opening and the snapshot date.
+      - name: is_newly_opened
+        data_type: boolean
+        description: Opened in the 31 days before the snapshot.
+        dimension: categorical
+      - name: is_open_24h
+        data_type: boolean
+        description: Open around the clock.
+        dimension: categorical
+      - name: pos_vendor
+        data_type: varchar
+        description: POS vendor, A or B.
+        dimension: categorical
+      - name: last_synced_at
+        data_type: timestamp
+        description: Last successful POS sync, local time.
+      - name: last_sync_attempt_at
+        data_type: timestamp
+        description: Last sync attempt, local time.
+      - name: last_sync_error
+        data_type: varchar
+        description: Error of the last attempt, null when it worked.
+      - name: pos_data_through
+        data_type: date
+        description: Last business day whose sales have reached the warehouse.
+      - name: pos_lag_days
+        data_type: bigint
+        description: Business days of sales still missing at the snapshot. 0 for a store synced through the day before.
+        data_tests:
+          - not_null
+      - name: is_pos_sync_lagging
+        data_type: boolean
+        description: True when any day of sales is missing. Answers that include such a store must say so (DR-004).
+        dimension: categorical

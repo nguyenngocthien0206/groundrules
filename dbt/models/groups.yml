@@ -1,0 +1,16 @@
+# Owning teams. A metric's group is its business owner, the team that
+# decides what the number means. A mart's group is its data owner, the team
+# that keeps the data right. Team handles only, never a person's name.
+groups:
+  - name: supply_chain_ops
+    owner:
+      name: Supply chain operations
+      email: supply-chain-ops@example.com
+  - name: finance
+    owner:
+      name: Finance
+      email: finance@example.com
+  - name: data_platform
+    owner:
+      name: Data platform
+      email: data-platform@example.com

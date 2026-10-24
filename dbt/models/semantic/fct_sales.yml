@@ -1,0 +1,147 @@
+# Time dimensions are written `dimension: {type: time}`: dbt-core 1.12.6 drops
+# the column granularity when the `dimension: time` shorthand is used.
+models:
+  - name: fct_sales
+    description: One row per sales line from both POS vendors, retries removed, base units, with and without VAT.
+    config:
+      group: data_platform
+      contract:
+        enforced: true
+    semantic_model:
+      enabled: true
+    agg_time_dimension: business_date
+    columns:
+      - name: sales_line_id
+        data_type: varchar
+        description: Vendor, receipt and line number joined.
+        entity:
+          type: primary
+          name: sales_line
+        constraints:
+          - type: not_null
+        data_tests:
+          - unique
+      - name: pos_vendor
+        data_type: varchar
+        description: POS vendor, A or B.
+        dimension: categorical
+      - name: receipt_no
+        data_type: varchar
+        description: Receipt number. Not unique per SKU, a receipt can hold the same SKU twice.
+      - name: line_no
+        data_type: integer
+        description: Line number within the receipt.
+      - name: store_code
+        data_type: varchar
+        description: Store code.
+        entity:
+          type: foreign
+          name: store
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_store')
+                field: store_code
+      - name: sku_code
+        data_type: varchar
+        description: ERP item number.
+        entity:
+          type: foreign
+          name: sku
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_sku')
+                field: sku_code
+      - name: business_date
+        data_type: date
+        description: Local date of the sale.
+        granularity: day
+        dimension: {type: time}
+      - name: sold_at
+        data_type: timestamp
+        description: Local time of the sale.
+      - name: uom_code
+        data_type: varchar
+        description: Unit sold.
+        dimension: categorical
+      - name: qty
+        data_type: integer
+        description: Quantity in uom_code.
+      - name: qty_base
+        data_type: integer
+        description: Quantity in base units.
+      - name: vat_rate
+        data_type: decimal(5,4)
+        description: VAT rate as a fraction.
+      - name: unit_price_incl_vat
+        data_type: bigint
+        description: Shelf price of one uom_code, VAT included.
+      - name: gross_incl_vat
+        data_type: bigint
+        description: Before discount, VAT included.
+      - name: discount_incl_vat
+        data_type: bigint
+        description: Discount, VAT included.
+      - name: amount_incl_vat
+        data_type: bigint
+        description: Paid, VAT included.
+      - name: gross_excl_vat
+        data_type: decimal(18,4)
+        description: Before discount, VAT excluded.
+      - name: discount_excl_vat
+        data_type: decimal(18,4)
+        description: Discount, VAT excluded.
+      - name: amount_excl_vat
+        data_type: decimal(18,4)
+        description: Paid, VAT excluded.
+      - name: unit_cost_excl_vat
+        data_type: decimal(18,4)
+        description: Weighted average cost of one base unit of the SKU at this store (DR-008).
+        data_tests:
+          - not_null
+      - name: cogs_excl_vat
+        data_type: decimal(18,4)
+        description: Cost of goods sold for the line, qty_base times unit_cost_excl_vat.
+
+    metrics:
+      - name: sales_net_excl_vat
+        description: Gross minus discounts, before VAT, counted on the sale date. Not for direct use; see net_revenue.
+        type: simple
+        agg: sum
+        expr: amount_excl_vat
+        hidden: true
+
+      - name: units_sold
+        description: Base units sold, counted on the sale date. Returned units are not subtracted (they are destroyed, DR-009). Not for direct use.
+        type: simple
+        agg: sum
+        expr: qty_base
+        hidden: true
+
+      - name: cogs
+        description: Cost of goods sold at the store's weighted average cost (DR-008). Not reversed for returns. Not for direct use; see gross_margin.
+        type: simple
+        agg: sum
+        expr: cogs_excl_vat
+        hidden: true
+
+      - name: revenue_v1
+        label: Revenue (v1, deprecated)
+        description: >
+          The old revenue number: what customers paid, VAT included, by sale
+          date, with returns ignored. Kept so old questions get a pointer to
+          net_revenue instead of a silent wrong answer.
+        type: simple
+        agg: sum
+        expr: amount_incl_vat
+        config:
+          group: finance
+          meta:
+            version: 1
+            status: deprecated
+            certified_on: 2026-03-01
+            recertify_every_days: 90
+            decision: decisions/DR-005.md
+            replaced_by: net_revenue
+            agent_notes: Deprecated. Do not answer with this metric; use net_revenue and say why.

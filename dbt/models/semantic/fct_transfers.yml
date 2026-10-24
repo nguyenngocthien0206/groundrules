@@ -1,0 +1,97 @@
+# Time dimensions are written `dimension: {type: time}`: dbt-core 1.12.6 drops
+# the column granularity when the `dimension: time` shorthand is used.
+models:
+  - name: fct_transfers
+    description: Store to store transfers in base units.
+    config:
+      group: data_platform
+      contract:
+        enforced: true
+    semantic_model:
+      enabled: true
+    agg_time_dimension: snapshot_date
+    columns:
+      - name: transfer_no
+        data_type: varchar
+        description: ERP transfer number.
+        entity:
+          type: primary
+          name: transfer
+        constraints:
+          - type: not_null
+        data_tests:
+          - unique
+      - name: sku_code
+        data_type: varchar
+        description: ERP item number.
+        entity:
+          type: foreign
+          name: sku
+      - name: lot_no
+        data_type: varchar
+        description: Lot being transferred.
+      - name: from_store_code
+        data_type: varchar
+        description: Sending store. Its on-hand still holds the stock until delivery. The `store` entity of this model.
+        entity:
+          type: foreign
+          name: store
+      - name: to_store_code
+        data_type: varchar
+        description: Receiving store.
+        entity:
+          type: foreign
+          name: receiving_store
+      - name: qty_base
+        data_type: integer
+        description: Quantity in base units.
+      - name: transfer_status
+        data_type: varchar
+        description: in_transit, delivered or cancelled.
+        dimension: categorical
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["in_transit", "delivered", "cancelled"]
+      - name: created_on
+        data_type: date
+        description: Date the transfer was created.
+      - name: shipped_on
+        data_type: date
+        description: Date the stock left the sending store. Set for cancelled transfers too.
+        granularity: day
+        dimension: {type: time}
+      - name: received_on
+        data_type: date
+        description: Date of delivery. Null unless delivered.
+        granularity: day
+        dimension: {type: time}
+      - name: updated_on
+        data_type: date
+        description: Date of the last status change.
+      - name: snapshot_date
+        data_type: date
+        description: Date the status refers to (the extract).
+        granularity: day
+        dimension: {type: time}
+
+    metrics:
+      - name: outbound_in_transit_units
+        description: >
+          Base units shipped by the store and not yet delivered at the
+          snapshot. Cancelled transfers never left the shelf and are not
+          counted (DR-003). Not for direct use; see available_stock.
+        type: simple
+        agg: sum
+        expr: qty_base
+        hidden: true
+        filter: "{{ Dimension('transfer__transfer_status') }} = 'in_transit'"
+
+      - name: units_transferred_out
+        description: Base units the store sent to other stores, counted on the delivery date (DR-009). Not for direct use; see sell_through_rate.
+        type: simple
+        agg: sum
+        expr: qty_base
+        hidden: true
+        agg_time_dimension: received_on
+        filter: "{{ Dimension('transfer__transfer_status') }} = 'delivered'"
