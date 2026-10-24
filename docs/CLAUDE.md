@@ -11,16 +11,20 @@ Core idea: agents remove the arrangement (an analyst in the loop) that made it s
 
 ## Stack
 - Python 3.11+, dbt-core, dbt-duckdb (local demo), MetricFlow (dbt Semantic Layer, open source), PyYAML, pytest
+- Pin exact versions in `pyproject.toml`. Record the versions you verified in `PROGRESS.md`. Which dbt line to use (dbt v2 or dbt-core 1.x) is an open question; settle it in build step 3.
 - The warehouse is swappable: the same project must run on Snowflake, BigQuery, Databricks or Postgres by changing only `profiles.yml`.
-- Optional extras (phase 2 and later, never required for the core demo): an MCP server and an agent eval harness.
+- Optional dashboard: Power BI Desktop (Windows only, opened by hand) reading Parquet exports of saved queries. `pyarrow` for writing Parquet is pending approval.
+- Optional extras (phase 2 and later, never required for the core demo): MCP access built on `dbt-mcp`, and an agent eval harness.
 - Ask before adding any dependency not listed here.
+- `make` needs WSL or Git Bash on Windows.
 
 ## Commands
 - `make setup`: install dependencies
 - `make data`: generate synthetic source data
-- `make build`: dbt build (staging, marts, data tests)
+- `make build`: dbt build (staging, marts, unit tests, data tests) + source freshness
 - `make test`: governance lint + golden questions + pytest
-- `make lint`: governance checks only
+- `make lint`: `dbt parse`, then governance checks on `target/manifest.json` (default `--today` is the snapshot date 2026-09-15)
+- `make dashboard-data`: run saved queries through MetricFlow and write Parquet for the Power BI report (optional)
 - `make demo-drift`: change a rule silently, show golden questions failing, restore
 - `make demo-conflict`: show three legacy definitions of net revenue disagreeing, then the certified one
 
@@ -28,7 +32,10 @@ Core idea: agents remove the arrangement (an analyst in the loop) that made it s
 - Realistic but synthetic. Data must look like real ERP and POS extracts (messy, late, duplicated), but every name, number and rule is invented with a fixed seed. Never use real company names, store names, people's names or real internal business rules.
 - Build on what companies already run (dbt, MetricFlow, Open Semantic Interchange). Do not write a custom semantic engine or a competing YAML standard.
 - Golden question expected values come from an independent reference computation over source tables (`golden/reference/`), never from the semantic layer code path. Otherwise the tests are circular.
-- Every metric has an owner, a version, a certification state and a linked decision record. CI enforces this.
+- Every metric has an owner (its dbt group), a version, a certification state and a linked decision record. CI enforces this.
+- Business thresholds and exclusions live in the semantic YAML (`dbt/models/semantic/`), never in mart SQL. Marts expose neutral facts such as `days_to_expiry`.
+- Use what dbt already provides (groups, contracts, exposures, unit tests, source freshness, saved queries) before adding custom `meta` fields. `meta` holds only what dbt has no field for.
+- Dashboards never redefine a certified metric. They show saved query exports at the grain they were exported, and lint checks the Power BI TMDL for this.
 - When unsure whether a tool supports something (for example MetricFlow on DuckDB, or OSI export), verify it by running it or reading its docs before building on it, and tell me what you found.
 
 ## Writing style for README and all docs
