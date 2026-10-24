@@ -46,8 +46,10 @@ groundrules/
     synth/                   # generator modules: config, master data, simulation, extract writers
   legacy/                    # three conflicting "existing dashboard" SQL definitions
   dbt/
-    dbt_project.yml  profiles.example.yml
+    dbt_project.yml  profiles.yml (local DuckDB)  profiles.example.yml
+    macros/                  # portable date parsing, schema naming, small generic tests
     models/staging/          # one model per source, cleaning, dedup, unit tests
+    models/intermediate/     # both POS vendors as one, base units, VAT split, returns matched to sales
     models/marts/            # dims and facts, contracts on marts that feed certified metrics
     models/semantic/         # MetricFlow semantic models, metrics, saved queries, governance meta
     models/groups.yml        # dbt groups = owning teams
@@ -94,7 +96,8 @@ Reproducibility: golden expected values are frozen from this output, so the gene
 
 ## 6. dbt project (`dbt/`)
 - Staging: one model per source, rename to a common vocabulary, decode status codes, dedupe POS retries, convert types, convert POS timestamps to local business time (Asia/Ho_Chi_Minh), convert quantities to the SKU base unit, split VAT out of POS amounts. Document every column.
-- Marts: `dim_store` (with `opened_on`, `is_newly_opened`, `last_synced_at`), `dim_sku`, `fct_inventory_batch`, `fct_transfers`, `fct_sales`, `fct_returns`, `fct_receipts`.
+- Intermediate: `int_sales_lines` (both vendors in one shape, base units, amounts with and without VAT) and `int_return_lines` (base units, before VAT, original sale date when the receipt is found).
+- Marts: `dim_store` (with `opened_on`, `is_newly_opened`, `last_synced_at`, `pos_lag_days`, `is_pos_sync_lagging`), `dim_sku`, `fct_inventory_batch`, `fct_transfers`, `fct_sales`, `fct_returns`, `fct_goods_received` (stock received from suppliers or by transfer; not "receipts", which already means sales receipts here).
 - Marts expose neutral facts, never business thresholds. For example `fct_inventory_batch.days_to_expiry` (computed against the snapshot date), `fct_transfers.transfer_status`, `fct_returns.return_date`. The 90-day rule, the cancelled-transfer exclusion and the return-month rule live in the semantic layer (section 7), so changing them always touches a file that CODEOWNERS protects.
 - Marts that feed a certified metric use `contract: enforced` and `access: public`. A column rename then fails the build instead of silently breaking a metric.
 - Unit tests (dbt `unit_tests`) for the logic most likely to break quietly: POS retry dedupe, status code decoding, UTC to local business day, unit of measure conversion, VAT split.
