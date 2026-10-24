@@ -4,14 +4,14 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: 1. Synthetic source extracts
+- Current step: 2. dbt staging + marts + unit tests + data tests + freshness
 - State: not started
-- Last verified green: never (`make build && make test` not yet runnable)
+- Last verified green: 2026-10-24 (`make build && make test`, 34 tests; `make build` is a placeholder until step 2)
 
 ## Build checklist (v0.1)
 Tick a step only when it runs end to end and its checks pass.
 
-- [ ] 1. Synthetic source extracts (`example/generate.py`) + checksum test
+- [x] 1. Synthetic source extracts (`example/generate.py`) + checksum test
 - [ ] 2. dbt staging + marts + unit tests + data tests + freshness
 - [ ] 3. Verify MetricFlow on DuckDB (versions, spec, Python API, saved queries), then semantic models and metrics
 - [ ] 4. Decision records (DR-001 to DR-007 + TEMPLATE)
@@ -46,6 +46,12 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-24 | Environment with uv and a committed `uv.lock`; Python 3.11 to 3.13; verified with Python 3.11.9, uv 0.11.14, pytest 9.1.1 | Lockfile pins indirect dependencies too; no venv path differences between Windows and Unix in the Makefile. Confirmed by the owner. |
+| 2026-10-24 | Generator uses the standard library only, one `random.Random(f"{seed}:{name}")` stream per part, and writes LF, UTF-8, integer amounts | No library can shift the numbers; output is byte-identical (checked on Python 3.11 and 3.14). |
+| 2026-10-24 | Extracts are not committed; `tests/fixtures/expected_manifest.json` (SHA-256 and rows per file) is. `make data-manifest` re-freezes it after an intended change | Keeps the repo small while still catching any drift in the data golden values depend on. |
+| 2026-10-24 | District names are invented (Riverside, Old Quarter, Airport, Industrial Park, New Town); store codes `NW001` to `NW030` | No real place names; Vietnam dropped the district level in 2025 anyway. Confirmed by the owner. |
+| 2026-10-24 | Source formats: ERP CSV (UPPER_SNAKE, `YYYYMMDD`); POS vendor A CSV per UTC day with UTC ISO timestamps and upload retries; POS vendor B semicolon CSV per local day with BOM, Vietnamese headers and `dd/mm/yyyy`; returns as nested JSON Lines with `+07:00` | Each source looks like its own system, so staging has real work to do. |
+| 2026-10-24 | Stock behaviour: FEFO sales, supplier minimum order quantities, discounted short-dated lots, write-off of expired stock on the 1st of the month, transfers reserved at the sender until delivered | Gives about 5% of on-hand value within 90 days of expiry (typical for a pharmacy) and makes the in-transit and cancelled-transfer rules matter. |
 | 2026-10-24 | Dashboard is Power BI Desktop on Parquet exports of dbt saved queries; optional, outside the core DoD | Official Semantic Layer connectors (Power BI included) need the paid dbt platform. Lightdash reads MetricFlow locally but is beta and skips `non_additive_dimension`, cross-model ratio and derived inputs, and cumulative metrics, which puts `available_stock`, `sell_through_rate` and `days_of_cover` at risk. dbt Charts (beta) cannot query the semantic layer yet. Confirmed by the owner. |
 | 2026-10-24 | Business thresholds live in semantic YAML; marts expose neutral facts | Keeps every rule change inside files CODEOWNERS protects, and makes `demo-drift` edit the right place. |
 | 2026-10-24 | dbt-native governance first: groups for owners, contracts on certified marts, exposures for dashboards; `meta` only for status, version, certification, DR, `replaced_by`, `agent_notes` | Matches how companies already run dbt, so adopters copy less custom structure. |
@@ -65,6 +71,8 @@ Things that need the owner's input. Remove an item once it is answered, and reco
 - Approve `pyarrow` as a dependency for Parquet exports (step 8).
 - Does Power BI Desktop's built-in Parquet connector read the local export files with no extra setup? Verify in step 8.
 - Do `dbt-mcp` semantic layer tools work against local MetricFlow, or only the dbt platform? Verify before v0.2.
+- Cost method for `gross_margin`: POS lines carry no batch, so COGS needs a rule (weighted average cost per store and SKU, or FEFO). Needs a DR in step 4.
+- Does `sell_through_rate` count stock received by transfer (`SOURCE_DOC` starting with `TRF`) as "received", or only supplier deliveries (`PO`)? Needs a DR in step 4.
 
 ## Session log
 One entry per working session. Format:
@@ -76,6 +84,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-24 (step 1)
+- Done: synthetic extracts for 30 stores, 150 SKUs, six months: ERP stores, SKUs, units, batches, transfers; POS vendors A and B; POS sync log; returns. Manifest plus reproducibility test.
+- Verified: `make setup && make data && make build && make test` green, 34 tests in about 65s; `make data` about 30s for 376 files and 505k rows; same bytes on Python 3.14
+- Next: step 2, starting in plan mode
+- Notes: a receipt can hold the same SKU and unit on two lines (scanned twice), so staging and the reference computations must not key sales on receipt plus SKU. Lagging stores have no sales after 2026-09-11 in any source. Returns are never restocked.
 
 ### 2026-10-24
 - Done: reviewed the spec and updated CLAUDE.md, SPEC.md and PROGRESS.md (golden scoring for caveat and deprecated kinds, rule placement, missing source columns, lint `--today`, version pinning, reference independence, registry check, em dash check, dbt-native governance, VN pharmacy data realism, optional Power BI dashboard, `dbt-mcp` for v0.2)

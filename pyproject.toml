@@ -1,0 +1,20 @@
+[project]
+name = "groundrules"
+version = "0.1.0.dev0"
+description = "Write down the rules your senior analyst never did, so your AI agent can follow them."
+license = "Apache-2.0"
+requires-python = ">=3.11,<3.14"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["example"]
+addopts = "-q"

@@ -42,7 +42,8 @@ groundrules/
     pull_request_template.md
     workflows/governance.yml
   example/
-    generate.py              # synthetic source extracts (CSV / Parquet)
+    generate.py              # synthetic source extracts (CSV / JSON Lines)
+    synth/                   # generator modules: config, master data, simulation, extract writers
   legacy/                    # three conflicting "existing dashboard" SQL definitions
   dbt/
     dbt_project.yml  profiles.example.yml
