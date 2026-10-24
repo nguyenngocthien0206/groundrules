@@ -19,7 +19,9 @@ select
     transfers.created_on,
     transfers.shipped_on,
     transfers.received_on,
-    transfers.updated_on
+    transfers.updated_on,
+    -- The status is as of the extract, so it describes the snapshot date.
+    cast('{{ var("snapshot_date") }}' as date) as snapshot_date
 from transfers
 inner join units
     on transfers.sku_code = units.sku_code
