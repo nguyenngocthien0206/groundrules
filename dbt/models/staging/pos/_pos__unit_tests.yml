@@ -1,0 +1,52 @@
+# Source inputs use SQL fixtures: the sources are files read through
+# external_location, so dbt cannot look up their column types for dict rows.
+unit_tests:
+  - name: pos_a_keeps_the_first_upload_of_a_retried_line
+    description: An upload retry sends the same receipt line again later. Only the first upload is kept.
+    model: stg_pos_a__sales_lines
+    given:
+      - input: source('pos_a', 'sales_lines')
+        format: sql
+        rows: |
+          select 'A0012608010001' as txn_id, '1' as line_no, 'NW001' as store_code, '100001' as item_code,
+                 'STRIP' as uom, '2' as qty, '31000' as unit_price, '0' as discount_amount, '62000' as line_amount,
+                 '2026-08-01T03:00:00Z' as txn_ts, '2026-08-01T03:05:00Z' as exported_at, 'sales_20260801.csv' as filename
+          union all
+          select 'A0012608010001', '1', 'NW001', '100001', 'STRIP', '2', '31000', '0', '62000',
+                 '2026-08-01T03:00:00Z', '2026-08-02T00:40:00Z', 'sales_20260802.csv'
+    expect:
+      rows:
+        - {receipt_no: A0012608010001, line_no: 1, source_file: sales_20260801.csv}
+
+  - name: pos_a_utc_evening_sale_belongs_to_the_next_local_day
+    description: 18:30 UTC is 01:30 the next day in Vietnam, so the business date is the next day, not the file's UTC date.
+    model: stg_pos_a__sales_lines
+    given:
+      - input: source('pos_a', 'sales_lines')
+        format: sql
+        rows: |
+          select 'A0042608020003' as txn_id, '1' as line_no, 'NW004' as store_code, '100076' as item_code,
+                 'BTL' as uom, '1' as qty, '90000' as unit_price, '0' as discount_amount, '90000' as line_amount,
+                 '2026-08-01T18:30:00Z' as txn_ts, '2026-08-01T18:40:00Z' as exported_at, 'sales_20260801.csv' as filename
+    expect:
+      rows:
+        - {receipt_no: A0042608020003, uom_code: BOTTLE, sold_at: "2026-08-02 01:30:00", business_date: "2026-08-02"}
+
+  - name: pos_b_parses_local_dates_and_vietnamese_units
+    description: Vendor B writes dd/mm/yyyy in local time and units in Vietnamese.
+    model: stg_pos_b__sales_lines
+    given:
+      - input: source('pos_b', 'sales_lines')
+        format: sql
+        rows: |
+          select 'HD0192608020001' as "SoHoaDon", '1' as "Dong", 'NW019' as "MaCuaHang", '100006' as "MaHang",
+                 'Paracetamol 650mg (Box 3x10)' as "TenHang", 'Vỉ' as "DVT", '3' as "SoLuong", '12000' as "DonGia",
+                 '0' as "ChietKhau", '36000' as "ThanhTien", '02/08/2026' as "NgayBan", '23:15:00' as "GioBan",
+                 'BanHang_02082026.csv' as filename
+          union all
+          select 'HD0192608020001', '2', 'NW019', '100120', 'Surgical face mask', 'Cái', '5', '2000',
+                 '0', '10000', '02/08/2026', '23:15:00', 'BanHang_02082026.csv'
+    expect:
+      rows:
+        - {line_no: 1, uom_code: STRIP, business_date: "2026-08-02", sold_at_utc: "2026-08-02 16:15:00"}
+        - {line_no: 2, uom_code: PIECE, business_date: "2026-08-02", sold_at_utc: "2026-08-02 16:15:00"}

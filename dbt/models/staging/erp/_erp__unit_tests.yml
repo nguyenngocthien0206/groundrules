@@ -1,0 +1,22 @@
+# Source inputs use SQL fixtures: the sources are files read through
+# external_location, so dbt cannot look up their column types for dict rows.
+unit_tests:
+  - name: erp_transfer_status_codes_are_decoded
+    description: TR, DL and CX become words. A cancelled transfer can carry a ship date and no receipt, like one in transit.
+    model: stg_erp__transfers
+    given:
+      - input: source('erp', 'transfers')
+        format: sql
+        rows: |
+          select 'TRF00001' as "TRF_NO", '100001' as "ITEM_NO", 'L26A0001' as "LOT_NO", 'NW001' as "FROM_STORE",
+                 'NW002' as "TO_STORE", '1' as "QTY", 'BOX' as "UOM", 'TR' as "STATUS", '20260913' as "CREATED_AT",
+                 '20260914' as "SHIPPED_AT", '' as "RECEIVED_AT", '20260914' as "UPDATED_AT"
+          union all
+          select 'TRF00002', '100001', 'L26A0001', 'NW001', 'NW003', '2', 'BOX', 'DL', '20260901', '20260901', '20260903', '20260903'
+          union all
+          select 'TRF00003', '100001', 'L26A0001', 'NW001', 'NW004', '1', 'BOX', 'CX', '20260913', '20260913', '', '20260914'
+    expect:
+      rows:
+        - {transfer_no: TRF00001, transfer_status: in_transit, shipped_on: "2026-09-14", received_on: null}
+        - {transfer_no: TRF00002, transfer_status: delivered, shipped_on: "2026-09-01", received_on: "2026-09-03"}
+        - {transfer_no: TRF00003, transfer_status: cancelled, shipped_on: "2026-09-13", received_on: null}
