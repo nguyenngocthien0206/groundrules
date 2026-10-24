@@ -29,6 +29,9 @@ def generate(out: Path, seed: str = config.SEED) -> World:
     extracts.write_erp_sku_uom(out, skus)
     extracts.write_erp_batches(out, world)
     extracts.write_erp_transfers(out, world)
+    extracts.write_pos_a(out, world, seed)
+    extracts.write_pos_b(out, world)
+    extracts.write_pos_sync_log(out, world, seed)
     return world
 
 
