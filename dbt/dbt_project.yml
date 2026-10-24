@@ -1,0 +1,32 @@
+name: groundrules
+version: "0.1.0"
+config-version: 2
+profile: groundrules
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+target-path: target
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  # The extract ran on the morning of the snapshot date, local time.
+  # Every "as of" fact in the marts is computed against these, never now().
+  snapshot_date: "2026-09-15"
+  extract_at: "2026-09-15 06:00:00"
+
+models:
+  groundrules:
+    staging:
+      +schema: staging
+      +materialized: table
+    intermediate:
+      +schema: intermediate
+      +materialized: table
+    marts:
+      +schema: marts
+      +materialized: table
+      +access: public
+
+flags:
+  require_generic_test_arguments_property: true

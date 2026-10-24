@@ -6,3 +6,11 @@ __pycache__/
 
 # Generated synthetic extracts (rebuild with `make data`)
 example/data/
+
+# dbt and the local DuckDB warehouse
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+dbt/.user.yml
+*.duckdb
+*.duckdb.wal
