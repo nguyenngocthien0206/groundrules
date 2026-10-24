@@ -1,0 +1,94 @@
+models:
+  - name: int_sales_lines
+    description: >
+      Sales lines from both POS vendors in one shape, with quantities in base
+      units and amounts with and without VAT. Not rounded.
+    columns:
+      - name: sales_line_id
+        description: Vendor, receipt and line number joined, unique across vendors.
+        data_tests:
+          - unique
+          - not_null
+      - name: pos_vendor
+        description: POS vendor, A or B.
+      - name: receipt_no
+        description: Receipt number as the vendor prints it.
+      - name: line_no
+        description: Line number within the receipt.
+      - name: store_code
+        description: Store code.
+      - name: sku_code
+        description: ERP item number.
+      - name: business_date
+        description: Local date of the sale.
+      - name: sold_at
+        description: Local time of the sale.
+      - name: sold_at_utc
+        description: UTC time of the sale.
+      - name: uom_code
+        description: Unit sold (ERP code).
+      - name: qty
+        description: Quantity in uom_code.
+      - name: qty_base
+        description: Quantity in the SKU's base unit, for example 2 strips of 10 is 20.
+      - name: vat_rate
+        description: VAT rate of the SKU as a fraction.
+      - name: unit_price_incl_vat
+        description: Shelf price of one uom_code, VND, VAT included.
+      - name: gross_incl_vat
+        description: qty times unit price, before discount, VAT included.
+      - name: discount_incl_vat
+        description: Discount on the line, VAT included.
+      - name: amount_incl_vat
+        description: Amount paid, VAT included.
+      - name: gross_excl_vat
+        description: gross_incl_vat without VAT.
+      - name: discount_excl_vat
+        description: discount_incl_vat without VAT.
+      - name: amount_excl_vat
+        description: amount_incl_vat without VAT.
+      - name: source_file
+        description: Landing file the line was read from.
+
+  - name: int_return_lines
+    description: >
+      Returned items in base units and before VAT, with the business date of
+      the original sale when its receipt is in the extract.
+    columns:
+      - name: return_line_id
+        description: Return id and line number joined.
+        data_tests:
+          - unique
+          - not_null
+      - name: return_id
+        description: Returns system id.
+      - name: line_no
+        description: Position of the item within the return.
+      - name: store_code
+        description: Store where the item came back.
+      - name: sku_code
+        description: ERP item number.
+      - name: returned_at
+        description: Local time of the return.
+      - name: return_date
+        description: Local date of the return.
+      - name: original_receipt_no
+        description: Receipt of the original sale, null when the customer had none.
+      - name: sale_business_date
+        description: Business date of the original sale. Null when the receipt is missing or not in the extract.
+      - name: has_matching_sale
+        description: True when the original receipt was found in the POS extracts.
+      - name: uom_code
+        description: Unit returned (ERP code).
+      - name: qty
+        description: Quantity returned in uom_code.
+      - name: qty_base
+        description: Quantity returned in base units.
+      - name: vat_rate
+        description: VAT rate of the SKU as a fraction.
+      - name: refund_incl_vat
+        description: Amount refunded, VAT included.
+      - name: refund_excl_vat
+        description: Amount refunded without VAT.
+      - name: return_reason
+        description: Reason code entered at the counter.

@@ -1,6 +1,7 @@
 .PHONY: setup data data-manifest build test
 
 DATA_DIR := example/data
+export DBT_SEND_ANONYMOUS_USAGE_STATS := false
 
 setup:
 	uv sync
@@ -12,8 +13,11 @@ data:
 data-manifest: data
 	cp $(DATA_DIR)/_manifest.json tests/fixtures/expected_manifest.json
 
+DBT := cd dbt && uv run dbt
+
 build:
-	@echo "Nothing to build yet: the dbt project arrives in build step 2."
+	$(DBT) build --profiles-dir .
+	$(DBT) source freshness --profiles-dir .
 
 test:
 	uv run pytest

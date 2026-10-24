@@ -4,15 +4,15 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: 2. dbt staging + marts + unit tests + data tests + freshness
+- Current step: 3. Verify MetricFlow on DuckDB, then semantic models and metrics
 - State: not started
-- Last verified green: 2026-10-24 (`make build && make test`, 34 tests; `make build` is a placeholder until step 2)
+- Last verified green: 2026-10-24 (`make build`: 80 dbt nodes, 1 expected warning, freshness pass; `make test`: 34 tests)
 
 ## Build checklist (v0.1)
 Tick a step only when it runs end to end and its checks pass.
 
 - [x] 1. Synthetic source extracts (`example/generate.py`) + checksum test
-- [ ] 2. dbt staging + marts + unit tests + data tests + freshness
+- [x] 2. dbt staging + marts + unit tests + data tests + freshness
 - [ ] 3. Verify MetricFlow on DuckDB (versions, spec, Python API, saved queries), then semantic models and metrics
 - [ ] 4. Decision records (DR-001 to DR-007 + TEMPLATE)
 - [ ] 5. Reference computations + golden questions + runner
@@ -46,6 +46,15 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-24 | dbt line: dbt-core 1.12.6 + dbt-duckdb 1.11.0 (duckdb 2.0.0). The project also passes `dbt parse --use-v2-parser` (dbt-oss 2.0.8) | dbt v2's bundled DuckDB adapter may not infer schemas for CSV or JSON sources and cannot load extensions; dbt itself says to reach 1.12 before moving to v2. dbt-metricflow 0.15.0 resolves on this line. Confirmed by the owner. |
+| 2026-10-24 | Raw files are read through dbt-duckdb `external_location` with `all_varchar`, so staging does all typing; the returns source uses `formatter: template` so its `columns = {...}` type map keeps its braces | Mirrors a loader that lands strings; explicit JSON types stop DuckDB guessing the time zone. |
+| 2026-10-24 | Date parsing and UTC to local use only standard SQL and dbt cross-database macros (`dbt.concat`, `dbt.dateadd`); only the returns unnest is DuckDB syntax | Switching warehouse should not need model edits; on a warehouse, loaders deliver nested returns lines as their own table. |
+| 2026-10-24 | New `models/intermediate/` layer (`int_sales_lines`, `int_return_lines`); SPEC's `fct_receipts` is named `fct_goods_received` | Unions, unit conversion and VAT split in one place; "receipt" already means a sales receipt. |
+| 2026-10-24 | Amounts excluding VAT are kept unrounded as `decimal(18,4)`; nothing is rounded in the marts | Rounding is a reporting rule, not a fact. |
+| 2026-10-24 | Source freshness adds `(now - extract_at)` inside `loaded_at_field`, so the demo measures freshness as of the extract time | The data stops on 2026-09-15; against today's clock it would always fail. Real projects use the plain column. |
+| 2026-10-24 | Per-store POS lag is a singular test with `severity: warn` that lists the 2 lagging stores on every build | Table-level freshness passes while single stores are days behind; DR-004 keeps them in the numbers but flagged. |
+| 2026-10-24 | Unit tests whose input is a file source use `format: sql` fixtures | dbt cannot look up column types of an `external_location` source for dict fixtures. |
+| 2026-10-24 | No dbt packages; a 10-line `unique_combination` generic test replaces dbt_utils | Quickstart needs no package download. |
 | 2026-10-24 | Environment with uv and a committed `uv.lock`; Python 3.11 to 3.13; verified with Python 3.11.9, uv 0.11.14, pytest 9.1.1 | Lockfile pins indirect dependencies too; no venv path differences between Windows and Unix in the Makefile. Confirmed by the owner. |
 | 2026-10-24 | Generator uses the standard library only, one `random.Random(f"{seed}:{name}")` stream per part, and writes LF, UTF-8, integer amounts | No library can shift the numbers; output is byte-identical (checked on Python 3.11 and 3.14). |
 | 2026-10-24 | Extracts are not committed; `tests/fixtures/expected_manifest.json` (SHA-256 and rows per file) is. `make data-manifest` re-freezes it after an intended change | Keeps the repo small while still catching any drift in the data golden values depend on. |
@@ -64,7 +73,6 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 ## Open questions and blockers
 Things that need the owner's input. Remove an item once it is answered, and record the answer under Implementation decisions.
 
-- dbt v2 (GA at dbt Summit 2026) or dbt-core 1.x? Decide in step 3 after checking that dbt-duckdb and MetricFlow run on it.
 - Which semantic YAML spec does the chosen dbt version expect (top-level `semantic_models:` or the newer spec on the model)? Verify in step 3.
 - Does MetricFlow's Python API, and `saved_queries`, work locally on DuckDB? Verify in step 3; the runner and the dashboard export depend on it.
 - Do `groups` and `meta` under `config` work on metrics and semantic models in the chosen version? Verify in step 3.
@@ -84,6 +92,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-24 (step 2)
+- Done: dbt project on DuckDB: 10 staging models (ERP, POS A/B, sync log, returns), 2 intermediate, 7 marts with enforced contracts and documented columns; 6 unit tests; data tests; source freshness; per-store POS lag warning
+- Verified: `make build` green in about 35s (79 pass, 1 expected warning listing NW029 and NW030), freshness pass on 3 sources; `make test` 34 pass; a deliberately wrong contract type fails the build; v2 parser parses the project
+- Next: step 3, starting in plan mode: add dbt-metricflow, check spec, Python API and saved queries on DuckDB
+- Notes: POS A retries removed exactly (472,947 lines, the simulated count). 16 transfers in transit and 50 cancelled at the snapshot. Returns: 4,793 lines match a sale, 228 have no receipt, 115 point to sales before the window; 1,446 land in a later month than the sale. Some 24-hour store sales on the evening of 31 March UTC belong to 1 April local, a good month-boundary case for golden questions.
 
 ### 2026-10-24 (step 1)
 - Done: synthetic extracts for 30 stores, 150 SKUs, six months: ERP stores, SKUs, units, batches, transfers; POS vendors A and B; POS sync log; returns. Manifest plus reproducibility test.

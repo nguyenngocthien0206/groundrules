@@ -1,0 +1,26 @@
+sources:
+  - name: returns
+    description: >
+      The returns system's API export: one JSON record per return, with the
+      store as an object and the returned items as a nested array. Returns
+      arrive days or weeks after the sale. On a warehouse, loaders usually
+      land the nested lines as their own child table.
+    tables:
+      - name: returns
+        description: One row per return, lines nested.
+        config:
+          meta:
+            # Column types are spelled out so DuckDB does not guess the
+            # timestamp's time zone. The template formatter keeps the braces.
+            formatter: template
+            external_location: >-
+              read_json('{{ env_var('GROUNDRULES_DATA_DIR', '../example/data') }}/returns/returns.jsonl',
+                format = 'newline_delimited',
+                columns = {
+                  'return_id': 'VARCHAR',
+                  'store': 'STRUCT(code VARCHAR, name VARCHAR)',
+                  'returned_at': 'VARCHAR',
+                  'original_receipt': 'VARCHAR',
+                  'reason': 'VARCHAR',
+                  'lines': 'STRUCT(sku VARCHAR, uom VARCHAR, qty INTEGER, refund_vnd BIGINT)[]'
+                })

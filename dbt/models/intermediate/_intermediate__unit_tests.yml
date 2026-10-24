@@ -1,0 +1,49 @@
+unit_tests:
+  - name: sales_lines_count_base_units_and_split_vat
+    description: Two strips of ten tablets are 20 tablets. A 105,000 VND line at 5% VAT is 100,000 before VAT.
+    model: int_sales_lines
+    given:
+      - input: ref('stg_pos_a__sales_lines')
+        rows:
+          - {pos_vendor: A, receipt_no: A0012608010001, line_no: 1, store_code: NW001, sku_code: "100001", uom_code: STRIP, qty: 2, unit_price_vnd: 55000, discount_vnd: 5000, line_amount_vnd: 105000, sold_at_utc: "2026-08-01 03:00:00", sold_at: "2026-08-01 10:00:00", business_date: "2026-08-01", source_file: a.csv}
+      - input: ref('stg_pos_b__sales_lines')
+        rows:
+          - {pos_vendor: B, receipt_no: HD0192608010001, line_no: 1, store_code: NW019, sku_code: "100120", uom_code: BOX, qty: 1, unit_price_vnd: 110000, discount_vnd: 0, line_amount_vnd: 110000, sold_at_utc: "2026-08-01 03:00:00", sold_at: "2026-08-01 10:00:00", business_date: "2026-08-01", source_file: b.csv}
+      - input: ref('stg_erp__sku_uoms')
+        rows:
+          - {sku_code: "100001", uom_code: STRIP, factor_to_base: 10}
+          - {sku_code: "100120", uom_code: BOX, factor_to_base: 50}
+      - input: ref('stg_erp__skus')
+        rows:
+          - {sku_code: "100001", vat_rate: 0.05}
+          - {sku_code: "100120", vat_rate: 0.10}
+    expect:
+      rows:
+        - {sales_line_id: A-A0012608010001-1, qty_base: 20, gross_incl_vat: 110000, gross_excl_vat: 104761.9048, discount_excl_vat: 4761.9048, amount_excl_vat: 100000.0000}
+        - {sales_line_id: B-HD0192608010001-1, qty_base: 50, gross_incl_vat: 110000, gross_excl_vat: 100000.0000, discount_excl_vat: 0.0000, amount_excl_vat: 100000.0000}
+
+  - name: return_lines_keep_the_original_sale_date
+    description: A return in August of a July sale keeps both dates. A return whose receipt is not in the extract has no sale date.
+    model: int_return_lines
+    given:
+      - input: ref('stg_returns__returns')
+        rows:
+          - {return_id: RT0000001, store_code: NW001, returned_at: "2026-08-03 10:00:00", return_date: "2026-08-03", original_receipt_no: A0012607300001, return_reason: CHANGED_MIND}
+          - {return_id: RT0000002, store_code: NW001, returned_at: "2026-03-20 10:00:00", return_date: "2026-03-20", original_receipt_no: A0012603010001, return_reason: WRONG_ITEM}
+      - input: ref('stg_returns__return_lines')
+        rows:
+          - {return_id: RT0000001, line_no: 1, sku_code: "100001", uom_code: STRIP, qty: 1, refund_vnd: 52500}
+          - {return_id: RT0000002, line_no: 1, sku_code: "100001", uom_code: STRIP, qty: 1, refund_vnd: 52500}
+      - input: ref('stg_erp__sku_uoms')
+        rows:
+          - {sku_code: "100001", uom_code: STRIP, factor_to_base: 10}
+      - input: ref('stg_erp__skus')
+        rows:
+          - {sku_code: "100001", vat_rate: 0.05}
+      - input: ref('int_sales_lines')
+        rows:
+          - {receipt_no: A0012607300001, business_date: "2026-07-30"}
+    expect:
+      rows:
+        - {return_line_id: RT0000001-1, return_date: "2026-08-03", sale_business_date: "2026-07-30", has_matching_sale: true, qty_base: 10, refund_excl_vat: 50000.0000}
+        - {return_line_id: RT0000002-1, return_date: "2026-03-20", sale_business_date: null, has_matching_sale: false, qty_base: 10, refund_excl_vat: 50000.0000}

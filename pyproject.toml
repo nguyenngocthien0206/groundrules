@@ -4,7 +4,10 @@ version = "0.1.0.dev0"
 description = "Write down the rules your senior analyst never did, so your AI agent can follow them."
 license = "Apache-2.0"
 requires-python = ">=3.11,<3.14"
-dependencies = []
+dependencies = [
+    "dbt-core==1.12.6",
+    "dbt-duckdb==1.11.0",
+]
 
 [dependency-groups]
 dev = [

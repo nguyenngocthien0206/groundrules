@@ -1,0 +1,53 @@
+models:
+  - name: stg_returns__returns
+    description: One row per return, as the returns system records it.
+    columns:
+      - name: return_id
+        description: Returns system id.
+        data_tests:
+          - unique
+          - not_null
+      - name: store_code
+        description: Store where the item came back.
+        data_tests:
+          - not_null
+      - name: returned_at
+        description: Local time of the return.
+      - name: return_date
+        description: Local date of the return. Often weeks after the sale, sometimes in a later month.
+        data_tests:
+          - not_null
+      - name: original_receipt_no
+        description: Receipt of the original sale. Null when the customer had none; some point to sales from before the extract window.
+      - name: return_reason
+        description: Reason code entered at the counter.
+
+  - name: stg_returns__return_lines
+    description: One row per returned item, unnested from the API record.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [return_id, line_no]
+    columns:
+      - name: return_id
+        description: Return the line belongs to.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_returns__returns')
+                field: return_id
+      - name: line_no
+        description: Position of the item within the return, from 1.
+      - name: sku_code
+        description: ERP item number.
+      - name: uom_code
+        description: Unit returned, in the ERP's codes.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["TAB", "STRIP", "BOX", "BOTTLE", "PIECE"]
+      - name: qty
+        description: Quantity returned in uom_code.
+      - name: refund_vnd
+        description: Amount refunded in VND, VAT included, net of the discount given at the sale.

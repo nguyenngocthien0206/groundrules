@@ -1,0 +1,10 @@
+# Local demo profile: a DuckDB file next to the project, no account needed.
+# To run on your own warehouse, see profiles.example.yml. Only this file
+# changes; the models stay the same.
+groundrules:
+  target: duckdb
+  outputs:
+    duckdb:
+      type: duckdb
+      path: "{{ env_var('GROUNDRULES_DUCKDB', 'groundrules.duckdb') }}"
+      threads: 4

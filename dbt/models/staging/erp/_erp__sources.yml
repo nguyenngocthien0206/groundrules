@@ -1,0 +1,21 @@
+sources:
+  - name: erp
+    description: >
+      Nightly ERP extract: master data, stock batches and transfers. Columns
+      are UPPER_SNAKE, dates are YYYYMMDD strings, statuses are codes.
+      Locally the extracts are files that `make data` writes (folder set by
+      GROUNDRULES_DATA_DIR); on a warehouse they are tables your loader fills.
+    config:
+      meta:
+        external_location: "read_csv('{{ env_var('GROUNDRULES_DATA_DIR', '../example/data') }}/erp/{name}.csv', header = true, all_varchar = true)"
+    tables:
+      - name: stores
+        description: One row per store.
+      - name: skus
+        description: One row per SKU, current name only.
+      - name: sku_uom
+        description: Units of measure per SKU and their factor to the base unit.
+      - name: batches
+        description: One row per stock batch (lot) per store, with on-hand at extract time.
+      - name: transfers
+        description: Store to store transfers, one lot each.

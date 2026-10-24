@@ -1,0 +1,159 @@
+models:
+  - name: stg_erp__stores
+    description: Stores from the ERP, renamed and typed.
+    columns:
+      - name: store_code
+        description: Store code, for example NW001. Codes follow opening order.
+        data_tests:
+          - unique
+          - not_null
+      - name: store_name
+        description: Store name as the ERP shows it.
+      - name: district_code
+        description: District the store belongs to.
+        data_tests:
+          - not_null
+      - name: district_name
+        description: District name.
+      - name: opened_on
+        description: Date the store opened.
+        data_tests:
+          - not_null
+      - name: is_open_24h
+        description: True for stores open around the clock.
+      - name: pos_vendor
+        description: POS system the store runs, A or B.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["A", "B"]
+      - name: store_status_code
+        description: ERP status code, A for active.
+
+  - name: stg_erp__skus
+    description: SKUs from the ERP with their current name. The ERP keeps no name history.
+    columns:
+      - name: sku_code
+        description: ERP item number.
+        data_tests:
+          - unique
+          - not_null
+      - name: sku_name
+        description: Current name. Renamed SKUs show only the new name here; vendor B receipts print the old one before the rename.
+      - name: category_code
+        description: Category code, one of six.
+      - name: category_name
+        description: Category name.
+      - name: base_uom
+        description: Smallest unit the SKU is counted in (TAB, BOTTLE or PIECE). Stock is kept in this unit.
+      - name: purchase_uom
+        description: Unit suppliers deliver and stores transfer in (BOX or CARTON).
+      - name: vat_rate
+        description: VAT rate as a fraction, for example 0.05. Shelf prices include it.
+      - name: list_price_vnd
+        description: Shelf price per base unit in VND, VAT included.
+      - name: shelf_life_days
+        description: Shelf life of a fresh lot, in days.
+      - name: created_on
+        description: Date the SKU was created in the ERP.
+      - name: updated_on
+        description: Date the SKU was last changed. A recent date is the only hint of a rename.
+
+  - name: stg_erp__sku_uoms
+    description: Every unit a SKU is sold or bought in, with its size in base units.
+    columns:
+      - name: sku_code
+        description: ERP item number.
+        data_tests:
+          - not_null
+      - name: uom_code
+        description: ERP unit code (TAB, STRIP, BOX, BOTTLE, CARTON, PIECE).
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["TAB", "STRIP", "BOX", "BOTTLE", "CARTON", "PIECE"]
+      - name: factor_to_base
+        description: Number of base units in one of this unit, for example 10 tablets in a strip.
+      - name: is_base_uom
+        description: True for the SKU's base unit (factor 1).
+      - name: sell_price_vnd
+        description: Shelf price for one of this unit in VND, VAT included. Null when the SKU is not sold in this unit.
+
+  - name: stg_erp__batches
+    description: >
+      Stock batches. Received quantity is in the purchase unit, on-hand is in
+      the base unit. On-hand still includes stock reserved for transfers that
+      have shipped but not arrived, because the ERP only moves it on receipt.
+    columns:
+      - name: batch_id
+        description: ERP batch id.
+        data_tests:
+          - unique
+          - not_null
+      - name: store_code
+        description: Store holding the batch.
+      - name: sku_code
+        description: ERP item number.
+      - name: lot_no
+        description: Supplier lot number. The same lot can sit in several stores after transfers.
+      - name: expires_on
+        description: Expiry date of the lot.
+      - name: received_on
+        description: Date the batch arrived at this store.
+      - name: received_qty
+        description: Quantity received, in received_uom.
+      - name: received_uom
+        description: Unit of the received quantity (the SKU's purchase unit).
+      - name: unit_cost_vnd
+        description: Cost of one received_uom in VND, VAT excluded. Differs between batches.
+      - name: source_doc
+        description: Purchase order (PO...) or transfer (TRF...) that brought the stock in.
+      - name: source_type
+        description: purchase_order or transfer, decoded from source_doc.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["purchase_order", "transfer"]
+      - name: on_hand_qty
+        description: Quantity on hand at extract time, in on_hand_uom. Expired stock stays here until the monthly write-off.
+      - name: on_hand_uom
+        description: Unit of the on-hand quantity (the SKU's base unit).
+
+  - name: stg_erp__transfers
+    description: Store to store transfers with decoded status.
+    columns:
+      - name: transfer_no
+        description: ERP transfer number.
+        data_tests:
+          - unique
+          - not_null
+      - name: sku_code
+        description: ERP item number.
+      - name: lot_no
+        description: Lot being transferred. One lot per transfer.
+      - name: from_store_code
+        description: Sending store.
+      - name: to_store_code
+        description: Receiving store.
+      - name: qty
+        description: Quantity in uom_code.
+      - name: uom_code
+        description: Unit of the quantity (the SKU's purchase unit).
+      - name: transfer_status_code
+        description: ERP status code (TR, DL, CX).
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["TR", "DL", "CX"]
+      - name: transfer_status
+        description: in_transit, delivered or cancelled. A cancelled transfer can have a ship date and no receipt, just like one in transit.
+        data_tests:
+          - not_null
+      - name: created_on
+        description: Date the transfer was created.
+      - name: shipped_on
+        description: Date the stock left the sending store.
+      - name: received_on
+        description: Date the receiving store confirmed it. Empty unless delivered.
+      - name: updated_on
+        description: Date of the last status change.

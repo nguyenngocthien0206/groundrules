@@ -11,7 +11,7 @@ Core idea: agents remove the arrangement (an analyst in the loop) that made it s
 
 ## Stack
 - Python 3.11+, dbt-core, dbt-duckdb (local demo), MetricFlow (dbt Semantic Layer, open source), PyYAML, pytest
-- Pin exact versions in `pyproject.toml`. Record the versions you verified in `PROGRESS.md`. Which dbt line to use (dbt v2 or dbt-core 1.x) is an open question; settle it in build step 3.
+- Pin exact versions in `pyproject.toml`. Record the versions you verified in `PROGRESS.md`. The dbt line is dbt-core 1.12 with dbt-duckdb 1.11 (decided in step 2, see `PROGRESS.md`); the project also parses with `dbt parse --use-v2-parser`.
 - The warehouse is swappable: the same project must run on Snowflake, BigQuery, Databricks or Postgres by changing only `profiles.yml`.
 - Optional dashboard: Power BI Desktop (Windows only, opened by hand) reading Parquet exports of saved queries. `pyarrow` for writing Parquet is pending approval.
 - Optional extras (phase 2 and later, never required for the core demo): MCP access built on `dbt-mcp`, and an agent eval harness.
