@@ -16,15 +16,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from synth import config, extracts  # noqa: E402
 from synth.master import build_skus, build_stores  # noqa: E402
+from synth.simulate import World, simulate  # noqa: E402
 
 
-def generate(out: Path, seed: str = config.SEED) -> None:
+def generate(out: Path, seed: str = config.SEED) -> World:
     stores = build_stores(seed)
     skus = build_skus(seed)
+    world = simulate(seed, stores, skus)
 
     extracts.write_erp_stores(out, stores)
     extracts.write_erp_skus(out, skus)
     extracts.write_erp_sku_uom(out, skus)
+    extracts.write_erp_batches(out, world)
+    extracts.write_erp_transfers(out, world)
+    return world
 
 
 def main(argv: list[str] | None = None) -> int:

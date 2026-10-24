@@ -188,8 +188,9 @@ def build_skus(seed: str) -> list[Sku]:
                 )
             )
 
-    # Demand follows a long tail: a few SKUs sell every hour, many sell
-    # a few times a month. The slow tail is where near-expiry stock piles up.
+    # Demand follows a long tail: no single SKU dominates, the best sellers
+    # sell every hour, and the slow tail sells a few times a month. The slow
+    # tail is where near-expiry stock piles up.
     ranks = list(range(1, len(skus) + 1))
     r.shuffle(ranks)
-    return [replace(s, popularity=round(1.0 / rank**0.9, 6)) for s, rank in zip(skus, ranks)]
+    return [replace(s, popularity=round(1.0 / (rank + 10) ** 1.3, 6)) for s, rank in zip(skus, ranks)]

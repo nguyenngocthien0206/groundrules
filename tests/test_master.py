@@ -1,9 +1,9 @@
 from collections import Counter
 from datetime import date, datetime
 
-import generate
 from conftest import read_csv
 from synth import config
+from synth.master import build_skus, build_stores
 
 
 def _ymd(s: str) -> date:
@@ -68,9 +68,7 @@ def test_renamed_skus_show_only_their_current_name(data_dir):
     assert {s["UPDATED_AT"] for s in renamed} == {config.RENAME_ON.strftime("%Y%m%d")}
 
 
-def test_same_seed_gives_same_master_data(tmp_path):
-    a, b = tmp_path / "a", tmp_path / "b"
-    generate.generate(a)
-    generate.generate(b)
-    for name in ("stores.csv", "skus.csv", "sku_uom.csv"):
-        assert (a / "erp" / name).read_bytes() == (b / "erp" / name).read_bytes()
+def test_same_seed_gives_same_master_data():
+    assert build_stores(config.SEED) == build_stores(config.SEED)
+    assert build_skus(config.SEED) == build_skus(config.SEED)
+    assert build_skus(config.SEED) != build_skus("another seed")
