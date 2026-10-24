@@ -1,0 +1,14 @@
+models:
+  - name: metricflow_time_spine
+    description: One row per day for MetricFlow's cumulative windows and time offsets.
+    config:
+      group: data_platform
+    time_spine:
+      standard_granularity_column: date_day
+    columns:
+      - name: date_day
+        description: A calendar day.
+        granularity: day
+        data_tests:
+          - unique
+          - not_null

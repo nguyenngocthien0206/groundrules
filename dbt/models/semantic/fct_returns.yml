@@ -1,0 +1,104 @@
+# Time dimensions are written `dimension: {type: time}`: dbt-core 1.12.6 drops
+# the column granularity when the `dimension: time` shorthand is used.
+models:
+  - name: fct_returns
+    description: One row per returned item, with the return date and the original sale date when known.
+    config:
+      group: data_platform
+      contract:
+        enforced: true
+    semantic_model:
+      enabled: true
+    agg_time_dimension: return_date
+    columns:
+      - name: return_line_id
+        data_type: varchar
+        description: Return id and line number joined.
+        entity:
+          type: primary
+          name: return_line
+        constraints:
+          - type: not_null
+        data_tests:
+          - unique
+      - name: return_id
+        data_type: varchar
+        description: Returns system id.
+      - name: line_no
+        data_type: integer
+        description: Position within the return.
+      - name: store_code
+        data_type: varchar
+        description: Store where the item came back.
+        entity:
+          type: foreign
+          name: store
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_store')
+                field: store_code
+      - name: sku_code
+        data_type: varchar
+        description: ERP item number.
+        entity:
+          type: foreign
+          name: sku
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_sku')
+                field: sku_code
+      - name: return_date
+        data_type: date
+        description: Local date of the return.
+        granularity: day
+        dimension: {type: time}
+      - name: returned_at
+        data_type: timestamp
+        description: Local time of the return.
+      - name: original_receipt_no
+        data_type: varchar
+        description: Receipt of the original sale, null when the customer had none.
+      - name: sale_business_date
+        data_type: date
+        description: Business date of the original sale, null when it is not in the extract.
+        granularity: day
+        dimension: {type: time}
+      - name: has_matching_sale
+        data_type: boolean
+        description: True when the original sale was found.
+        dimension: categorical
+      - name: uom_code
+        data_type: varchar
+        description: Unit returned.
+      - name: qty
+        data_type: integer
+        description: Quantity in uom_code.
+      - name: qty_base
+        data_type: integer
+        description: Quantity in base units.
+      - name: vat_rate
+        data_type: decimal(5,4)
+        description: VAT rate as a fraction.
+      - name: refund_incl_vat
+        data_type: bigint
+        description: Refunded, VAT included.
+      - name: refund_excl_vat
+        data_type: decimal(18,4)
+        description: Refunded, VAT excluded.
+      - name: return_reason
+        data_type: varchar
+        description: Reason code.
+        dimension: categorical
+
+    metrics:
+      - name: returns_excl_vat
+        description: >
+          Refunds before VAT, counted on the return date, whatever month the
+          sale was in (DR-002). Includes returns with no matching sale. Not
+          for direct use; see net_revenue.
+        type: simple
+        agg: sum
+        expr: refund_excl_vat
+        hidden: true

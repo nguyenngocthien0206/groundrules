@@ -1,0 +1,57 @@
+models:
+  - name: dim_sku
+    description: One row per SKU with its units and VAT rate.
+    config:
+      group: data_platform
+      contract:
+        enforced: true
+    semantic_model:
+      enabled: true
+    columns:
+      - name: sku_code
+        data_type: varchar
+        description: ERP item number.
+        entity:
+          type: primary
+          name: sku
+        constraints:
+          - type: not_null
+        data_tests:
+          - unique
+      - name: sku_name
+        data_type: varchar
+        description: Current name.
+        dimension: categorical
+      - name: category_code
+        data_type: varchar
+        description: Category code.
+        dimension: categorical
+      - name: category_name
+        data_type: varchar
+        description: Category name.
+        dimension: categorical
+      - name: base_uom
+        data_type: varchar
+        description: Base unit all quantities in the marts are counted in.
+        dimension: categorical
+      - name: purchase_uom
+        data_type: varchar
+        description: Unit suppliers deliver in.
+      - name: purchase_uom_factor
+        data_type: integer
+        description: Base units in one purchase unit.
+      - name: vat_rate
+        data_type: decimal(5,4)
+        description: VAT rate as a fraction.
+      - name: list_price_incl_vat
+        data_type: bigint
+        description: Shelf price per base unit, VND, VAT included.
+      - name: shelf_life_days
+        data_type: integer
+        description: Shelf life of a fresh lot, days.
+      - name: created_on
+        data_type: date
+        description: Date the SKU was created.
+      - name: updated_on
+        data_type: date
+        description: Date the SKU was last changed.

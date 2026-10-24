@@ -50,6 +50,29 @@ models:
       - name: source_file
         description: Landing file the line was read from.
 
+  - name: int_store_sku_costs
+    description: >
+      Weighted average cost per base unit for each store and SKU, over every
+      receipt of that SKU at that store (DR-008). Used as the cost of goods
+      sold, because POS lines do not say which batch they came from.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [store_code, sku_code]
+    columns:
+      - name: store_code
+        description: Store code.
+      - name: sku_code
+        description: ERP item number.
+      - name: units_received_base
+        description: Base units received by the store for the SKU, all sources.
+      - name: value_received_excl_vat
+        description: Cost of those receipts, VND, VAT excluded.
+      - name: unit_cost_excl_vat
+        description: value_received_excl_vat divided by units_received_base.
+        data_tests:
+          - not_null
+
   - name: int_return_lines
     description: >
       Returned items in base units and before VAT, with the business date of

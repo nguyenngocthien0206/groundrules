@@ -1,0 +1,143 @@
+# Certified metrics that combine more than one semantic model. Each carries
+# its business owner (group) and the governance fields dbt has no place for.
+# The simple metrics they build on are hidden and live next to their model.
+#
+# An input that can be empty for a store or a month (no transfers, no
+# returns) is wrapped in coalesce(..., 0). Without it the whole metric turns
+# null for that row. `fill_nulls_with` would be the usual tool, but dbt-core
+# 1.12.6 drops it for metrics in the latest YAML spec.
+metrics:
+  - name: available_stock
+    label: Available stock
+    description: >
+      Base units a store can sell or transfer: on hand in batches with at
+      least 90 days to expiry (DR-001), minus stock it has shipped to other
+      stores that has not arrived yet (in transit; cancelled transfers are not
+      subtracted, DR-003). A stock position at the snapshot date.
+    type: derived
+    expr: coalesce(available_on_hand_units, 0) - coalesce(outbound_in_transit_units, 0)
+    input_metrics:
+      - name: available_on_hand_units
+      - name: outbound_in_transit_units
+    config:
+      group: supply_chain_ops
+      meta:
+        version: 3
+        status: certified
+        certified_on: 2026-09-10
+        recertify_every_days: 180
+        decision: decisions/DR-001.md
+        replaced_by: null
+        agent_notes: >
+          Use this for "how much do we have". Never sum on-hand quantities
+          directly: they include stock under 90 days to expiry, expired stock
+          and stock already shipped to another store. Counted in the SKU's
+          base unit (tablet, bottle, piece; DR-007).
+
+  - name: net_revenue
+    label: Net revenue
+    description: >
+      Sales after discounts and before VAT, counted on the sale date, minus
+      refunds before VAT, counted on the return date (DR-002, DR-006). A
+      return in August of a July sale lowers August.
+    type: derived
+    expr: coalesce(sales_net_excl_vat, 0) - coalesce(returns_excl_vat, 0)
+    input_metrics:
+      - name: sales_net_excl_vat
+      - name: returns_excl_vat
+    config:
+      group: finance
+      meta:
+        version: 2
+        status: certified
+        certified_on: 2026-09-10
+        recertify_every_days: 90
+        decision: decisions/DR-002.md
+        replaced_by: null
+        agent_notes: >
+          The revenue number for every question about revenue or sales value.
+          Before VAT. Returns count in the month they come back, not the month
+          of the sale. If the scope includes a store whose POS sync lags, say
+          the latest days are incomplete (DR-004).
+
+  - name: gross_margin
+    label: Gross margin
+    description: >
+      Net revenue minus the cost of goods sold at each store's weighted
+      average cost for the SKU (DR-008). Returned goods are destroyed, so
+      their cost is not reversed.
+    type: derived
+    expr: coalesce(net_revenue, 0) - coalesce(cogs, 0)
+    input_metrics:
+      - name: net_revenue
+      - name: cogs
+    config:
+      group: finance
+      meta:
+        version: 1
+        status: certified
+        certified_on: 2026-09-10
+        recertify_every_days: 90
+        decision: decisions/DR-008.md
+        replaced_by: null
+        agent_notes: >
+          An amount in VND, not a percentage. For a margin rate, divide by
+          net_revenue for the same scope and say so.
+
+  - name: sell_through_rate
+    label: Sell-through rate
+    description: >
+      Base units sold divided by base units received net in the same period:
+      received from suppliers and other stores, minus units transferred out
+      (DR-009). Returned units are not subtracted from sales.
+    type: derived
+    expr: coalesce(units_sold, 0) * 1.0 / nullif(coalesce(units_received, 0) - coalesce(units_transferred_out, 0), 0)
+    input_metrics:
+      - name: units_sold
+      - name: units_received
+      - name: units_transferred_out
+    config:
+      group: supply_chain_ops
+      meta:
+        version: 1
+        status: certified
+        certified_on: 2026-09-10
+        recertify_every_days: 180
+        decision: decisions/DR-009.md
+        replaced_by: null
+        agent_notes: >
+          A ratio, not a percentage. Only meaningful over a period of weeks
+          or more; for one day it swings with delivery days.
+
+  - name: units_sold_28d
+    description: Base units sold over a rolling 28-day window. Not for direct use; see days_of_cover.
+    type: cumulative
+    input_metric: units_sold
+    window: 28 days
+    hidden: true
+
+  - name: days_of_cover
+    label: Days of cover
+    description: >
+      How many days available stock lasts at the recent pace: available stock
+      at the snapshot divided by average daily base units sold over the 28
+      full days before it.
+    type: derived
+    expr: available_stock / nullif(units_sold_prior_28d / 28.0, 0)
+    input_metrics:
+      - name: available_stock
+      - name: units_sold_28d
+        alias: units_sold_prior_28d
+        offset_window: 1 day
+    config:
+      group: supply_chain_ops
+      meta:
+        version: 1
+        status: certified
+        certified_on: 2026-09-10
+        recertify_every_days: 180
+        decision: decisions/DR-001.md
+        replaced_by: null
+        agent_notes: >
+          Ask it at the snapshot date. Stores whose POS sync lags show too
+          few recent sales, so their cover looks longer than it is (DR-004).

@@ -1,0 +1,73 @@
+# Time dimensions are written `dimension: {type: time}`: dbt-core 1.12.6 drops
+# the column granularity when the `dimension: time` shorthand is used.
+models:
+  - name: fct_goods_received
+    description: >
+      Stock received by each store, one row per batch, from suppliers or from
+      other stores. Includes the opening stock received before the sales window.
+    config:
+      group: data_platform
+      contract:
+        enforced: true
+    semantic_model:
+      enabled: true
+    agg_time_dimension: received_on
+    columns:
+      - name: goods_received_id
+        data_type: varchar
+        description: ERP batch id of the receipt.
+        entity:
+          type: primary
+          name: goods_received
+        constraints:
+          - type: not_null
+        data_tests:
+          - unique
+      - name: store_code
+        data_type: varchar
+        description: Receiving store.
+        entity:
+          type: foreign
+          name: store
+      - name: sku_code
+        data_type: varchar
+        description: ERP item number.
+        entity:
+          type: foreign
+          name: sku
+      - name: lot_no
+        data_type: varchar
+        description: Supplier lot number.
+      - name: received_on
+        data_type: date
+        description: Date received.
+        granularity: day
+        dimension: {type: time}
+      - name: source_type
+        data_type: varchar
+        description: purchase_order or transfer.
+        dimension: categorical
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["purchase_order", "transfer"]
+      - name: source_doc
+        data_type: varchar
+        description: Purchase order or transfer number.
+      - name: qty_base
+        data_type: integer
+        description: Quantity received in base units.
+      - name: unit_cost_excl_vat
+        data_type: decimal(18,4)
+        description: Cost of one base unit, VND, VAT excluded.
+      - name: received_value_excl_vat
+        data_type: decimal(18,4)
+        description: Cost of the whole receipt, VAT excluded.
+
+    metrics:
+      - name: units_received
+        description: Base units received from suppliers and from other stores, on the receipt date. Not for direct use; see sell_through_rate.
+        type: simple
+        agg: sum
+        expr: qty_base
+        hidden: true
