@@ -8,13 +8,14 @@ number and rule is invented. The same seed always gives byte-identical files.
 """
 
 import argparse
+import shutil
 import sys
 import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from synth import config, extracts  # noqa: E402
+from synth import config, extracts, manifest  # noqa: E402
 from synth.master import build_skus, build_stores  # noqa: E402
 from synth.simulate import World, simulate  # noqa: E402
 
@@ -33,6 +34,7 @@ def generate(out: Path, seed: str = config.SEED) -> World:
     extracts.write_pos_b(out, world)
     extracts.write_pos_sync_log(out, world, seed)
     extracts.write_returns(out, world, seed)
+    manifest.write(out)
     return world
 
 
@@ -43,8 +45,16 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     started = time.perf_counter()
+    # Stale files from an older run would end up in the manifest, so start
+    # clean. Only ever delete a folder this script wrote itself.
+    if (args.out / manifest.MANIFEST).exists():
+        shutil.rmtree(args.out)
+    elif args.out.exists() and any(args.out.iterdir()):
+        parser.error(f"{args.out} is not empty and was not written by this script")
     generate(args.out, args.seed)
-    print(f"Wrote extracts to {args.out} in {time.perf_counter() - started:.1f}s")
+    files = manifest.build(args.out)
+    rows = sum(f["rows"] for f in files.values())
+    print(f"Wrote {len(files)} files ({rows:,} rows) to {args.out} in {time.perf_counter() - started:.1f}s")
     return 0
 
 
