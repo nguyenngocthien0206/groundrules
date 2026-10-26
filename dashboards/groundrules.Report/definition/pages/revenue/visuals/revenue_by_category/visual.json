@@ -1,0 +1,96 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "revenue_by_category",
+  "position": {
+    "x": 650,
+    "y": 340,
+    "z": 3000,
+    "height": 360,
+    "width": 610,
+    "tabOrder": 3000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Revenue by category"
+                    }
+                  },
+                  "Property": "Month"
+                }
+              },
+              "queryRef": "Revenue by category.Month",
+              "nativeQueryRef": "Month"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Revenue by category"
+                    }
+                  },
+                  "Property": "Data through"
+                }
+              },
+              "queryRef": "Revenue by category.Data through",
+              "nativeQueryRef": "Data through"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Revenue by category"
+                    }
+                  },
+                  "Property": "Category"
+                }
+              },
+              "queryRef": "Revenue by category.Category",
+              "nativeQueryRef": "Category"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Revenue by category"
+                    }
+                  },
+                  "Property": "Net revenue by category"
+                }
+              },
+              "queryRef": "Revenue by category.Net revenue by category",
+              "nativeQueryRef": "Net revenue by category",
+              "displayName": "Net revenue"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Revenue by category"
+                    }
+                  },
+                  "Property": "Gross margin by category"
+                }
+              },
+              "queryRef": "Revenue by category.Gross margin by category",
+              "nativeQueryRef": "Gross margin by category",
+              "displayName": "Gross margin"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

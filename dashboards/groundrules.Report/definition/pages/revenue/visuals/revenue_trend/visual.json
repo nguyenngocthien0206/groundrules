@@ -1,0 +1,73 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "revenue_trend",
+  "position": {
+    "x": 20,
+    "y": 20,
+    "z": 1000,
+    "height": 300,
+    "width": 1240,
+    "tabOrder": 1000
+  },
+  "visual": {
+    "visualType": "lineChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Revenue by month"
+                    }
+                  },
+                  "Property": "Month"
+                }
+              },
+              "queryRef": "Revenue by month.Month",
+              "nativeQueryRef": "Month",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Revenue by month"
+                    }
+                  },
+                  "Property": "Net revenue by month"
+                }
+              },
+              "queryRef": "Revenue by month.Net revenue by month",
+              "nativeQueryRef": "Net revenue by month",
+              "displayName": "Net revenue"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Revenue by month"
+                    }
+                  },
+                  "Property": "Gross margin by month"
+                }
+              },
+              "queryRef": "Revenue by month.Gross margin by month",
+              "nativeQueryRef": "Gross margin by month",
+              "displayName": "Gross margin"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "sell_through_by_store",
+  "position": {
+    "x": 20,
+    "y": 20,
+    "z": 1000,
+    "height": 680,
+    "width": 1240,
+    "tabOrder": 1000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Sell-through by store"
+                    }
+                  },
+                  "Property": "Month"
+                }
+              },
+              "queryRef": "Sell-through by store.Month",
+              "nativeQueryRef": "Month"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Sell-through by store"
+                    }
+                  },
+                  "Property": "Data through"
+                }
+              },
+              "queryRef": "Sell-through by store.Data through",
+              "nativeQueryRef": "Data through"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Sell-through by store"
+                    }
+                  },
+                  "Property": "Store"
+                }
+              },
+              "queryRef": "Sell-through by store.Store",
+              "nativeQueryRef": "Store"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Sell-through by store"
+                    }
+                  },
+                  "Property": "Store name"
+                }
+              },
+              "queryRef": "Sell-through by store.Store name",
+              "nativeQueryRef": "Store name"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Sell-through by store"
+                    }
+                  },
+                  "Property": "Caveats"
+                }
+              },
+              "queryRef": "Sell-through by store.Caveats",
+              "nativeQueryRef": "Caveats"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Sell-through by store"
+                    }
+                  },
+                  "Property": "Sell-through rate by store"
+                }
+              },
+              "queryRef": "Sell-through by store.Sell-through rate by store",
+              "nativeQueryRef": "Sell-through rate by store",
+              "displayName": "Sell-through rate"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

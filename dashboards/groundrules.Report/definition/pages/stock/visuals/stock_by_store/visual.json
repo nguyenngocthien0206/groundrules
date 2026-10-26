@@ -1,0 +1,125 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "stock_by_store",
+  "position": {
+    "x": 20,
+    "y": 20,
+    "z": 1000,
+    "height": 680,
+    "width": 820,
+    "tabOrder": 1000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Stock by store"
+                    }
+                  },
+                  "Property": "Store"
+                }
+              },
+              "queryRef": "Stock by store.Store",
+              "nativeQueryRef": "Store"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Stock by store"
+                    }
+                  },
+                  "Property": "Store name"
+                }
+              },
+              "queryRef": "Stock by store.Store name",
+              "nativeQueryRef": "Store name"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Stock by store"
+                    }
+                  },
+                  "Property": "District"
+                }
+              },
+              "queryRef": "Stock by store.District",
+              "nativeQueryRef": "District"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Stock by store"
+                    }
+                  },
+                  "Property": "Caveats"
+                }
+              },
+              "queryRef": "Stock by store.Caveats",
+              "nativeQueryRef": "Caveats"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Stock by store"
+                    }
+                  },
+                  "Property": "Available stock by store"
+                }
+              },
+              "queryRef": "Stock by store.Available stock by store",
+              "nativeQueryRef": "Available stock by store",
+              "displayName": "Available stock"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Stock by store"
+                    }
+                  },
+                  "Property": "Near-expiry value by store"
+                }
+              },
+              "queryRef": "Stock by store.Near-expiry value by store",
+              "nativeQueryRef": "Near-expiry value by store",
+              "displayName": "Near-expiry value"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Stock by store"
+                    }
+                  },
+                  "Property": "Days of cover by store"
+                }
+              },
+              "queryRef": "Stock by store.Days of cover by store",
+              "nativeQueryRef": "Days of cover by store",
+              "displayName": "Days of cover"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

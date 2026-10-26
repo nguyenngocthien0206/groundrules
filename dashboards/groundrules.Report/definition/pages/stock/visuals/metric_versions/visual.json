@@ -1,0 +1,168 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "metric_versions",
+  "position": {
+    "x": 860,
+    "y": 360,
+    "z": 3000,
+    "height": 340,
+    "width": 400,
+    "tabOrder": 3000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Metric versions"
+                    }
+                  },
+                  "Property": "Label"
+                }
+              },
+              "queryRef": "Metric versions.Label",
+              "nativeQueryRef": "Label"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Metric versions"
+                    }
+                  },
+                  "Property": "Version"
+                }
+              },
+              "queryRef": "Metric versions.Version",
+              "nativeQueryRef": "Version"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Metric versions"
+                    }
+                  },
+                  "Property": "Status"
+                }
+              },
+              "queryRef": "Metric versions.Status",
+              "nativeQueryRef": "Status"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Metric versions"
+                    }
+                  },
+                  "Property": "Owner"
+                }
+              },
+              "queryRef": "Metric versions.Owner",
+              "nativeQueryRef": "Owner"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Metric versions"
+                    }
+                  },
+                  "Property": "Decision"
+                }
+              },
+              "queryRef": "Metric versions.Decision",
+              "nativeQueryRef": "Decision"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "c9621d7ae538cc56cbb3",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Metric versions"
+              }
+            },
+            "Property": "Label"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "50730113fa52a284d007",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Metric versions"
+              }
+            },
+            "Property": "Version"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "64918c927d099201c3dd",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Metric versions"
+              }
+            },
+            "Property": "Status"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "bc802581c13da3050842",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Metric versions"
+              }
+            },
+            "Property": "Owner"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "1ef0ca1c019fbbf91383",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Metric versions"
+              }
+            },
+            "Property": "Decision"
+          }
+        },
+        "type": "Categorical"
+      }
+    ]
+  }
+}
