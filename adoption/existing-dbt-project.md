@@ -11,7 +11,7 @@ away.
 | `decisions/` | the template, the index and the format the lint reads | delete DR-001 to DR-011, keep `TEMPLATE.md` and the README's "when to write one" |
 | `golden/` | the question format, the runner, the freeze script, the shared MetricFlow client | replace the questions, expected files and reference SQL with your own |
 | `governance/` | the lint, the registry generator, `affected.py` | `DBT_DIR` in `governance/repo.py` if your dbt project is not in `dbt/` |
-| `.github/` | CODEOWNERS and the pull request template | your team handles; the CI workflow comes with this repo's CI step |
+| `.github/` | CODEOWNERS, the pull request template and the [CI workflow](../.github/workflows/governance.yml) | your team handles, and the paths if your dbt project is not in `dbt/` |
 | `Makefile` targets | `golden`, `golden-freeze`, `lint`, `registry`, `affected` | paths, if your dbt project is not in `dbt/` |
 
 The lint and the registry read the manifest dbt writes on `dbt parse`, so
@@ -65,6 +65,24 @@ and fine for golden questions, which only need the rows they ask about.
 - `dashboards/`, if you do not use Power BI. If you use another BI tool,
   keep `dashboards/export.py` as a starting point.
 - This repo's semantic models, marts and staging, obviously.
+
+## Make Git enforce it
+The workflow runs the same `make` targets people run locally, one step per
+promise: build, lint as of today, registry current, golden questions,
+tests, demos, the dbt v2 parser. On pull requests it also writes the
+affected metrics and dashboards into the job summary. A weekly scheduled run
+fails when a metric is past its recertification date, so the owner hears
+about it without anyone's pull request being blocked.
+
+None of it binds until branch protection says so. On the main branch:
+- **Require status checks to pass**, and select `governance`.
+- **Require review from Code Owners**, so a rule file cannot merge without
+  its owning team.
+- **Require branches to be up to date**, so the golden questions ran against
+  what will actually be merged.
+
+The same settings can be applied with `gh api` in a script, which is worth
+doing if you manage many repositories.
 
 ## The order that works
 1. Groups and CODEOWNERS first: ownership costs nothing and settles who
