@@ -4,9 +4,9 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: 6. Governance lint, registry, groups, exposures, CODEOWNERS, PR template
+- Current step: 7. Demos (`make demo-conflict`, `make demo-drift`)
 - State: not started
-- Last verified green: 2026-10-26 (`make build`: 87 dbt nodes, 1 expected warning, freshness pass; `make metrics`: 0 errors; `make test`: 28 golden questions pass, then 106 pytest)
+- Last verified green: 2026-10-26 (`make build`: 90 dbt nodes incl. 3 exposures, 1 expected warning, freshness pass; `make metrics`: 0 errors; `make test`: lint 0 errors 0 warnings, 28 golden questions, 93 pytest)
 
 ## Build checklist (v0.1)
 Tick a step only when it runs end to end and its checks pass.
@@ -16,7 +16,7 @@ Tick a step only when it runs end to end and its checks pass.
 - [x] 3. Verify MetricFlow on DuckDB (versions, spec, Python API, saved queries), then semantic models and metrics
 - [x] 4. Decision records (DR-001 to DR-010 + TEMPLATE)
 - [x] 5. Reference computations + golden questions + runner
-- [ ] 6. Governance lint, registry, groups, exposures, CODEOWNERS, PR template
+- [x] 6. Governance lint, registry, groups, exposures, CODEOWNERS, PR template
 - [ ] 7. Demos (`make demo-conflict`, `make demo-drift`)
 - [ ] 8. Dashboard: saved queries, Parquet export, Power BI project, TMDL lint (optional)
 - [ ] 9. Playbook + adoption guide
@@ -30,8 +30,8 @@ Copied from SPEC section 20. Tick when verified on a fresh clone.
 - [ ] Generator checksum test passes on a second machine
 - [ ] `make demo-conflict` prints four different net revenue numbers and names the DR
 - [ ] `make demo-drift` fails golden questions for the right reason, then restores everything
-- [ ] `make lint` fails clearly on: removed owner group, broken DR link, certified metric with no golden question, deprecated metric with no replacement, em dash
-- [ ] `make lint` gives the same result on any calendar day with the default `--today`
+- [x] `make lint` fails clearly on: removed owner group, broken DR link, certified metric with no golden question, deprecated metric with no replacement, em dash
+- [x] `make lint` gives the same result on any calendar day with the default `--today`
 - [ ] CI fails when `registry.md` is out of date
 - [ ] (Optional dashboard) `make dashboard-data` matches golden expected values; Power BI report opens and refreshes on Windows (manual)
 - [ ] Warehouse switch documented, needs no model changes
@@ -46,6 +46,12 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-26 | Cross-model metrics split by owner (`metrics_finance.yml`, `metrics_supply_chain.yml`); expected values split by domain (`golden/expected/<domain>.yml`) | On GitHub any listed code owner can approve a file, so a shared file would let one team approve another team's rules or numbers. Confirmed by the owner. |
+| 2026-10-26 | Team handles live in `models/groups.yml` as `config.meta.github_team`; new group `retail_operations` | One source for ownership; the lint checks CODEOWNERS against it. `config.meta` instead of extra `owner` keys keeps the dbt JSON schema (and IDEs) happy; both parsers accept it. |
+| 2026-10-26 | A rule file's CODEOWNERS must be exactly the teams of the metrics its rules shape; hidden building blocks count for the certified metrics that use them. Decision records and golden files must at least reach every team they cover | Exact for rule files so no extra team can approve alone; `fct_sales.yml` is the one shared rule file (finance revenue blocks and supply chain units sold). |
+| 2026-10-26 | The lint is functions over loaded data (`governance/repo.py`), not over files; it absorbed `tests/test_decisions.py` and the question link checks | Tests break a deep copy instead of files and do not rerun dbt. |
+| 2026-10-26 | The registry shows "recertify by" dates, not "stale" | The file stays the same whatever the calendar says; staleness is the lint's job, with `--today`. |
+| 2026-10-26 | Three legacy dashboards declared as exposures now (their SQL comes in step 7); `make affected` follows dbt lineage from changed files to metrics and exposures | Exposures are what `make affected` and the registry report on. |
 | 2026-10-26 | Reference computations are SQL over the raw extracts (DuckDB reading the files, one SQL file per metric citing its DRs), not Python or pandas | What teams use for reconciliation in practice: analysts and owners can read and sign SQL, and adopters swap `read_csv` for raw tables. A test forbids marts, dbt and MetricFlow in `golden/reference/`. Asked by the owner. |
 | 2026-10-26 | Expected values live in generated `golden/expected.yml` (with the data fingerprint); question files are human-written | Owner's choice; a script never rewrites what people wrote. A test fails if `expected.yml` differs from a fresh reference run. |
 | 2026-10-26 | `pos_sync_lag` follows stores and days: a lagging store in scope counts when the period reaches past its last day of data, or for a stock position at `as_of`. One clarifying sentence added to DR-004 | Owner's choice; avoids a caveat on every chain-level question. GQ-POS-04 guards against over-caveating. |
@@ -112,6 +118,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-26 (step 6)
+- Done: governance lint (8 checks plus staleness), registry generator and `registry.md`, `affected.py`, team handles on groups, `retail_operations` group, three legacy exposures, CODEOWNERS, PR template, metrics and expected values split by owner, `make lint`, `make registry`, `make affected`; `make test` now runs lint, golden, pytest; 20 lint tests, `tests/test_decisions.py` removed
+- Verified: lint 0 errors 0 warnings; on the real repo each definition-of-done break fails `make lint` with one clear line (owner group removed, decision link broken, a certified metric's golden questions deleted, `replaced_by` removed, an em dash added) and passes again once restored; `--today 2027-01-04` warns on the two finance metrics due 2026-12-09, `--fail-on-stale` fails; golden 28/28; pytest 93; v2 parser parses (run with its own `--target-path`)
+- Next: step 7, starting in plan mode: the three legacy SQL files, `make demo-conflict` and `make demo-drift`
+- Notes: the lint caught its own em dash on its first run (an escaped code point had been written out as the literal character); it now uses `chr(0x2014)`. A changed `int_store_sku_costs.sql` reaches every `fct_sales` metric and all three dashboards through lineage, which is conservative but honest at model level.
 
 ### 2026-10-26 (step 5)
 - Done: reference SQL over the raw extracts (raw views + 6 metric files + lagging stores), 28 golden questions in 7 files covering all four kinds and every certified metric, `expected.yml` frozen from the reference, the runner (table, why and DR on failure, JUnit XML), shared MetricFlow client, `make golden` and `make golden-freeze`, `make test` now runs golden first, 29 new tests

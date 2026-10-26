@@ -28,7 +28,9 @@ Core idea: agents remove the arrangement (an analyst in the loop) that made it s
 - `make golden`: ask the semantic layer every golden question; fails on a wrong value or caveat
 - `make golden-freeze`: recompute `golden/expected.yml` from the reference SQL over the raw extracts (review its diff before committing)
 - `make test`: governance lint + golden questions + pytest (the semantic layer and golden tests need `make build` first)
-- `make lint`: `dbt parse`, then governance checks on `target/manifest.json` (default `--today` is the snapshot date 2026-09-15)
+- `make lint`: `dbt parse`, then governance checks on `target/manifest.json` (default `--today` is the snapshot date 2026-09-15; `LINT_ARGS="--today YYYY-MM-DD --fail-on-stale"` for real CI)
+- `make registry`: regenerate `governance/registry.md` (the lint fails when it is stale)
+- `make affected BASE=origin/main`: metrics and exposures a branch touches, for the PR template
 - `make dashboard-data`: run saved queries through MetricFlow and write Parquet for the Power BI report (optional)
 - `make demo-drift`: change a rule silently, show golden questions failing, restore
 - `make demo-conflict`: show three legacy definitions of net revenue disagreeing, then the certified one
@@ -38,6 +40,7 @@ Core idea: agents remove the arrangement (an analyst in the loop) that made it s
 - Build on what companies already run (dbt, MetricFlow, Open Semantic Interchange). Do not write a custom semantic engine or a competing YAML standard.
 - Golden question expected values come from an independent reference computation over source tables (`golden/reference/`), never from the semantic layer code path. Otherwise the tests are circular.
 - Every metric has an owner (its dbt group), a version, a certification state and a linked decision record. CI enforces this.
+- One owning team per rule file. Team handles live only in `models/groups.yml` (`config.meta.github_team`); `.github/CODEOWNERS` must agree with them, and the lint checks it. A new metric goes in its owner's file.
 - Business thresholds and exclusions live in the semantic YAML (`dbt/models/semantic/`), never in mart SQL. Marts expose neutral facts such as `days_to_expiry`.
 - Use what dbt already provides (groups, contracts, exposures, unit tests, source freshness, saved queries) before adding custom `meta` fields. `meta` holds only what dbt has no field for.
 - Dashboards never redefine a certified metric. They show saved query exports at the grain they were exported, and lint checks the Power BI TMDL for this.
