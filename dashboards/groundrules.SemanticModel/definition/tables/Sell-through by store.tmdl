@@ -1,7 +1,7 @@
 table 'Sell-through by store'
 	lineageTag: 914af5ab-6433-4b08-9cc6-a9ebe38549b3
 
-	/// metric: sell_through_rate v1 (owner: supply_chain_ops). Shows the exported certified value;
+	/// metric: sell_through_rate v2 (owner: supply_chain_ops). Shows the exported certified value;
 	/// a total that was not exported stays blank on purpose.
 	measure 'Sell-through rate by store' = SELECTEDVALUE('Sell-through by store'[sell_through_rate])
 		formatString: 0.000
