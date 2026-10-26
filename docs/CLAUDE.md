@@ -14,7 +14,7 @@ Core idea: agents remove the arrangement (an analyst in the loop) that made it s
 - Query MetricFlow from Python through `dbt_metricflow.cli.cli_configuration.CLIConfiguration` and `MetricFlowQueryRequest`, run with the dbt folder as project and profiles dir, and pass each filter as its own where constraint (see `tests/test_semantic_layer.py`).
 - Pin exact versions in `pyproject.toml`. Record the versions you verified in `PROGRESS.md`. The dbt line is dbt-core 1.12 with dbt-duckdb 1.11 (decided in step 2, see `PROGRESS.md`); the project also parses with `dbt parse --use-v2-parser`.
 - The warehouse is swappable: the same project must run on Snowflake, BigQuery, Databricks or Postgres by changing only `profiles.yml`.
-- Optional dashboard: Power BI Desktop (Windows only, opened by hand) reading Parquet exports of saved queries. `pyarrow` for writing Parquet is pending approval.
+- Optional dashboard: Power BI Desktop (Windows only, opened by hand) reading Parquet exports of saved queries; `pyarrow` (dev dependency) writes the Parquet.
 - Optional extras (phase 2 and later, never required for the core demo): MCP access built on `dbt-mcp`, and an agent eval harness.
 - Ask before adding any dependency not listed here.
 - `make` needs WSL or Git Bash on Windows.
@@ -26,12 +26,12 @@ Core idea: agents remove the arrangement (an analyst in the loop) that made it s
 - `make metrics`: `mf validate-configs` against the warehouse, then list the visible metrics
 - `make export-osi`: write the Open Semantic Interchange document (`dbt/target/osi_document.json`)
 - `make golden`: ask the semantic layer every golden question; fails on a wrong value or caveat
-- `make golden-freeze`: recompute `golden/expected.yml` from the reference SQL over the raw extracts (review its diff before committing)
-- `make test`: governance lint + golden questions + pytest (the semantic layer and golden tests need `make build` first)
+- `make golden-freeze`: recompute `golden/expected/` from the reference SQL over the raw extracts (review its diff before committing)
+- `make test`: governance lint + golden questions + dashboard export + pytest (needs `make build` first)
 - `make lint`: `dbt parse`, then governance checks on `target/manifest.json` (default `--today` is the snapshot date 2026-09-15; `LINT_ARGS="--today YYYY-MM-DD --fail-on-stale"` for real CI)
 - `make registry`: regenerate `governance/registry.md` (the lint fails when it is stale)
 - `make affected BASE=origin/main`: metrics and exposures a branch touches, for the PR template
-- `make dashboard-data`: run saved queries through MetricFlow and write Parquet for the Power BI report (optional)
+- `make dashboard-data`: run saved queries through MetricFlow and write Parquet to `dashboards/exports/` for the Power BI report (optional; open `dashboards/groundrules.pbip`, set `ExportFolder`, refresh)
 - `make demo-drift`: change a rule silently, show golden questions failing, restore
 - `make demo-conflict`: show three legacy definitions of net revenue disagreeing, then the certified one
 

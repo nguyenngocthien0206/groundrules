@@ -66,13 +66,15 @@ groundrules/
     run_golden.py
   governance/
     repo.py                  # loads manifest, decisions, golden questions, CODEOWNERS, files once
-    lint.py                  # ownership, DR links, proof, lifecycle, contracts, CODEOWNERS, em dash, staleness
+    lint.py                  # ownership, DR links, proof, lifecycle, contracts, CODEOWNERS, em dash,
+                             # Power BI measures, staleness
     registry.py  registry.md # generated: metric, owner, version, status, DR, recertify by, exposures
     affected.py              # metrics and exposures a branch touches, for the PR
   dashboards/
     export.py                # runs saved queries through MetricFlow, writes Parquet
     exports/                 # generated Parquet, not committed
-    groundrules.pbip         # Power BI project (TMDL model + PBIR report), text files
+    groundrules.pbip         # Power BI project: groundrules.SemanticModel/ (TMDL) and
+                             # groundrules.Report/ (PBIR), text files
   playbook/
   adoption/
   tests/                     # pytest for runner, lint, generator checksum, exports
@@ -224,17 +226,17 @@ How each kind passes in v0.1 (there is no agent yet, so the runner plays that ro
 - `make demo-conflict`: see section 8.
 
 ## 13. Dashboards (Power BI, optional)
-Most companies already own a BI tool, and the biggest risk is that the tool quietly becomes a second place where metrics are defined. This section shows the safe pattern with Power BI Desktop. It is optional: not part of `make test`, and its definition-of-done item is checked separately from the core ones.
+Most companies already own a BI tool, and the biggest risk is that the tool quietly becomes a second place where metrics are defined. This section shows the safe pattern with Power BI Desktop. It is optional: an adopter can delete `dashboards/` and keep everything else, and its definition-of-done item is checked separately from the core ones. In this repo `make test` runs the export first, so the dashboard tests always have fresh data.
 
 Why not connect Power BI straight to the semantic layer: dbt's official Power BI connector needs the dbt platform (Starter plan or above) and is in preview. Open-source MetricFlow on DuckDB has no server for it to talk to, and Power BI has no native DuckDB connector. So the repo copies what companies on the dbt platform do with saved queries and exports.
 
 How it works:
-1. Every slice the report shows is a dbt saved query (section 7).
-2. `make dashboard-data` runs `dashboards/export.py`, which executes each saved query through MetricFlow and writes one Parquet file per saved query to `dashboards/exports/`, with `metric_version`, `as_of` and `caveats` columns.
-3. `dashboards/groundrules.pbip` is a Power BI project: the semantic model in TMDL and the report in PBIR, both text, so changes are reviewed in a PR like any other definition. It imports the Parquet files with Power BI's built-in Parquet connector, so nothing needs to be installed.
-4. The report never recomputes a certified metric. Ratio and semi-additive metrics (`sell_through_rate`, `days_of_cover`, `available_stock`) are exported at exactly the grain the visual shows, because summing them again in DAX gives a wrong number. Lint reads the TMDL files and fails when a measure has no description naming its metric and version, or uses anything beyond display functions (`SELECTEDVALUE`, `MAX`, `MIN`).
-5. A pytest compares the exported Parquet with golden expected values wherever a saved query and a golden question cover the same slice. The numbers on the dashboard are then backed by the same proof as the metric.
-6. The report is declared as a dbt `exposure` that depends on the semantic models it uses, so lint can list it as affected when a metric changes.
+1. Every slice the report shows is a dbt saved query (section 7), in one file per owning team: `saved_queries_finance.yml` (net revenue and gross margin by month, by district and month, by category and month) and `saved_queries_supply_chain.yml` (sell-through by store and month; available stock, near-expiry value and days of cover by store and by category at the snapshot). A saved query decides which slice of a metric managers see, so the lint requires its file to be owned by the teams of the metrics it exports. Monthly slices start at the first full month of POS data (April 2026): before it the ERP has receipts but the tills have no sales, so a ratio would read 0 where the truth is "no data", and a half month would read as a bad month.
+2. `make dashboard-data` runs `dashboards/export.py`, which executes each saved query through MetricFlow and writes one Parquet file per saved query to `dashboards/exports/` (not committed), with readable column names plus `as_of` and `caveats` (the lagging stores a row depends on, by the same stores-and-days rule as the golden runner). Monthly rows also carry `data_through` and `is_month_to_date`, so the current month reads as month to date, and the export refuses a month that starts before the POS history. It also writes `metric_versions.parquet` (metric, version, status, owner, decision record) for the report's footer, and refuses to export a metric that is not certified.
+3. `dashboards/groundrules.pbip` is a Power BI project: the semantic model in TMDL and the report in PBIR, both text, so changes are reviewed in a PR like any other definition. It imports the Parquet files with Power BI's built-in Parquet connector, so nothing needs to be installed. Power BI has no relative paths, so the `ExportFolder` parameter is set once after cloning. Every PBIR file was checked against Microsoft's published JSON schemas.
+4. The report never recomputes a certified metric. Ratio and semi-additive metrics (`sell_through_rate`, `days_of_cover`, `available_stock`) are exported at exactly the grain the visual shows, because summing them again in DAX gives a wrong number. Each measure is `SELECTEDVALUE` over one exported column, metric columns are hidden with `summarizeBy: none`, and the model sets `discourageImplicitMeasures`. Totals stay blank on purpose: a total that was not exported is not certified. Lint reads the TMDL files and fails when a measure uses anything beyond display functions (`SELECTEDVALUE`, `MAX`, `MIN`), has no `///` description naming a certified metric and its current version (for example `metric: net_revenue v2`), or when a metric column can be summed.
+5. A pytest compares the exported Parquet with golden expected values, caveats included, wherever a saved query and a golden question cover the same slice. The numbers on the dashboard are then backed by the same proof as the metric. Another test checks that every visual asks only for tables, columns and measures that exist in the TMDL.
+6. The report is declared as a dbt `exposure` (`groundrules_powerbi_report`) that depends on the six certified metrics, so `make affected` lists it when a metric changes.
 
 Limits, stated plainly in README: Power BI Desktop runs only on Windows, so CI runs the export, the TMDL lint and the pytest, and opening the report is a manual step. Mac and Linux users can point any BI tool at the Parquet files. A company on the dbt platform replaces step 2 with dbt exports or the official connector, and keeps everything else.
 
