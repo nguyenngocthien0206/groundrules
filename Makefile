@@ -1,4 +1,4 @@
-.PHONY: setup data data-manifest build metrics export-osi test
+.PHONY: setup data data-manifest build metrics export-osi golden golden-freeze test
 
 DATA_DIR := example/data
 export DBT_SEND_ANONYMOUS_USAGE_STATS := false
@@ -33,5 +33,14 @@ export-osi:
 	$(DBT) parse --profiles-dir .
 	@echo "OSI document: dbt/target/osi_document.json"
 
-test:
+# Ask the semantic layer every golden question; fails on a wrong value or caveat.
+golden:
+	uv run python golden/run_golden.py
+
+# Recompute expected answers from the reference SQL over the raw extracts.
+# Review the diff of golden/expected.yml before committing it.
+golden-freeze:
+	uv run python golden/reference/freeze.py
+
+test: golden
 	uv run pytest
