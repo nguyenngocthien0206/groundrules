@@ -17,6 +17,7 @@ dashboards/**/.pbi/cache.abf
 
 # dbt and the local DuckDB warehouse
 dbt/target/
+dbt/target_v2/
 dbt/logs/
 dbt/dbt_packages/
 dbt/.user.yml
