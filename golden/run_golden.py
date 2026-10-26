@@ -138,16 +138,21 @@ def write_junit(results: list[tuple[dict, Answer, str | None]], seconds: float) 
     ET.ElementTree(suite).write(REPORT, encoding="utf-8", xml_declaration=True)
 
 
+def store_sync_state(sl) -> list[dict]:
+    """Each store's district and last day of POS data, from the semantic layer."""
+    return [
+        {"store": r["store"], "district": r["store__district_code"], "data_through": r["store__pos_data_through__day"].date()}
+        for r in sl.query([], ["store", "store__district_code", "store__pos_data_through__day"])
+    ]
+
+
 def main() -> int:
     from semantic_client import SemanticLayer
 
     started = time.perf_counter()
     questions, expected = load_questions(), load_expected()["answers"]
     sl = SemanticLayer()
-    stores = [
-        {"store": r["store"], "district": r["store__district_code"], "data_through": r["store__pos_data_through__day"].date()}
-        for r in sl.query([], ["store", "store__district_code", "store__pos_data_through__day"])
-    ]
+    stores = store_sync_state(sl)
 
     results = []
     for q in questions:
