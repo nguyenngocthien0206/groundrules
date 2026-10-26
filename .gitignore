@@ -7,6 +7,9 @@ __pycache__/
 # Generated synthetic extracts (rebuild with `make data`)
 example/data/
 
+# Golden question runner report (CI uploads it)
+golden/report/
+
 # dbt and the local DuckDB warehouse
 dbt/target/
 dbt/logs/

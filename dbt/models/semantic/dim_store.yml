@@ -59,7 +59,9 @@ models:
         description: Error of the last attempt, null when it worked.
       - name: pos_data_through
         data_type: date
-        description: Last business day whose sales have reached the warehouse.
+        description: Last business day whose sales have reached the warehouse. Answers use it to name lagging stores (DR-004).
+        granularity: day
+        dimension: {type: time}
       - name: pos_lag_days
         data_type: bigint
         description: Business days of sales still missing at the snapshot. 0 for a store synced through the day before.
