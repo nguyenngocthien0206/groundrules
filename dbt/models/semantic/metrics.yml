@@ -136,7 +136,7 @@ metrics:
         status: certified
         certified_on: 2026-09-10
         recertify_every_days: 180
-        decision: decisions/DR-001.md
+        decision: decisions/DR-010.md
         replaced_by: null
         agent_notes: >
           Ask it at the snapshot date. Stores whose POS sync lags show too
