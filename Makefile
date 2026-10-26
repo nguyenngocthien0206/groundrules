@@ -1,4 +1,4 @@
-.PHONY: setup data data-manifest build metrics export-osi golden golden-freeze lint registry affected test
+.PHONY: setup data data-manifest build metrics export-osi golden golden-freeze lint registry affected demo-conflict demo-drift test
 
 DATA_DIR := example/data
 export DBT_SEND_ANONYMOUS_USAGE_STATS := false
@@ -59,6 +59,16 @@ BASE ?= origin/main
 affected:
 	$(DBT) parse --profiles-dir . --quiet
 	uv run python governance/affected.py --base $(BASE)
+
+# Demo 1: three legacy dashboards, three revenue numbers, one certified answer.
+MONTH ?= 2026-08
+demo-conflict:
+	uv run python demos/conflict.py --month $(MONTH)
+
+# Demo 2: change the 90-day rule to 60 silently; the golden questions catch it.
+# The rule file is restored afterwards, even if a step fails.
+demo-drift:
+	uv run python demos/drift.py
 
 test: lint golden
 	uv run pytest
