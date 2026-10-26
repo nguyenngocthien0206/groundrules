@@ -82,6 +82,14 @@ def check_decisions(repo: Repo) -> list[Issue]:
                 issues.append(_error("decisions", f"{dr.path} links metric {name}, which does not exist"))
         if f"[{dr.id}]({dr.id}.md)" not in repo.decisions_index:
             issues.append(_error("decisions", f"decisions/README.md does not list {dr.id}"))
+        # A rule changes by a new record replacing the old one; both must say so.
+        newer, older = dr.front.get("superseded_by"), dr.front.get("supersedes")
+        if newer and ((repo.decisions.get(newer) and repo.decisions[newer].front or {}).get("supersedes") != dr.id):
+            issues.append(_error("decisions", f"{dr.path} is superseded_by {newer}, but {newer} does not say it supersedes {dr.id}"))
+        if newer and dr.front.get("status") != "superseded":
+            issues.append(_error("decisions", f"{dr.path} is superseded_by {newer}, so its status must be superseded"))
+        if older and ((repo.decisions.get(older) and repo.decisions[older].front or {}).get("superseded_by") != dr.id):
+            issues.append(_error("decisions", f"{dr.path} supersedes {older}, but {older} does not say superseded_by: {dr.id}"))
     for m in governed(repo).values():
         link = m.meta.get("decision")
         if not link:
@@ -91,6 +99,10 @@ def check_decisions(repo: Repo) -> list[Issue]:
             issues.append(_error("decisions", f"metric {m.name}: decision {link} does not exist"))
         elif m.name not in (dr.front or {}).get("linked_metrics", []):
             issues.append(_error("decisions", f"metric {m.name}: {link} does not list it under linked_metrics"))
+        elif (dr.front or {}).get("status") != "accepted":
+            replaced = (dr.front or {}).get("superseded_by")
+            hint = f"; link decisions/{replaced}.md, which replaced it" if replaced else ""
+            issues.append(_error("decisions", f"metric {m.name}: {link} is {dr.front.get('status')}, not accepted{hint}"))
     return issues
 
 
