@@ -64,8 +64,12 @@ before this date are the owners' history and are not recorded here.
 
 ### [Unreleased]
 
-Everything below becomes v0.1.0 when the CI step lands and the release is
-tagged.
+Nothing yet.
+
+### [0.1.0] - 2026-10-26
+
+The first release: the whole loop runs on a laptop with no cloud account,
+and every check runs in CI on every pull request.
 
 #### Added
 - Synthetic source extracts for a fictional pharmacy chain: 30 stores, 150
@@ -91,7 +95,7 @@ tagged.
 - CI on GitHub Actions: build, lint as of today, registry check, golden
   questions, tests, both demos and the dbt v2 parser on every pull request,
   affected metrics in the job summary, and a weekly run that fails on
-  overdue recertification.
+  overdue recertification (#12).
 
 #### Changed
 - `sell_through_rate` v2 under DR-011, the `new_store` caveat, and lint
