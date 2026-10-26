@@ -32,7 +32,9 @@ models:
         dimension: categorical
       - name: opened_on
         data_type: date
-        description: Date the store opened.
+        description: Date the store opened. Sell-through answers use it to flag new stores (DR-011).
+        granularity: day
+        dimension: {type: time}
       - name: days_open
         data_type: bigint
         description: Days between opening and the snapshot date.
