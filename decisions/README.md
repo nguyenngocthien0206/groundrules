@@ -39,5 +39,6 @@ new record that `supersedes` the old one and set `superseded_by` on the old one.
 | [DR-006](DR-006.md) | Revenue is reported before VAT | Chief Financial Officer | net_revenue, gross_margin |
 | [DR-007](DR-007.md) | Stock and units sold are counted in the base unit | Head of Supply Chain | available_stock, sell_through_rate, days_of_cover |
 | [DR-008](DR-008.md) | Cost of goods sold uses the store's weighted average cost | Chief Financial Officer | gross_margin |
-| [DR-009](DR-009.md) | Sell-through divides units sold by units received net of transfers out | Head of Supply Chain | sell_through_rate |
+| [DR-009](DR-009.md) | Sell-through divides units sold by units received net of transfers out (superseded by DR-011) | Head of Supply Chain | sell_through_rate |
 | [DR-010](DR-010.md) | Days of cover uses the pace of the 28 full days before the snapshot | Head of Supply Chain | days_of_cover |
+| [DR-011](DR-011.md) | Sell-through has no value when net received is not positive, and new stores are flagged | Head of Supply Chain | sell_through_rate |
