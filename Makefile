@@ -1,4 +1,4 @@
-.PHONY: setup data data-manifest build metrics export-osi golden golden-freeze lint registry affected demo-conflict demo-drift test
+.PHONY: setup data data-manifest build metrics export-osi golden golden-freeze lint registry affected dashboard-data demo-conflict demo-drift test
 
 DATA_DIR := example/data
 export DBT_SEND_ANONYMOUS_USAGE_STATS := false
@@ -60,6 +60,11 @@ affected:
 	$(DBT) parse --profiles-dir . --quiet
 	uv run python governance/affected.py --base $(BASE)
 
+# Run the dashboard's saved queries through MetricFlow and write Parquet for
+# Power BI (dashboards/exports/). Needs `make build`.
+dashboard-data:
+	uv run python dashboards/export.py
+
 # Demo 1: three legacy dashboards, three revenue numbers, one certified answer.
 MONTH ?= 2026-08
 demo-conflict:
@@ -70,5 +75,6 @@ demo-conflict:
 demo-drift:
 	uv run python demos/drift.py
 
-test: lint golden
+# The dashboard tests read the exports, so they are rebuilt first.
+test: lint golden dashboard-data
 	uv run pytest
