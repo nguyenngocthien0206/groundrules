@@ -156,7 +156,7 @@ OSI: dbt 1.12 writes an Open Semantic Interchange document (`target/osi_document
 Three SQL files that mimic real dashboards: `finance_dashboard.sql`, `sales_dashboard.sql`, `ops_weekly_report.sql`. Each computes "net revenue" differently (returns by sale month, returns ignored, discounts ignored). `make demo-conflict` runs all three plus the certified metric for the same month and prints the four numbers side by side, with the DR that settled it. Each legacy dashboard is declared as a dbt `exposure` with an owner and `maturity: low`, the way a company would catalog what it already has.
 
 ## 9. Decision records (`decisions/`)
-`TEMPLATE.md` sections: Context, Decision, Options considered, Decided by (role), Date, Consequences, Linked metrics, Linked golden questions, Supersedes, Worked example (one case computed by hand).
+Format (MADR style): YAML front matter for what the lint reads (`id`, `title`, `status` proposed | accepted | superseded, `date`, `decided_by` role, `consulted` roles, `linked_metrics`, `linked_golden_questions`, `supersedes`, `superseded_by`), and body sections for people: Context, Decision, Options considered, Consequences, Worked example (one real case from the data, computed by hand and cross-checked once against MetricFlow). `TEMPLATE.md` and an index in `README.md`. A record is never edited to change its decision; a new record supersedes it.
 
 v0.1 records:
 - DR-001: available stock excludes batches under 90 days to expiry (60 vs 90 considered).
@@ -168,6 +168,9 @@ v0.1 records:
 - DR-007: stock and sell-through are counted in the SKU base unit; boxes and strips are converted, never added as they are.
 - DR-008: cost of goods sold uses the weighted average cost per store and SKU over all its receipts, because POS lines carry no batch (store-level vs chain-level average considered). Returns are destroyed, so their cost is not reversed.
 - DR-009: sell-through divides gross units sold by units received net (suppliers plus transfers in, minus transfers out), so it is right per store and for the chain (supplier-only and supplier-plus-transfers-in considered).
+- DR-010: days of cover uses the pace of the 28 full days before the snapshot day (7, 90 and a window ending on the snapshot day considered).
+
+DR-001 also records that near-expiry value includes expired stock not yet written off.
 
 ## 10. Golden questions (`golden/`)
 About 30 questions, grouped by domain, covering four kinds:
