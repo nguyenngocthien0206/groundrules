@@ -41,7 +41,7 @@ def _row(rows: list[dict], **keys) -> dict:
 
 
 def _caveats(expected_caveats: list[str]) -> str:
-    return ", ".join(c.split(":", 1)[1] for c in expected_caveats)
+    return ", ".join(expected_caveats)  # the dashboard uses the golden questions' words
 
 
 # (export, row keys, metric column, golden question, tolerance)
@@ -52,6 +52,8 @@ SAME_SLICE = [
     ("revenue_by_category_month", {"month": date(2026, 7, 1), "category_code": "VITA"}, "net_revenue", "GQ-REV-03", 1),
     ("revenue_by_category_month", {"month": date(2026, 7, 1), "category_code": "VITA"}, "gross_margin", "GQ-MARGIN-03", 100),
     ("sell_through_by_store_month", {"month": date(2026, 8, 1), "store_code": "NW014"}, "sell_through_rate", "GQ-SELL-01", 0.0001),
+    ("sell_through_by_store_month", {"month": date(2026, 9, 1), "store_code": "NW030"}, "sell_through_rate", "GQ-SELL-04", 0.0001),
+    ("sell_through_by_store_month", {"month": date(2026, 8, 1), "store_code": "NW030"}, "sell_through_rate", "GQ-SELL-05", 0.0001),
     ("stock_by_store", {"store_code": "NW001"}, "days_of_cover", "GQ-COVER-01", 0.0001),
     ("stock_by_store", {"store_code": "NW029"}, "days_of_cover", "GQ-COVER-02", 0.0001),
     ("stock_by_category", {"category_code": "VITA"}, "near_expiry_value", "GQ-STOCK-08", 1),
@@ -62,7 +64,10 @@ SAME_SLICE = [
                          ids=[f"{s[0]}-{s[3]}" for s in SAME_SLICE])
 def test_exports_match_the_golden_questions_on_the_same_slice(exports, expected, export, keys, column, question, tolerance):
     row = _row(exports[export], **keys)
-    assert row[column] == pytest.approx(expected[question]["expected"], abs=tolerance)
+    if expected[question]["expected"] is None:
+        assert row[column] is None  # no value stays empty, never 0
+    else:
+        assert row[column] == pytest.approx(expected[question]["expected"], abs=tolerance)
     assert row["caveats"] == _caveats(expected[question]["expected_caveats"])
 
 
@@ -88,6 +93,11 @@ def test_the_export_refuses_a_month_that_starts_before_the_pos_history():
     raw = [{"metric_time__month": datetime(2026, 3, 1), "net_revenue": 1.0}]
     with pytest.raises(ValueError, match="2026-03 starts before POS data begins on 2026-03-15"):
         export.shape("revenue_by_month", raw, ["net_revenue"], date(2026, 9, 15), [], (POS_FIRST_DAY, POS_LAST_DAY))
+
+
+def test_no_sell_through_is_negative(exports):
+    rates = [r["sell_through_rate"] for r in exports["sell_through_by_store_month"]]
+    assert all(r is None or r >= 0 for r in rates)
 
 
 def test_every_row_says_what_day_it_is_as_of(exports):
