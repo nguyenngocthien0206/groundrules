@@ -1,4 +1,4 @@
-"""The playbook and adoption guide stay true as the repo changes.
+"""The README, changelog, playbook and adoption guide stay true as the repo changes.
 
 Docs that name files and commands rot without anyone noticing. These checks
 fail when a link points nowhere, a `make` target does not exist, or a page
@@ -12,7 +12,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 FOLDERS = ("playbook", "adoption")
-PAGES = sorted(p for folder in FOLDERS for p in (ROOT / folder).glob("*.md"))
+PAGES = [ROOT / "README.md", ROOT / "CHANGELOG.md"] + sorted(p for folder in FOLDERS for p in (ROOT / folder).glob("*.md"))
 
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 # `make target` in inline code, or a fenced line that starts with make.
