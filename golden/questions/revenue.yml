@@ -1,0 +1,74 @@
+# Golden questions about revenue. Expected values: golden/expected.yml.
+questions:
+  - id: GQ-REV-01
+    question: What was our revenue in August 2026?
+    kind: conflict
+    metric: net_revenue
+    filters: {month: 2026-08}
+    as_of: 2026-09-15
+    tolerance: 1
+    why: >
+      Three dashboards gave three numbers. The certified one is sales after
+      discounts and before VAT, minus refunds counted in the month they came
+      back: 7,442,338,601.72 - 68,895,839.13 = 7,373,442,762.59 VND.
+    decision: DR-002
+    signed_off_by: Finance Controller
+    signed_off_on: 2026-09-12
+
+  - id: GQ-REV-02
+    question: What was NW001's revenue in August 2026?
+    kind: tacit_rule
+    metric: net_revenue
+    filters: {month: 2026-08, store: NW001}
+    as_of: 2026-09-15
+    tolerance: 1
+    why: >
+      238,404,424.24 of sales minus 2,100,467.53 of refunds returned in August
+      = 236,303,956.71 VND. Refund RT0003323 for a July sale lowers August.
+    decision: DR-002
+    signed_off_by: Finance Controller
+    signed_off_on: 2026-09-12
+
+  - id: GQ-REV-03
+    question: How much did vitamins and supplements bring in during the July promotion?
+    kind: tacit_rule
+    metric: net_revenue
+    filters: {month: 2026-07, category: VITA}
+    as_of: 2026-09-15
+    tolerance: 1
+    why: >
+      Vitamins carry 10% VAT, medicines 5%. Revenue is before VAT, so every
+      paid amount is divided by 1.10 for this category, after the promotion
+      discount already taken off at the till.
+    decision: DR-006
+    signed_off_by: Finance Controller
+    signed_off_on: 2026-09-12
+
+  - id: GQ-REV-04
+    question: What was our revenue in April 2026?
+    kind: tacit_rule
+    metric: net_revenue
+    filters: {month: 2026-04}
+    as_of: 2026-09-15
+    tolerance: 1
+    why: >
+      Night sales in 24-hour stores on the evening of 31 March UTC happened on
+      1 April local time and count in April. Grouping by UTC date or by file
+      date puts them in March.
+    decision: DR-004
+    signed_off_by: Finance Controller
+    signed_off_on: 2026-09-12
+
+  - id: GQ-REV-05
+    question: What was our revenue in July 2026?
+    kind: conflict
+    metric: net_revenue
+    filters: {month: 2026-07}
+    as_of: 2026-09-15
+    tolerance: 1
+    why: >
+      July is final: refunds of July sales that came back in August count in
+      August, so this number does not move after the month closes.
+    decision: DR-002
+    signed_off_by: Finance Controller
+    signed_off_on: 2026-09-12

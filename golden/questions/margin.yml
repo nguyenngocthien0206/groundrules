@@ -1,0 +1,51 @@
+# Golden questions about gross margin. Expected values: golden/expected.yml.
+questions:
+  - id: GQ-MARGIN-01
+    question: What gross margin did NW004 make in August 2026?
+    kind: tacit_rule
+    metric: gross_margin
+    filters: {month: 2026-08, store: NW004}
+    as_of: 2026-09-15
+    # Unit cost is stored to 4 decimals per base unit, so a total over many
+    # units can drift by a few VND. A changed cost rule moves it by millions.
+    tolerance: 100
+    why: >
+      Net revenue minus cost at NW004's own weighted average cost per SKU. For
+      Vitamin D3 1000IU (100105) that is (332,595 + 61,745 + 312,265) /
+      (500 + 100 + 500) = 642.37 VND per tablet.
+    decision: DR-008
+    signed_off_by: Finance Controller
+    signed_off_on: 2026-09-12
+
+  - id: GQ-MARGIN-02
+    question: What was the chain's gross margin in August 2026?
+    kind: tacit_rule
+    metric: gross_margin
+    filters: {month: 2026-08}
+    as_of: 2026-09-15
+    # Unit cost is stored to 4 decimals per base unit, so a total over many
+    # units can drift by a few VND. A changed cost rule moves it by millions.
+    tolerance: 100
+    why: >
+      Each store's sales cost that store's average, not a chain average.
+      Returned goods are destroyed, so their cost stays in.
+    decision: DR-008
+    signed_off_by: Finance Controller
+    signed_off_on: 2026-09-12
+
+  - id: GQ-MARGIN-03
+    question: What margin did vitamins and supplements make in July 2026?
+    kind: tacit_rule
+    metric: gross_margin
+    filters: {month: 2026-07, category: VITA}
+    as_of: 2026-09-15
+    # Unit cost is stored to 4 decimals per base unit, so a total over many
+    # units can drift by a few VND. A changed cost rule moves it by millions.
+    tolerance: 100
+    why: >
+      Revenue and cost are both before VAT. With VAT left in revenue, a 10%
+      category would gain twice as much from VAT as a 5% one, and that is tax
+      collected for the state, not margin.
+    decision: DR-006
+    signed_off_by: Finance Controller
+    signed_off_on: 2026-09-12

@@ -1,0 +1,33 @@
+# Golden questions about deprecated metrics. The expected answer is a
+# refusal that names the replacement, never a number.
+questions:
+  - id: GQ-LIFE-01
+    question: What was revenue_v1 for August 2026?
+    kind: deprecated
+    metric: revenue_v1
+    expected_replacement: net_revenue
+    filters: {month: 2026-08}
+    as_of: 2026-09-15
+    tolerance: 0
+    why: >
+      revenue_v1 (VAT included, returns ignored) is deprecated. The answer
+      points to net_revenue and explains the gap: 7,929,135,600 vs
+      7,373,442,762.59 VND, about 7%, which is VAT plus August's returns.
+    decision: DR-005
+    signed_off_by: Chief Financial Officer
+    signed_off_on: 2026-09-12
+
+  - id: GQ-LIFE-02
+    question: Give me NW001's till revenue (revenue_v1) for July 2026.
+    kind: deprecated
+    metric: revenue_v1
+    expected_replacement: net_revenue
+    filters: {month: 2026-07, store: NW001}
+    as_of: 2026-09-15
+    tolerance: 0
+    why: >
+      Asking for one store does not make a deprecated metric valid again. The
+      answer is the same pointer to net_revenue.
+    decision: DR-005
+    signed_off_by: Chief Financial Officer
+    signed_off_on: 2026-09-12

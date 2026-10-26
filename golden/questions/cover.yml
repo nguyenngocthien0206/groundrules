@@ -1,0 +1,44 @@
+# Golden questions about days of cover. Expected values: golden/expected.yml.
+questions:
+  - id: GQ-COVER-01
+    question: How many days will NW001's stock last?
+    kind: tacit_rule
+    metric: days_of_cover
+    filters: {store: NW001}
+    as_of: 2026-09-15
+    tolerance: 0.0001
+    why: >
+      Available stock 40,282 - 48 = 40,234 base units. Sold over 2026-08-18 to
+      2026-09-14: 42,803, so 1,528.68 a day. 40,234 / 1,528.68 = 26.32 days.
+    decision: DR-010
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-09-12
+
+  - id: GQ-COVER-02
+    question: How many days of stock does NW029 have?
+    kind: caveat_required
+    metric: days_of_cover
+    filters: {store: NW029}
+    as_of: 2026-09-15
+    tolerance: 0.0001
+    why: >
+      NW029 opened on 2026-08-18 and its data stops at 2026-09-11: 25 days of
+      sales divided by 28 make the pace too slow, so cover reads 38.8 days,
+      longer than it really is. The answer must say so.
+    decision: DR-004
+    signed_off_by: Head of Retail Operations
+    signed_off_on: 2026-09-12
+
+  - id: GQ-COVER-03
+    question: How many days of stock does the chain have?
+    kind: tacit_rule
+    metric: days_of_cover
+    filters: {}
+    as_of: 2026-09-15
+    tolerance: 0.0001
+    why: >
+      Chain available stock over the chain's pace in the 28 full days before
+      the snapshot. Lagging stores are in scope, so a caveat applies.
+    decision: DR-010
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-09-12

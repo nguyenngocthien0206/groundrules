@@ -1,0 +1,44 @@
+# Golden questions about sell-through. Expected values: golden/expected.yml.
+questions:
+  - id: GQ-SELL-01
+    question: What was NW014's sell-through in August 2026?
+    kind: tacit_rule
+    metric: sell_through_rate
+    filters: {month: 2026-08, store: NW014}
+    as_of: 2026-09-15
+    tolerance: 0.0001
+    why: >
+      53,782 units sold / (48,852 from suppliers + 140 by transfer - 840 sent
+      to other stores) = 53,782 / 48,152 = 1.117. Supplier-only would say 1.101.
+    decision: DR-009
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-09-12
+
+  - id: GQ-SELL-02
+    question: What was the chain's sell-through in August 2026?
+    kind: tacit_rule
+    metric: sell_through_rate
+    filters: {month: 2026-08}
+    as_of: 2026-09-15
+    tolerance: 0.0001
+    why: >
+      For the chain, transfers in and out cancel out, so only supplier
+      deliveries remain in the denominator. Counting transfers in alone would
+      count every moved unit twice.
+    decision: DR-009
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-09-12
+
+  - id: GQ-SELL-03
+    question: How did cough, cold and allergy products sell through over July and August 2026?
+    kind: tacit_rule
+    metric: sell_through_rate
+    filters: {start: 2026-07-01, end: 2026-08-31, category: RESP}
+    as_of: 2026-09-15
+    tolerance: 0.0001
+    why: >
+      One ratio over the whole two months, both sides in base units (tablets
+      and bottles), not the average of two monthly ratios.
+    decision: DR-009
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-09-12
