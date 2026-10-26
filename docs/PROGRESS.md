@@ -4,9 +4,9 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: 11. CI
-- State: not started (step 10 built on `step-10-readme-changelog`)
-- Last verified green: 2026-10-26 (`make build`: 97 dbt nodes, 1 expected warning; `make test`: lint 0 errors 0 warnings, 30 golden questions, 7 Parquet exports, 149 pytest)
+- Current step: v0.1 complete; release v0.1.0 (`release-0.1.0`). v0.2 and v0.3 stay locked until the owner says go
+- State: all 11 steps merged; CI green on GitHub (Ubuntu) for PR #12 and on main
+- Last verified green: 2026-10-26 on GitHub Actions, run 40357875267 on main (`make build`: 97 dbt nodes, 1 expected warning; lint 0 errors 0 warnings as of 2026-10-26; golden 30/30; 185 pytest; both demos; v2 parser)
 
 ## Build checklist (v0.1)
 Tick a step only when it runs end to end and its checks pass.
@@ -21,18 +21,18 @@ Tick a step only when it runs end to end and its checks pass.
 - [x] 8. Dashboard: saved queries, Parquet export, Power BI project, TMDL lint (optional)
 - [x] 9. Playbook + adoption guide
 - [x] 10. README + CHANGELOG
-- [ ] 11. CI
+- [x] 11. CI
 
 ## Definition of done (v0.1)
 Copied from SPEC section 20. Tick when verified on a fresh clone.
 
 - [x] `make setup && make data && make build && make test` passes in under 10 minutes (289 seconds on a fresh clone, uv cache warm)
-- [ ] Generator checksum test passes on a second machine
+- [x] Generator checksum test passes on a second machine (Ubuntu runner in CI, run 40357875267)
 - [x] `make demo-conflict` prints four different net revenue numbers and names the DR
 - [x] `make demo-drift` fails golden questions for the right reason, then restores everything
 - [x] `make lint` fails clearly on: removed owner group, broken DR link, certified metric with no golden question, deprecated metric with no replacement, em dash
 - [x] `make lint` gives the same result on any calendar day with the default `--today`
-- [ ] CI fails when `registry.md` is out of date
+- [x] CI fails when `registry.md` is out of date (the lint step and the registry step both fail; verified with the CI commands on a version bump without `make registry`)
 - [x] (Optional dashboard) `make dashboard-data` matches golden expected values; Power BI report opens and refreshes on Windows (manual)
 - [x] Warehouse switch documented: profiles, sources, the staging models that depend on how data lands, and the reference's raw views change; marts and the semantic layer do not
 - [ ] No real company names or rules, no em dash character anywhere
@@ -46,6 +46,10 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-26 | CI is one GitHub Actions job with one step per promise, each calling the same `make` target people run locally; actions pinned by commit SHA to releases at least two weeks old; uv pinned to 0.11.14 | A red step names the broken promise; local and CI cannot drift apart. The newest setup-uv was four days old, so the release before it is used. |
+| 2026-10-26 | Overdue recertification warns on pull requests; a weekly scheduled run adds `--fail-on-stale` | Owner's choice: one late metric should not block every team's pull request, but its owner must hear about it. |
+| 2026-10-26 | `make check-v2` parses with dbt's v2 parser into `target_v2/` | The v2 parser overwrites `target/`; one target keeps that knowledge in one place. |
+| 2026-10-26 | Release in its own pull request after CI is green on main: CHANGELOG `[0.1.0]`, pyproject and `uv.lock` to 0.1.0, then the tag | Owner's choice: the release is only declared once a clean Linux machine has run everything. |
 | 2026-10-26 | `CHANGELOG.md` has two parts: Definitions (for readers of the numbers) and Repository (Keep a Changelog, `[Unreleased]` until v0.1.0 is tagged after CI); the lint fails when a governed metric's current version has no Definitions entry | Owner's choice. SPEC asked for a definitions changelog kept by hand; the check makes "by hand" safe. The baseline records versions as certified on 2026-09-10 and invents no earlier history. |
 | 2026-10-26 | Apache-2.0 `LICENSE`, copied verbatim from an installed package's copy with the appendix placeholders left as in the original | Owner's choice; SPEC listed it but the file did not exist. Copying avoids retyping legal text. |
 | 2026-10-26 | The README does not link the Substack article | Owner's choice; the README stands on its own. |
@@ -138,6 +142,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-26 (step 11 and release 0.1.0)
+- Done: `.github/workflows/governance.yml` (locked install, data, build, lint as of today with the result in the job summary, registry diff, affected metrics on PRs, golden with the JUnit report as an artifact, export, pytest, both demos with a clean-tree check, v2 parser; weekly run with `--fail-on-stale`), `make check-v2`, CI badge, branch protection guidance in the adoption guide; release branch with CHANGELOG `[0.1.0]` and version 0.1.0
+- Verified: actionlint passes; every step run locally in order; a version bump without `make registry` makes the registry step exit 1 and the lint fail; GitHub Actions green on PR #12 (run 40357479803) and on main (run 40357875267, 1 minute 54 seconds: 185 pytest including the generator checksum on Ubuntu)
+- Next: owner checks the last definition-of-done item (real company names), turns on branch protection, merges the release PR and tags v0.1.0. v0.2 waits for the owner
+- Notes: the suite runs faster on the Linux runner (pytest 31 seconds) than on this Windows laptop (99 seconds). Editing `registry.md` by hand is not the failure case to test, because `make registry` rewrites it; the real case is a definition changed without regenerating it.
 
 ### 2026-10-26 (step 10)
 - Done: `README.md` (problem, four homes, quickstart, three demos with real output, example company, repo map, adoption, what this is not, roadmap), `CHANGELOG.md` (Definitions and Repository), `LICENSE` (Apache-2.0), `check_changelog` in the lint, README and CHANGELOG covered by the docs test, SPEC goal 4 and README item corrected
