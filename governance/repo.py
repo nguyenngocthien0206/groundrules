@@ -121,7 +121,8 @@ def parse_tmdl_table(path: Path) -> dict:
     """The parts of a TMDL table file the lint reads: measures and columns.
 
     Handles the TMDL this repo writes and Power BI Desktop saves: tab
-    indentation, `///` descriptions right above an object, one-line measures.
+    indentation, `///` descriptions right above an object, one-line measures,
+    and the `SummarizationSetBy` annotation on columns.
     """
     table = {"file": path.relative_to(ROOT).as_posix(), "name": None, "measures": [], "columns": []}
     description: list[str] = []
@@ -140,11 +141,14 @@ def parse_tmdl_table(path: Path) -> dict:
             table["measures"].append(current)
             description = []
         elif depth == 1 and text.startswith("column "):
-            current = {"name": text[len("column "):].strip("'"), "summarizeBy": None, "sourceColumn": None, "description": " ".join(description)}
+            current = {"name": text[len("column "):].strip("'"), "summarizeBy": None, "sourceColumn": None,
+                       "summarizationSetBy": None, "description": " ".join(description)}
             table["columns"].append(current)
             description = []
         elif depth == 1 and text:
             current, description = None, []
+        elif depth == 2 and current is not None and text.startswith("annotation SummarizationSetBy") and current in table["columns"]:
+            current["summarizationSetBy"] = text.partition("=")[2].strip()
         elif depth == 2 and current is not None and ":" in text and current in table["columns"]:
             key, _, value = text.partition(":")
             if key in ("summarizeBy", "sourceColumn"):
@@ -158,6 +162,7 @@ def load_powerbi() -> dict:
         return {}
     return {
         "model": (definition / "model.tmdl").read_text(encoding="utf-8"),
+        "expressions": (definition / "expressions.tmdl").read_text(encoding="utf-8"),
         "tables": [parse_tmdl_table(p) for p in sorted((definition / "tables").glob("*.tmdl"))],
     }
 

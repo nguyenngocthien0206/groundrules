@@ -208,6 +208,8 @@ def check_registry(repo: Repo) -> list[Issue]:
 
 DISPLAY_ONLY = re.compile(r"^(SELECTEDVALUE|MAX|MIN)\(\s*('[^']+'|\w+)\[[^\]]+\]\s*\)$")
 METRIC_TAG = re.compile(r"metric:\s*(\w+)\s+v(\d+)")
+EXPORT_FOLDER_PLACEHOLDER = r"C:\path\to\groundrules\dashboards\exports"
+AUTO_DATE_TABLE = re.compile(r"^(LocalDateTable|DateTableTemplate)_")
 
 
 def check_powerbi(repo: Repo) -> list[Issue]:
@@ -217,6 +219,14 @@ def check_powerbi(repo: Repo) -> list[Issue]:
     issues = []
     if not re.search(r"^\tdiscourageImplicitMeasures\s*$", repo.powerbi["model"], re.MULTILINE):
         issues.append(_error("powerbi", "the Power BI model must set discourageImplicitMeasures, so nobody can sum a metric by dragging a column"))
+    # Saving in Power BI Desktop writes the saver's own folder into the parameter.
+    if f'expression ExportFolder = "{EXPORT_FOLDER_PLACEHOLDER}"' not in repo.powerbi["expressions"]:
+        issues.append(_error("powerbi", f"ExportFolder in expressions.tmdl holds someone's local path; put back {EXPORT_FOLDER_PLACEHOLDER} before committing"))
+    # Auto date/time adds a hidden date table and relationship for every date column.
+    auto_dates = [t["name"] for t in repo.powerbi["tables"] if AUTO_DATE_TABLE.match(t["name"])]
+    if auto_dates or "annotation __PBI_TimeIntelligenceEnabled = 0" not in repo.powerbi["model"]:
+        issues.append(_error("powerbi", f"Auto date/time is on ({len(auto_dates)} hidden date tables): turn it off in "
+                                        "File > Options > Current file > Data load, and remove the LocalDateTable files"))
     # Power BI refuses to open a model where two measures share a name, even in
     # different tables (names are case-insensitive), or a measure is named like a column.
     measure_tables = {}
@@ -247,8 +257,12 @@ def check_powerbi(repo: Repo) -> list[Issue]:
             elif str(metric.meta.get("version")) != tag.group(2):
                 issues.append(_error("powerbi", f"{where} says {tag.group(1)} v{tag.group(2)}, but the certified version is v{metric.meta.get('version')}"))
         for c in table["columns"]:
-            if (c["sourceColumn"] in shown or c["sourceColumn"] in repo.metrics) and c["summarizeBy"] != "none":
-                issues.append(_error("powerbi", f"{table['file']}: column '{c['name']}' holds a metric and must have summarizeBy: none"))
+            if (c["sourceColumn"] in shown or c["sourceColumn"] in repo.metrics) and (
+                c["summarizeBy"] != "none" or c["summarizationSetBy"] != "User"
+            ):
+                # Without the User annotation, a refresh in Power BI resets the column to sum.
+                issues.append(_error("powerbi", f"{table['file']}: column '{c['name']}' holds a metric and must have "
+                                                "summarizeBy: none with `annotation SummarizationSetBy = User`"))
     return issues
 
 
