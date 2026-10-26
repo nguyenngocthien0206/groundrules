@@ -31,6 +31,7 @@ Core idea: agents remove the arrangement (an analyst in the loop) that made it s
 - `make lint`: `dbt parse`, then governance checks on `target/manifest.json` (default `--today` is the snapshot date 2026-09-15; `LINT_ARGS="--today YYYY-MM-DD --fail-on-stale"` for real CI)
 - `make registry`: regenerate `governance/registry.md` (the lint fails when it is stale)
 - `make affected BASE=origin/main`: metrics and exposures a branch touches, for the PR template
+- `make check-v2`: parse with dbt's v2 parser into its own `target_v2/` (it would overwrite `target/`)
 - `make dashboard-data`: run saved queries through MetricFlow and write Parquet to `dashboards/exports/` for the Power BI report (optional; open `dashboards/groundrules.pbip`, set `ExportFolder`, refresh)
 - `make demo-drift`: change a rule silently, show golden questions failing, restore
 - `make demo-conflict`: show three legacy definitions of net revenue disagreeing, then the certified one

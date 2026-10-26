@@ -1,5 +1,7 @@
 # Groundrules
 
+[![governance](https://github.com/nguyenngocthien0206/groundrules/actions/workflows/governance.yml/badge.svg)](https://github.com/nguyenngocthien0206/groundrules/actions/workflows/governance.yml)
+
 **Write down the rules your senior analyst never did, so your AI agent can
 follow them.** Semantic models, decision records, and golden questions in
 CI, built on dbt.

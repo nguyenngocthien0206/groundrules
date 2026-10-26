@@ -1,4 +1,4 @@
-.PHONY: setup data data-manifest build metrics export-osi golden golden-freeze lint registry affected dashboard-data demo-conflict demo-drift test
+.PHONY: setup data data-manifest build metrics export-osi golden golden-freeze lint registry affected dashboard-data demo-conflict demo-drift check-v2 test
 
 DATA_DIR := example/data
 export DBT_SEND_ANONYMOUS_USAGE_STATS := false
@@ -74,6 +74,11 @@ demo-conflict:
 # The rule file is restored afterwards, even if a step fails.
 demo-drift:
 	uv run python demos/drift.py
+
+# dbt v2's parser must keep parsing the project. It rewrites target/ (and
+# writes `config: null`), so it gets a folder of its own.
+check-v2:
+	$(DBT) parse --use-v2-parser --profiles-dir . --target-path target_v2 --quiet
 
 # The dashboard tests read the exports, so they are rebuilt first.
 test: lint golden dashboard-data

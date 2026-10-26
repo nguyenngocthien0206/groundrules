@@ -87,7 +87,11 @@ tagged.
 - Playbook and adoption guide, with a test that keeps their links and
   commands true (#10).
 - README, this changelog, the Apache-2.0 license, and a lint check that
-  every metric version has a definitions entry.
+  every metric version has a definitions entry (#11).
+- CI on GitHub Actions: build, lint as of today, registry check, golden
+  questions, tests, both demos and the dbt v2 parser on every pull request,
+  affected metrics in the job summary, and a weekly run that fails on
+  overdue recertification.
 
 #### Changed
 - `sell_through_rate` v2 under DR-011, the `new_store` caveat, and lint
