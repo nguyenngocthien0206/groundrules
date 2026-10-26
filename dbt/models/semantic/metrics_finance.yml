@@ -1,0 +1,60 @@
+# Certified metrics owned by finance that combine more than one semantic
+# model. One owner per file: on GitHub any listed code owner can approve a
+# file, so a file shared with another team would let that team approve these
+# rules. The simple metrics they build on are hidden and live next to their
+# model.
+#
+# An input that can be empty for a store or a month (no returns) is wrapped
+# in coalesce(..., 0). Without it the whole metric turns null for that row.
+# `fill_nulls_with` would be the usual tool, but dbt-core 1.12.6 drops it for
+# metrics in the latest YAML spec.
+metrics:
+  - name: net_revenue
+    label: Net revenue
+    description: >
+      Sales after discounts and before VAT, counted on the sale date, minus
+      refunds before VAT, counted on the return date (DR-002, DR-006). A
+      return in August of a July sale lowers August.
+    type: derived
+    expr: coalesce(sales_net_excl_vat, 0) - coalesce(returns_excl_vat, 0)
+    input_metrics:
+      - name: sales_net_excl_vat
+      - name: returns_excl_vat
+    config:
+      group: finance
+      meta:
+        version: 2
+        status: certified
+        certified_on: 2026-09-10
+        recertify_every_days: 90
+        decision: decisions/DR-002.md
+        replaced_by: null
+        agent_notes: >
+          The revenue number for every question about revenue or sales value.
+          Before VAT. Returns count in the month they come back, not the month
+          of the sale. If the scope includes a store whose POS sync lags, say
+          the latest days are incomplete (DR-004).
+
+  - name: gross_margin
+    label: Gross margin
+    description: >
+      Net revenue minus the cost of goods sold at each store's weighted
+      average cost for the SKU (DR-008). Returned goods are destroyed, so
+      their cost is not reversed.
+    type: derived
+    expr: coalesce(net_revenue, 0) - coalesce(cogs, 0)
+    input_metrics:
+      - name: net_revenue
+      - name: cogs
+    config:
+      group: finance
+      meta:
+        version: 1
+        status: certified
+        certified_on: 2026-09-10
+        recertify_every_days: 90
+        decision: decisions/DR-008.md
+        replaced_by: null
+        agent_notes: >
+          An amount in VND, not a percentage. For a margin rate, divide by
+          net_revenue for the same scope and say so.
