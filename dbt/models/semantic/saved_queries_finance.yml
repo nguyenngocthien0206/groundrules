@@ -1,0 +1,45 @@
+# Slices of finance's certified metrics that the Power BI report shows.
+# A saved query is the only way a number reaches a dashboard: it is exported
+# at exactly the grain the visual shows, so the BI tool never adds numbers up
+# again. One owner per file, like the metrics (see .github/CODEOWNERS).
+#
+# Monthly slices start in April 2026, the first full month of POS data (the
+# tills' history begins on 2026-03-15). A half month would read as a bad
+# month. The current month is kept; the export marks it as month to date.
+saved_queries:
+  - name: revenue_by_month
+    description: Net revenue and gross margin for the whole chain, by month.
+    query_params:
+      metrics:
+        - net_revenue
+        - gross_margin
+      group_by:
+        - "TimeDimension('metric_time', 'month')"
+      where:
+        - "{{ TimeDimension('metric_time', 'month') }} >= '2026-04-01'"
+
+  - name: revenue_by_district_month
+    description: Net revenue and gross margin by district and month.
+    query_params:
+      metrics:
+        - net_revenue
+        - gross_margin
+      group_by:
+        - "TimeDimension('metric_time', 'month')"
+        - "Dimension('store__district_code')"
+        - "Dimension('store__district_name')"
+      where:
+        - "{{ TimeDimension('metric_time', 'month') }} >= '2026-04-01'"
+
+  - name: revenue_by_category_month
+    description: Net revenue and gross margin by product category and month.
+    query_params:
+      metrics:
+        - net_revenue
+        - gross_margin
+      group_by:
+        - "TimeDimension('metric_time', 'month')"
+        - "Dimension('sku__category_code')"
+        - "Dimension('sku__category_name')"
+      where:
+        - "{{ TimeDimension('metric_time', 'month') }} >= '2026-04-01'"
