@@ -8,14 +8,10 @@ Run after `make build`, which creates the DuckDB file and the manifests.
 """
 
 import json
-import os
-from pathlib import Path
 
 import pytest
 
-DBT_DIR = Path(__file__).resolve().parent.parent / "dbt"
-DUCKDB_FILE = DBT_DIR / "groundrules.duckdb"
-SEMANTIC_MANIFEST = DBT_DIR / "target" / "semantic_manifest.json"
+from semantic_client import DBT_DIR, SEMANTIC_MANIFEST, SemanticLayer
 
 GOVERNANCE_FIELDS = {"version", "status", "certified_on", "recertify_every_days", "decision", "replaced_by", "agent_notes"}
 CERTIFIED = {"available_stock", "near_expiry_value", "net_revenue", "gross_margin", "sell_through_rate", "days_of_cover"}
@@ -33,29 +29,11 @@ def manifest() -> dict:
 
 @pytest.fixture(scope="module")
 def query():
-    """Return a function that runs a MetricFlow query and gives back rows as dicts."""
-    if not DUCKDB_FILE.exists():
-        pytest.fail("No DuckDB file: run `make data && make build` first.")
-    # The profile's DuckDB path is relative to wherever the process runs.
-    os.environ["GROUNDRULES_DUCKDB"] = str(DUCKDB_FILE)
-    from dbt_metricflow.cli.cli_configuration import CLIConfiguration
-    from metricflow.engine.metricflow_engine import MetricFlowQueryRequest
-
-    cfg = CLIConfiguration()
-    cfg.setup(dbt_profiles_path=DBT_DIR, dbt_project_path=DBT_DIR, configure_file_logging=False)
-
-    def run(metrics: list[str], group_by: list[str], where: list[str] | None = None) -> list[dict]:
-        # Each filter is its own constraint. Joined with "and" into one string,
-        # MetricFlow pushes a time filter below a derived metric's time offset
-        # and days_of_cover comes back empty.
-        request = MetricFlowQueryRequest.create(
-            metric_names=metrics, group_by_names=group_by, where_constraints=where or []
-        )
-        table = cfg.mf.query(request).result_df
-        names = [c.column_name for c in table.column_descriptions]
-        return [dict(zip(names, row)) for row in table.rows]
-
-    return run
+    """The shared semantic layer client's query function (golden/semantic_client.py)."""
+    try:
+        return SemanticLayer().query
+    except FileNotFoundError as e:
+        pytest.fail(str(e))
 
 
 def _metric(manifest: dict, name: str) -> dict:
