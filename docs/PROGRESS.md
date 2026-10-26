@@ -4,9 +4,9 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: 5. Reference computations + golden questions + runner
+- Current step: 6. Governance lint, registry, groups, exposures, CODEOWNERS, PR template
 - State: not started
-- Last verified green: 2026-10-26 (`make build`: 87 dbt nodes, 1 expected warning, freshness pass; `make metrics`: 0 errors; `make test`: 77 tests)
+- Last verified green: 2026-10-26 (`make build`: 87 dbt nodes, 1 expected warning, freshness pass; `make metrics`: 0 errors; `make test`: 28 golden questions pass, then 106 pytest)
 
 ## Build checklist (v0.1)
 Tick a step only when it runs end to end and its checks pass.
@@ -15,7 +15,7 @@ Tick a step only when it runs end to end and its checks pass.
 - [x] 2. dbt staging + marts + unit tests + data tests + freshness
 - [x] 3. Verify MetricFlow on DuckDB (versions, spec, Python API, saved queries), then semantic models and metrics
 - [x] 4. Decision records (DR-001 to DR-010 + TEMPLATE)
-- [ ] 5. Reference computations + golden questions + runner
+- [x] 5. Reference computations + golden questions + runner
 - [ ] 6. Governance lint, registry, groups, exposures, CODEOWNERS, PR template
 - [ ] 7. Demos (`make demo-conflict`, `make demo-drift`)
 - [ ] 8. Dashboard: saved queries, Parquet export, Power BI project, TMDL lint (optional)
@@ -46,6 +46,14 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-26 | Reference computations are SQL over the raw extracts (DuckDB reading the files, one SQL file per metric citing its DRs), not Python or pandas | What teams use for reconciliation in practice: analysts and owners can read and sign SQL, and adopters swap `read_csv` for raw tables. A test forbids marts, dbt and MetricFlow in `golden/reference/`. Asked by the owner. |
+| 2026-10-26 | Expected values live in generated `golden/expected.yml` (with the data fingerprint); question files are human-written | Owner's choice; a script never rewrites what people wrote. A test fails if `expected.yml` differs from a fresh reference run. |
+| 2026-10-26 | `pos_sync_lag` follows stores and days: a lagging store in scope counts when the period reaches past its last day of data, or for a stock position at `as_of`. One clarifying sentence added to DR-004 | Owner's choice; avoids a caveat on every chain-level question. GQ-POS-04 guards against over-caveating. |
+| 2026-10-26 | Reference money is summed as `decimal(38, 6)` per line; raw files are loaded once into in-memory tables | Floating-point sums changed in the last digits between runs (parallel aggregation), which would make every re-freeze a noisy diff; freezing dropped from 33s to 3s. |
+| 2026-10-26 | Gross margin questions use a 100 VND tolerance, other money questions 1 VND | The mart stores unit cost to 4 decimals, so the chain total drifts by about 2 VND from the reference; a changed cost rule moves it by millions. |
+| 2026-10-26 | Deprecated questions carry `expected_replacement` in the question file; freeze copies it | The replacement is a decision (DR-005), not something the data can compute. |
+| 2026-10-26 | `dim_store.pos_data_through` became a time dimension; the runner gets lag information through a dimension-only MetricFlow query | Caveats come from the semantic layer, as an agent's will. |
+| 2026-10-26 | `golden/semantic_client.py` is the one MetricFlow wrapper; `tests/test_semantic_layer.py` uses it | One place for the step 3 rules (absolute DuckDB path, one where constraint per filter). |
 | 2026-10-26 | Decision records use MADR-style YAML front matter (id, status, date, decided_by, consulted, linked_metrics, linked_golden_questions, supersedes, superseded_by) plus body sections Context, Decision, Options considered, Consequences, Worked example | Front matter is machine readable for the lint; teams already know the format. |
 | 2026-10-26 | New DR-010 for the days-of-cover pace window; `days_of_cover` now links to it instead of DR-001. DR-001 also records that near-expiry value includes expired stock | The 28-day window was a rule with no record. |
 | 2026-10-26 | Golden question ids reserved in the records (GQ-STOCK-01 to 05, GQ-REV-01 to 03, GQ-POS-01 to 02, GQ-LIFE-01, GQ-MARGIN-01, GQ-SELL-01, GQ-COVER-01 to 02); step 5 must create each one | Records and questions stay linked from the start. |
@@ -104,6 +112,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-26 (step 5)
+- Done: reference SQL over the raw extracts (raw views + 6 metric files + lagging stores), 28 golden questions in 7 files covering all four kinds and every certified metric, `expected.yml` frozen from the reference, the runner (table, why and DR on failure, JUnit XML), shared MetricFlow client, `make golden` and `make golden-freeze`, `make test` now runs golden first, 29 new tests
+- Verified: `make build` green, `make metrics` 0 errors, golden 28/28 in about 10s, pytest 106 pass, v2 parser parses. Freezing three times gives identical files. Drift dry run (90 to 60 days in `available_stock`): 4 questions fail, GQ-STOCK-01 shows 48 vs 49 with its why and DR-001; restored. A wrong expected caveat on GQ-POS-04 fails on caveats, not value. Pointing a reference SQL file at `marts.` fails the independence test
+- Next: step 6, starting in plan mode: governance lint on manifest.json (absorbing tests/test_decisions.py and the question link checks), registry, exposures, CODEOWNERS, PR template
+- Notes: first runner pass found the only mismatch at 2.16 VND on chain gross margin (rounding of unit cost in the mart), not a rule error. The reference independently reproduces every decision record worked example within its rounding. The whole quickstart now takes about 3 minutes on this laptop. `dbt parse --use-v2-parser` overwrites `dbt/target/` and writes `config: null` for metrics without config; readers now accept that, and step 11's CI must run the v2 check with its own `--target-path`.
 
 ### 2026-10-26 (step 4)
 - Done: `decisions/` with TEMPLATE, README index and DR-001 to DR-010, each with a real worked example; `days_of_cover` linked to DR-010; decision record tests

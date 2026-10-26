@@ -25,7 +25,9 @@ Core idea: agents remove the arrangement (an analyst in the loop) that made it s
 - `make build`: dbt build (staging, marts, unit tests, data tests) + source freshness
 - `make metrics`: `mf validate-configs` against the warehouse, then list the visible metrics
 - `make export-osi`: write the Open Semantic Interchange document (`dbt/target/osi_document.json`)
-- `make test`: governance lint + golden questions + pytest (the semantic layer tests need `make build` first)
+- `make golden`: ask the semantic layer every golden question; fails on a wrong value or caveat
+- `make golden-freeze`: recompute `golden/expected.yml` from the reference SQL over the raw extracts (review its diff before committing)
+- `make test`: governance lint + golden questions + pytest (the semantic layer and golden tests need `make build` first)
 - `make lint`: `dbt parse`, then governance checks on `target/manifest.json` (default `--today` is the snapshot date 2026-09-15)
 - `make dashboard-data`: run saved queries through MetricFlow and write Parquet for the Power BI report (optional)
 - `make demo-drift`: change a rule silently, show golden questions failing, restore

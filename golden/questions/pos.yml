@@ -1,0 +1,60 @@
+# Golden questions about POS data: time zones and stores whose sync lags.
+# Expected values and caveats: golden/expected.yml.
+questions:
+  - id: GQ-POS-01
+    question: What were sales yesterday across all stores?
+    kind: caveat_required
+    metric: net_revenue
+    filters: {day: 2026-09-14}
+    as_of: 2026-09-15
+    tolerance: 1
+    why: >
+      NW029 and NW030 last synced on 2026-09-12; their data stops at
+      2026-09-11, so they show no sales yesterday. The number includes them
+      and the answer must name them.
+    decision: DR-004
+    signed_off_by: Head of Retail Operations
+    signed_off_on: 2026-09-12
+
+  - id: GQ-POS-02
+    question: What was NW012's revenue on 1 August 2026?
+    kind: tacit_rule
+    metric: net_revenue
+    filters: {day: 2026-08-01, store: NW012}
+    as_of: 2026-09-15
+    tolerance: 1
+    why: >
+      NW012 is open 24 hours. Its sale at 02:09 on 1 August local time sits in
+      vendor A's file for 31 July (19:09 UTC) but belongs to 1 August.
+    decision: DR-004
+    signed_off_by: Head of Retail Operations
+    signed_off_on: 2026-09-12
+
+  - id: GQ-POS-03
+    question: How is New Town doing in September so far?
+    kind: caveat_required
+    metric: net_revenue
+    filters: {month: 2026-09, district: D05}
+    as_of: 2026-09-15
+    tolerance: 1
+    why: >
+      New Town includes NW030, opened on 2026-09-01, whose data stops at
+      2026-09-11. Three September days are missing for it.
+    decision: DR-004
+    signed_off_by: Head of Retail Operations
+    signed_off_on: 2026-09-12
+
+  - id: GQ-POS-04
+    question: What was Old Quarter's revenue in August 2026?
+    kind: tacit_rule
+    metric: net_revenue
+    filters: {month: 2026-08, district: D02}
+    as_of: 2026-09-15
+    tolerance: 1
+    why: >
+      Old Quarter includes the lagging NW029, but its August data is complete
+      (it runs to 2026-09-11). No caveat: a caveat that is always there gets
+      ignored.
+    decision: DR-004
+    signed_off_by: Head of Retail Operations
+    signed_off_on: 2026-09-12

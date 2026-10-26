@@ -1,0 +1,117 @@
+# Golden questions about stock. Expected values: golden/expected.yml
+# (generated from golden/reference by `make golden-freeze`).
+questions:
+  - id: GQ-STOCK-01
+    question: How many bottles of the 70ml saline nasal spray (100075) can NW001 sell today?
+    kind: tacit_rule
+    metric: available_stock
+    filters: {store: NW001, sku: "100075"}
+    as_of: 2026-09-15
+    tolerance: 0
+    why: >
+      One bottle expires in 71 days and 48 in 191 days. Only batches with at
+      least 90 days left count, so 48 are available; the rejected 60-day rule
+      would say 49.
+    decision: DR-001
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-09-12
+
+  - id: GQ-STOCK-02
+    question: What is our stock close to expiry worth across the chain?
+    kind: tacit_rule
+    metric: near_expiry_value
+    filters: {}
+    as_of: 2026-09-15
+    tolerance: 1
+    why: >
+      Cost value, before VAT, of every batch with fewer than 90 days left,
+      including expired stock still on the shelf until the monthly write-off.
+      The two newest stores lag, so their stock position is not current.
+    decision: DR-001
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-09-12
+
+  - id: GQ-STOCK-03
+    question: How much near-expiry stock of the compressor nebulizer (100149) does NW013 hold?
+    kind: tacit_rule
+    metric: near_expiry_value
+    filters: {store: NW013, sku: "100149"}
+    as_of: 2026-09-15
+    tolerance: 1
+    why: >
+      Batch B0002679 expired on 2026-09-14 and its 7 units are still on hand,
+      worth 4,896,318 VND. Expired stock counts as near-expiry value.
+    decision: DR-001
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-09-12
+
+  - id: GQ-STOCK-04
+    question: How many tablets of Paracetamol 325mg (100002) does NW014 have available?
+    kind: tacit_rule
+    metric: available_stock
+    filters: {store: NW014, sku: "100002"}
+    as_of: 2026-09-15
+    tolerance: 0
+    why: >
+      2,326 tablets on long-dated batches. Transfer TRF01263 (30 tablets) has a
+      ship date and no receipt, but it was cancelled, so nothing is subtracted.
+      A "shipped and not received" filter would wrongly give 2,296.
+    decision: DR-003
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-09-12
+
+  - id: GQ-STOCK-05
+    question: How much Loratadine 10mg (100059) does NW001 have available?
+    kind: tacit_rule
+    metric: available_stock
+    filters: {store: NW001, sku: "100059"}
+    as_of: 2026-09-15
+    tolerance: 0
+    why: >
+      The answer is in tablets, the base unit. Boxes (30 tablets) and strips
+      (10 tablets) are converted, never added as they come.
+    decision: DR-007
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-09-12
+
+  - id: GQ-STOCK-06
+    question: How many tablets of Ibuprofen 400mg (100010) can NW004 still sell or move?
+    kind: tacit_rule
+    metric: available_stock
+    filters: {store: NW004, sku: "100010"}
+    as_of: 2026-09-15
+    tolerance: 0
+    why: >
+      507 tablets on long-dated batches, minus transfer TRF01279 (30 tablets)
+      shipped on 2026-09-14 and still in transit: 477.
+    decision: DR-003
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-09-12
+
+  - id: GQ-STOCK-07
+    question: How much Paracetamol 325mg (100002) do we have across Old Quarter?
+    kind: caveat_required
+    metric: available_stock
+    filters: {district: D02, sku: "100002"}
+    as_of: 2026-09-15
+    tolerance: 0
+    why: >
+      Old Quarter includes NW029, whose POS data stops at 2026-09-11. Its ERP
+      stock has not seen three days of sales, so the answer must say so.
+    decision: DR-004
+    signed_off_by: Head of Retail Operations
+    signed_off_on: 2026-09-12
+
+  - id: GQ-STOCK-08
+    question: What are our near-expiry vitamins and supplements worth?
+    kind: tacit_rule
+    metric: near_expiry_value
+    filters: {category: VITA}
+    as_of: 2026-09-15
+    tolerance: 1
+    why: >
+      Same 90-day line as every near-expiry question, limited to one category
+      through the SKU master. Lagging stores are in scope, so a caveat applies.
+    decision: DR-001
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-09-12
