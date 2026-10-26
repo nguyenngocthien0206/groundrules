@@ -246,6 +246,8 @@ Limits, stated plainly in README: Power BI Desktop runs only on Windows, so CI r
 - `ownership.md`: business owner vs data owner, what each is accountable for, how they map to dbt groups, and a RACI table template.
 - `from-analyst-answers-to-golden-questions.md`: harvest the questions analysts answer every week; why this is easier than asking them to list their rules.
 - `recertification.md`: how often to review (tied to the quarterly business review), who signs, what happens to stale metrics.
+- `changing-a-rule.md`: a rule change end to end, with the sell-through fix (DR-011 superseding DR-009) as the worked example: new record, version bump, golden questions, the freeze diff signed by the owner, the lint blocking until the dashboard and registry agree.
+- `when-a-golden-question-fails.md`: triage by cause (silent rule change, data changed on purpose, one of the two paths wrong), who fixes each, and what never to do (edit expected values by hand, widen a tolerance to pass).
 
 ## 15. Adoption guide (`adoption/`)
 - `adopt-in-30-days.md`: week 1 pick the 10 numbers leadership looks at most and find their owners; week 2 run definition sessions and write DRs; week 3 encode metrics and golden questions; week 4 turn on CI and CODEOWNERS.
@@ -294,5 +296,5 @@ Run and verify each step before moving to the next.
 - `make lint` gives the same result on any calendar day with the default `--today`.
 - CI fails when `registry.md` is out of date.
 - Optional dashboard, checked separately from the core items: `make dashboard-data` writes Parquet that matches golden expected values, and the Power BI report opens and refreshes on Windows (manual check).
-- Switching `profiles.yml` to another warehouse needs no model changes (documented, not tested in CI).
+- Switching to another warehouse is documented in `adoption/warehouses.md`: profiles, source definitions, the staging models that depend on how data lands, and the reference's raw views change; marts and the semantic layer do not (documented, not tested in CI).
 - No real company names or rules, and no em dash character anywhere in the repo.

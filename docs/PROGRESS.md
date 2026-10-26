@@ -4,8 +4,8 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: 9. Playbook + adoption guide
-- State: not started (fix for sell-through of new stores built on `fix-sell-through-new-stores`; step 9 uses it as the playbook's worked example)
+- Current step: 10. README + CHANGELOG
+- State: not started (step 9 built on `step-09-playbook-adoption`)
 - Last verified green: 2026-10-26 (`make build`: 97 dbt nodes, 1 expected warning; `make test`: lint 0 errors 0 warnings, 30 golden questions, 7 Parquet exports, 149 pytest)
 
 ## Build checklist (v0.1)
@@ -19,7 +19,7 @@ Tick a step only when it runs end to end and its checks pass.
 - [x] 6. Governance lint, registry, groups, exposures, CODEOWNERS, PR template
 - [x] 7. Demos (`make demo-conflict`, `make demo-drift`)
 - [x] 8. Dashboard: saved queries, Parquet export, Power BI project, TMDL lint (optional)
-- [ ] 9. Playbook + adoption guide
+- [x] 9. Playbook + adoption guide
 - [ ] 10. README + CHANGELOG
 - [ ] 11. CI
 
@@ -34,7 +34,7 @@ Copied from SPEC section 20. Tick when verified on a fresh clone.
 - [x] `make lint` gives the same result on any calendar day with the default `--today`
 - [ ] CI fails when `registry.md` is out of date
 - [x] (Optional dashboard) `make dashboard-data` matches golden expected values; Power BI report opens and refreshes on Windows (manual)
-- [ ] Warehouse switch documented, needs no model changes
+- [x] Warehouse switch documented: profiles, sources, the staging models that depend on how data lands, and the reference's raw views change; marts and the semantic layer do not
 - [ ] No real company names or rules, no em dash character anywhere
 
 ## Later phases (locked until the owner says go)
@@ -46,6 +46,9 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-26 | Playbook gains `changing-a-rule.md` (PR #9 as the worked example) and `when-a-golden-question-fails.md`, beyond SPEC's four pages | The two situations a team meets first; told with what really happened in this repo instead of an invented case. |
+| 2026-10-26 | The warehouse doc and definition of done say exactly what changes: profiles, sources, the two returns staging models (nested JSON), the POS file name column, `qualify` on Postgres, the reference's raw views, freshness offsets | Checking the claim "no model changes" against the code found the returns struct and array, the `filename` column and `qualify`. The owner chose the truthful wording over adding untested per-warehouse macros. |
+| 2026-10-26 | `tests/test_docs.py` checks links, `make` targets and folder indexes in `playbook/` and `adoption/` | Docs that name commands and files rot silently; this keeps them true as the repo changes. |
 | 2026-10-26 | DR-011 supersedes DR-009: sell-through has no value when net received is zero or negative, and stores opened after the period began and within 7 days after it carry `new_store:<store>`; `sell_through_rate` v2 | Step 8's export showed NW030 at -20.43 (September) and 0 (August, opening stock only). The owner chose a caveat over hiding new stores on the dashboard, so agents warn too. |
 | 2026-10-26 | `dim_store.opened_on` became a time dimension; the runner reads opening days from the semantic layer, the reference from `raw_stores` | Same pattern as the lag caveat: the runner asks what an agent would ask, the reference stays independent. |
 | 2026-10-26 | The dashboard's `caveats` column uses the golden caveat strings (`new_store:NW030, pos_sync_lag:NW030`) | One caveat vocabulary for agents, tests and managers once there is more than one kind. |
@@ -132,6 +135,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-26 (step 9)
+- Done: `playbook/` (index plus six pages) and `adoption/` (index plus five pages), warehouse wording corrected in `profiles.example.yml`, CLAUDE.md, SPEC and the definition of done, `tests/test_docs.py`
+- Verified: every number quoted checked against the repo (four August revenue answers, GQ-STOCK-01's 48 vs 49, NW030's -20.43, the 2.16 VND margin drift, the 12 reset columns, recertification periods of 90 and 180 days); the docs test fails on a broken link and on an unknown make target, then passes; `make test` green; no em dash
+- Next: step 10, starting in plan mode: README and CHANGELOG
+- Notes: the warehouse claim was wrong in the spec and in `profiles.example.yml` ("models run unchanged"); five staging-level changes are needed, all where staging is meant to absorb them.
 
 ### 2026-10-26 (fix: sell-through for new stores)
 - Done: DR-011 superseding DR-009, `sell_through_rate` v2 (no value when net received is not positive), `new_store` caveat in the reference, runner and export, GQ-SELL-04 and 05, lint checks for superseded records, Power BI description at v2, registry, 17 new tests

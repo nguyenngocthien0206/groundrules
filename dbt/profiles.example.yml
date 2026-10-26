@@ -2,8 +2,9 @@
 # and install its adapter, for example `uv add dbt-snowflake`.
 #
 # On a warehouse, the raw extracts are tables your loader already fills, not
-# files. Point the sources at those tables (see adoption/warehouses.md) and the
-# models run unchanged. Warehouse-specific parsing lives in dbt/macros/.
+# files. Point the sources at those tables and adapt the staging models that
+# depend on how data lands (nested returns JSON, the POS file name column):
+# adoption/warehouses.md lists every change. Marts and metrics run unchanged.
 groundrules:
   target: duckdb
   outputs:
