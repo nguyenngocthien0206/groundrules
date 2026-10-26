@@ -34,6 +34,12 @@
 /dbt/models/marts/fct_goods_received.sql           @your-org/data-platform @your-org/supply-chain-ops
 /dbt/models/intermediate/int_store_sku_costs.sql   @your-org/data-platform @your-org/finance
 
+# The legacy dashboards belong to the teams that still use them (see the
+# exposures in dbt/models/exposures.yml).
+/legacy/finance_dashboard.sql                      @your-org/finance
+/legacy/sales_dashboard.sql                        @your-org/retail-operations
+/legacy/ops_weekly_report.sql                      @your-org/supply-chain-ops
+
 # Why each rule exists.
 /decisions/DR-001.md                               @your-org/supply-chain-ops
 /decisions/DR-002.md                               @your-org/finance

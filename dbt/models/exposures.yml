@@ -45,9 +45,10 @@ exposures:
     maturity: low
     url: legacy/ops_weekly_report.sql
     description: >
-      Weekly stock and sales review for operations. Reports revenue before
-      discounts and reads stock from batches as they are, without the
-      90-day line. Superseded by net_revenue and available_stock.
+      Weekly stock and sales review for operations. Reports revenue as the
+      tills show it, VAT included, and reads stock from batches as they are,
+      without the 90-day line. Superseded by net_revenue (DR-006) and
+      available_stock (DR-001).
     owner:
       name: Supply chain operations
       email: supply-chain-ops@example.com

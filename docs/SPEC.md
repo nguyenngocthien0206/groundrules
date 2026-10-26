@@ -45,6 +45,7 @@ groundrules/
     generate.py              # synthetic source extracts (CSV / JSON Lines)
     synth/                   # generator modules: config, master data, simulation, extract writers
   legacy/                    # three conflicting "existing dashboard" SQL definitions
+  demos/                     # conflict.py and drift.py, run by make demo-conflict / demo-drift
   dbt/
     dbt_project.yml  profiles.yml (local DuckDB)  profiles.example.yml
     macros/                  # portable date parsing, schema naming, small generic tests
@@ -157,7 +158,7 @@ Saved queries: the slices the dashboard shows (section 13) are defined as dbt `s
 OSI: dbt 1.12 writes an Open Semantic Interchange document (`target/osi_document.json`, OSI 0.1.1) on every parse, with hidden metrics left out. `make export-osi` runs the parse and points to it.
 
 ## 8. Legacy conflict (`legacy/`)
-Three SQL files that mimic real dashboards: `finance_dashboard.sql`, `sales_dashboard.sql`, `ops_weekly_report.sql`. Each computes "net revenue" differently (returns by sale month, returns ignored, discounts ignored). `make demo-conflict` runs all three plus the certified metric for the same month and prints the four numbers side by side, with the DR that settled it. Each legacy dashboard is declared as a dbt `exposure` with an owner and `maturity: low`, the way a company would catalog what it already has.
+Three SQL files that mimic real dashboards: `finance_dashboard.sql`, `sales_dashboard.sql`, `ops_weekly_report.sql`. They read the marts, the way an old dashboard reads the warehouse, and each differs from `net_revenue` by exactly one rule that has a decision record: refunds put back on the month of the sale (DR-002), returns left out (DR-002), till amounts with VAT included (DR-006). `make demo-conflict` (`demos/conflict.py`, optional `MONTH=YYYY-MM`) runs all three plus the certified metric for the same month and prints the four numbers side by side with each gap and its reason, then the DR that settled it (who decided, when, after hearing whom) and the golden question that guards the number. It exits 1 if two answers agree, so the demo cannot silently stop making its point. Each legacy dashboard is declared as a dbt `exposure` with an owner and `maturity: low`, the way a company would catalog what it already has.
 
 ## 9. Decision records (`decisions/`)
 Format (MADR style): YAML front matter for what the lint reads (`id`, `title`, `status` proposed | accepted | superseded, `date`, `decided_by` role, `consulted` roles, `linked_metrics`, `linked_golden_questions`, `supersedes`, `superseded_by`), and body sections for people: Context, Decision, Options considered, Consequences, Worked example (one real case from the data, computed by hand and cross-checked once against MetricFlow). `TEMPLATE.md` and an index in `README.md`. A record is never edited to change its decision; a new record supersedes it.
@@ -219,7 +220,7 @@ How each kind passes in v0.1 (there is no agent yet, so the runner plays that ro
 - `CHANGELOG.md` for definition changes, kept by hand.
 
 ## 12. Demos
-- `make demo-drift`: change the 90-day threshold to 60 in `available_stock` without touching DR-001 or golden questions; run golden questions; show failures with `why`; restore the file even if a step fails.
+- `make demo-drift` (`demos/drift.py`): change the 90-day threshold to 60 in `available_stock` (in `models/semantic/fct_inventory_batch.yml`) without touching DR-001 or golden questions; show that the lint finds nothing wrong (owner, fields and links are all still there), what `affected` lists and which team CODEOWNERS asks; run golden questions and show the failures with `why` and their DR; restore the file byte for byte and reparse in a `finally` block, even if a step fails or the demo is interrupted. It exits 0 only when the golden questions caught the drift and the file is restored.
 - `make demo-conflict`: see section 8.
 
 ## 13. Dashboards (Power BI, optional)
