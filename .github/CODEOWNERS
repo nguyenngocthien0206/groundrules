@@ -1,0 +1,70 @@
+# Who must review a change. Team handles are placeholders: replace
+# @your-org with your GitHub organization (dbt/models/groups.yml holds the
+# same handles, and the governance lint checks that the two agree).
+#
+# How GitHub reads this file: the last matching line wins, and when a line
+# lists several teams, an approval from ANY ONE of them is enough. So a file
+# that holds a team's rules is owned by that team alone. Where all listed
+# teams must approve, use a repository ruleset requiring each team instead.
+#
+# Turn on "Require review from Code Owners" in branch protection, or none of
+# this is enforced.
+
+# Default: the data platform team keeps the repo running.
+*                                                  @your-org/data-platform
+
+# Business rules. The lint requires each file's owners to be exactly the
+# owners of the metrics whose rules it holds (hidden building blocks count
+# for the certified metrics that use them).
+/dbt/models/semantic/metrics_finance.yml           @your-org/finance
+/dbt/models/semantic/metrics_supply_chain.yml      @your-org/supply-chain-ops
+/dbt/models/semantic/fct_inventory_batch.yml       @your-org/supply-chain-ops
+/dbt/models/semantic/fct_transfers.yml             @your-org/supply-chain-ops
+/dbt/models/semantic/fct_goods_received.yml        @your-org/supply-chain-ops
+/dbt/models/semantic/fct_returns.yml               @your-org/finance
+# fct_sales.yml holds revenue rules (finance) and units sold (supply chain).
+/dbt/models/semantic/fct_sales.yml                 @your-org/finance @your-org/supply-chain-ops
+
+# The data under the rules: the data platform builds it, the teams that rely
+# on it can approve too.
+/dbt/models/marts/fct_sales.sql                    @your-org/data-platform @your-org/finance @your-org/supply-chain-ops
+/dbt/models/marts/fct_returns.sql                  @your-org/data-platform @your-org/finance
+/dbt/models/marts/fct_inventory_batch.sql          @your-org/data-platform @your-org/supply-chain-ops
+/dbt/models/marts/fct_transfers.sql                @your-org/data-platform @your-org/supply-chain-ops
+/dbt/models/marts/fct_goods_received.sql           @your-org/data-platform @your-org/supply-chain-ops
+/dbt/models/intermediate/int_store_sku_costs.sql   @your-org/data-platform @your-org/finance
+
+# Why each rule exists.
+/decisions/DR-001.md                               @your-org/supply-chain-ops
+/decisions/DR-002.md                               @your-org/finance
+/decisions/DR-003.md                               @your-org/supply-chain-ops
+/decisions/DR-004.md                               @your-org/retail-operations @your-org/finance @your-org/supply-chain-ops
+/decisions/DR-005.md                               @your-org/finance
+/decisions/DR-006.md                               @your-org/finance
+/decisions/DR-007.md                               @your-org/supply-chain-ops
+/decisions/DR-008.md                               @your-org/finance
+/decisions/DR-009.md                               @your-org/supply-chain-ops
+/decisions/DR-010.md                               @your-org/supply-chain-ops
+
+# Proof: the questions, the numbers they expect, and the reference that
+# computes those numbers. A moved expected value needs its owner's sign-off.
+/golden/questions/stock.yml                        @your-org/supply-chain-ops
+/golden/questions/sell_through.yml                 @your-org/supply-chain-ops
+/golden/questions/cover.yml                        @your-org/supply-chain-ops
+/golden/questions/revenue.yml                      @your-org/finance
+/golden/questions/margin.yml                       @your-org/finance
+/golden/questions/lifecycle.yml                    @your-org/finance
+/golden/questions/pos.yml                          @your-org/retail-operations @your-org/finance
+/golden/expected/stock.yml                         @your-org/supply-chain-ops
+/golden/expected/sell_through.yml                  @your-org/supply-chain-ops
+/golden/expected/cover.yml                         @your-org/supply-chain-ops
+/golden/expected/revenue.yml                       @your-org/finance
+/golden/expected/margin.yml                        @your-org/finance
+/golden/expected/lifecycle.yml                     @your-org/finance
+/golden/expected/pos.yml                           @your-org/retail-operations @your-org/finance
+/golden/reference/available_stock.sql              @your-org/supply-chain-ops
+/golden/reference/near_expiry_value.sql            @your-org/supply-chain-ops
+/golden/reference/sell_through_rate.sql            @your-org/supply-chain-ops
+/golden/reference/days_of_cover.sql                @your-org/supply-chain-ops
+/golden/reference/net_revenue.sql                  @your-org/finance
+/golden/reference/gross_margin.sql                 @your-org/finance
