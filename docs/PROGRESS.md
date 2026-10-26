@@ -4,8 +4,8 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: 10. README + CHANGELOG
-- State: not started (step 9 built on `step-09-playbook-adoption`)
+- Current step: 11. CI
+- State: not started (step 10 built on `step-10-readme-changelog`)
 - Last verified green: 2026-10-26 (`make build`: 97 dbt nodes, 1 expected warning; `make test`: lint 0 errors 0 warnings, 30 golden questions, 7 Parquet exports, 149 pytest)
 
 ## Build checklist (v0.1)
@@ -20,13 +20,13 @@ Tick a step only when it runs end to end and its checks pass.
 - [x] 7. Demos (`make demo-conflict`, `make demo-drift`)
 - [x] 8. Dashboard: saved queries, Parquet export, Power BI project, TMDL lint (optional)
 - [x] 9. Playbook + adoption guide
-- [ ] 10. README + CHANGELOG
+- [x] 10. README + CHANGELOG
 - [ ] 11. CI
 
 ## Definition of done (v0.1)
 Copied from SPEC section 20. Tick when verified on a fresh clone.
 
-- [ ] `make setup && make data && make build && make test` passes in under 10 minutes
+- [x] `make setup && make data && make build && make test` passes in under 10 minutes (289 seconds on a fresh clone, uv cache warm)
 - [ ] Generator checksum test passes on a second machine
 - [x] `make demo-conflict` prints four different net revenue numbers and names the DR
 - [x] `make demo-drift` fails golden questions for the right reason, then restores everything
@@ -46,6 +46,9 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-26 | `CHANGELOG.md` has two parts: Definitions (for readers of the numbers) and Repository (Keep a Changelog, `[Unreleased]` until v0.1.0 is tagged after CI); the lint fails when a governed metric's current version has no Definitions entry | Owner's choice. SPEC asked for a definitions changelog kept by hand; the check makes "by hand" safe. The baseline records versions as certified on 2026-09-10 and invents no earlier history. |
+| 2026-10-26 | Apache-2.0 `LICENSE`, copied verbatim from an installed package's copy with the appendix placeholders left as in the original | Owner's choice; SPEC listed it but the file did not exist. Copying avoids retyping legal text. |
+| 2026-10-26 | The README does not link the Substack article | Owner's choice; the README stands on its own. |
 | 2026-10-26 | Playbook gains `changing-a-rule.md` (PR #9 as the worked example) and `when-a-golden-question-fails.md`, beyond SPEC's four pages | The two situations a team meets first; told with what really happened in this repo instead of an invented case. |
 | 2026-10-26 | The warehouse doc and definition of done say exactly what changes: profiles, sources, the two returns staging models (nested JSON), the POS file name column, `qualify` on Postgres, the reference's raw views, freshness offsets | Checking the claim "no model changes" against the code found the returns struct and array, the `filename` column and `qualify`. The owner chose the truthful wording over adding untested per-warehouse macros. |
 | 2026-10-26 | `tests/test_docs.py` checks links, `make` targets and folder indexes in `playbook/` and `adoption/` | Docs that name commands and files rot silently; this keeps them true as the repo changes. |
@@ -135,6 +138,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-26 (step 10)
+- Done: `README.md` (problem, four homes, quickstart, three demos with real output, example company, repo map, adoption, what this is not, roadmap), `CHANGELOG.md` (Definitions and Repository), `LICENSE` (Apache-2.0), `check_changelog` in the lint, README and CHANGELOG covered by the docs test, SPEC goal 4 and README item corrected
+- Verified: fresh clone of `main`: `make setup && make data && make build && make test` exit 0 in 289 seconds (uv cache warm, so a new machine adds the dependency download); every number in the README taken from `make demo-conflict` and `make demo-drift` output; bumping `gross_margin` to v2 without an entry fails the changelog check; `make test` green; no em dash
+- Next: step 11, starting in plan mode: CI (lint with the real date, golden, pytest, registry diff, v2 parser with its own target path), then tag v0.1.0
+- Notes: the fresh clone's golden run took 24 seconds against 10 on the warm working copy; first runs warm up MetricFlow and DuckDB.
 
 ### 2026-10-26 (step 9)
 - Done: `playbook/` (index plus six pages) and `adoption/` (index plus five pages), warehouse wording corrected in `profiles.example.yml`, CLAUDE.md, SPEC and the definition of done, `tests/test_docs.py`

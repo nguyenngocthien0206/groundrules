@@ -214,6 +214,29 @@ def test_a_saved_query_file_is_owned_by_its_metrics_owners(broken):
     assert any("saved_queries_finance.yml must be owned by @your-org/finance" in m for m in errors(lint.check_codeowners(broken)))
 
 
+# Changelog
+
+
+def test_a_version_bump_without_a_changelog_entry_fails(broken):
+    broken.metrics["gross_margin"].meta["version"] = 2
+    assert errors(lint.check_changelog(broken)) == [
+        "CHANGELOG.md has no entry for gross_margin v2; add one under Definitions"
+    ]
+
+
+def test_the_changelog_reads_versions_in_prose_and_in_tables(broken):
+    broken.text_files["CHANGELOG.md"] = "\n".join(
+        [f"### `{name}` v{m.meta['version']}" for name, m in lint.governed(broken).items() if name != "net_revenue"]
+        + ["| `net_revenue` | v2 | finance |"]
+    )
+    assert lint.check_changelog(broken) == []
+
+
+def test_a_missing_changelog_fails(broken):
+    del broken.text_files["CHANGELOG.md"]
+    assert errors(lint.check_changelog(broken)) == ["CHANGELOG.md is missing; it records when a number's meaning changed"]
+
+
 # Registry and staleness
 
 

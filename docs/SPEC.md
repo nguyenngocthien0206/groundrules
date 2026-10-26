@@ -12,7 +12,7 @@ A data lead should be able to:
 1. Clone the repo and see the whole loop working locally in under 10 minutes, with no cloud account.
 2. Recognize their own company in the example: messy sources, conflicting dashboards, rules nobody wrote down.
 3. Copy the governance pieces (decision records, golden questions, CODEOWNERS, CI, playbook) into their own repo in an afternoon.
-4. Point the same project at Snowflake, BigQuery, Databricks or Postgres by changing only `profiles.yml`.
+4. Point the same project at Snowflake, BigQuery, Databricks or Postgres by changing `profiles.yml`, the source definitions and the few staging models that depend on how data lands (`adoption/warehouses.md`); marts and the semantic layer stay as they are.
 
 Companion to the Substack article "When the One Asking for Data Is No Longer a Person" (link placeholder: `SUBSTACK_URL`).
 
@@ -215,12 +215,13 @@ How each kind passes in v0.1 (there is no agent yet, so the runner plays that ro
   - CODEOWNERS disagrees with the groups: a file holding rules must be owned by exactly the teams of the metrics those rules shape (a hidden building block counts for the certified metrics that use it); decision records and golden files must reach every team they cover;
   - any text file Git sees contains the em dash character (U+2014);
   - `governance/registry.md` is out of date;
-  - a Power BI measure recomputes a metric (section 13, step 8).
+  - a Power BI measure recomputes a metric (section 13, step 8);
+  - a governed metric's current version has no entry in `CHANGELOG.md`.
 - Staleness: a certification older than `recertify_every_days` is a warning, `--fail-on-stale` makes it an error. Lint takes `--today`. The default is the snapshot date (2026-09-15), so the demo gives the same result on any calendar day. A company's real CI passes the actual date (`make lint LINT_ARGS="--today ..."`).
 - Recertification follows the business review rhythm: 90 days for finance metrics (quarterly review), 180 days for operations metrics.
 - `governance/affected.py` (`make affected BASE=origin/main`) lists the governed metrics and exposures a branch touches, following dbt lineage from the changed files, ready to paste into the PR template.
 - `governance/registry.md` (`make registry`): generated tables of every governed metric (label, owner and team, version, status, certified on, recertify by, decision record, number of golden questions, replaced by) and of the exposures that read the data. It shows the due date rather than "stale", so the file does not change with the calendar. The lint fails when it is out of date, and CI also runs `git diff --exit-code`.
-- `CHANGELOG.md` for definition changes, kept by hand.
+- `CHANGELOG.md`, kept by hand, in two parts: **Definitions** for the people who read the numbers (each change of a certified number's meaning: what changed, what moves, decision record, golden questions, pull request) and **Repository** in Keep a Changelog style. The lint fails when a governed metric's current version has no Definitions entry.
 
 ## 12. Demos
 - `make demo-drift` (`demos/drift.py`): change the 90-day threshold to 60 in `available_stock` (in `models/semantic/fct_inventory_batch.yml`) without touching DR-001 or golden questions; show that the lint finds nothing wrong (owner, fields and links are all still there), what `affected` lists and which team CODEOWNERS asks; run golden questions and show the failures with `why` and their DR; restore the file byte for byte and reparse in a `finally` block, even if a step fails or the demo is interrupted. It exits 0 only when the golden questions caught the drift and the file is restored.
@@ -257,7 +258,7 @@ Limits, stated plainly in README: Power BI Desktop runs only on Windows, so CI r
 - `cost-and-roles.md`: the real cost is business experts' hours, not tooling; who to involve and how much time to budget.
 
 ## 16. README
-1. The problem, in 5 to 6 sentences, link to `SUBSTACK_URL`
+1. The problem, in 5 to 6 sentences, standing on its own (no article link for now)
 2. What you get: four homes for knowledge (semantic model = what, decisions = why, golden questions = proof, Git = ownership)
 3. Quickstart. Note that `make` needs WSL or Git Bash on Windows.
 4. Demo 1: conflicting dashboards. Demo 2: silent drift caught. Demo 3 (optional, Windows): the Power BI report on certified exports.
