@@ -4,9 +4,9 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: 4. Decision records (DR-001 to DR-009 + TEMPLATE)
+- Current step: 5. Reference computations + golden questions + runner
 - State: not started
-- Last verified green: 2026-10-24 (`make build`: 87 dbt nodes, 1 expected warning, freshness pass; `make metrics`: 0 errors; `make test`: 44 tests)
+- Last verified green: 2026-10-26 (`make build`: 87 dbt nodes, 1 expected warning, freshness pass; `make metrics`: 0 errors; `make test`: 77 tests)
 
 ## Build checklist (v0.1)
 Tick a step only when it runs end to end and its checks pass.
@@ -14,7 +14,7 @@ Tick a step only when it runs end to end and its checks pass.
 - [x] 1. Synthetic source extracts (`example/generate.py`) + checksum test
 - [x] 2. dbt staging + marts + unit tests + data tests + freshness
 - [x] 3. Verify MetricFlow on DuckDB (versions, spec, Python API, saved queries), then semantic models and metrics
-- [ ] 4. Decision records (DR-001 to DR-009 + TEMPLATE)
+- [x] 4. Decision records (DR-001 to DR-010 + TEMPLATE)
 - [ ] 5. Reference computations + golden questions + runner
 - [ ] 6. Governance lint, registry, groups, exposures, CODEOWNERS, PR template
 - [ ] 7. Demos (`make demo-conflict`, `make demo-drift`)
@@ -46,6 +46,11 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-26 | Decision records use MADR-style YAML front matter (id, status, date, decided_by, consulted, linked_metrics, linked_golden_questions, supersedes, superseded_by) plus body sections Context, Decision, Options considered, Consequences, Worked example | Front matter is machine readable for the lint; teams already know the format. |
+| 2026-10-26 | New DR-010 for the days-of-cover pace window; `days_of_cover` now links to it instead of DR-001. DR-001 also records that near-expiry value includes expired stock | The 28-day window was a rule with no record. |
+| 2026-10-26 | Golden question ids reserved in the records (GQ-STOCK-01 to 05, GQ-REV-01 to 03, GQ-POS-01 to 02, GQ-LIFE-01, GQ-MARGIN-01, GQ-SELL-01, GQ-COVER-01 to 02); step 5 must create each one | Records and questions stay linked from the start. |
+| 2026-10-26 | Worked examples use real rows from the marts and were cross-checked against MetricFlow (all match) | A reader can check one number by hand; step 5 reuses the same cases in `why`. |
+| 2026-10-26 | `tests/test_decisions.py` checks front matter, sections, metric links both ways and the index; `pyyaml==6.0.3` pinned as a dev dependency | Step 6's lint will take these checks over. |
 | 2026-10-24 | Business rules for step 3: COGS at weighted average cost per store and SKU over all receipts, not reversed for returns (DR-008); sell-through = gross units sold / units received net of transfers out (DR-009); near-expiry value includes expired stock not yet written off | Confirmed by the owner. |
 | 2026-10-24 | Semantic layer in dbt's latest YAML spec on dbt-core 1.12.6 + dbt-metricflow 0.15.0 (MetricFlow 0.213.0); each mart's properties moved to `models/semantic/<mart>.yml`, cross-model metrics in `models/semantic/metrics.yml` | dbt's recommended spec; a semantic model must share a properties file with its model, and this keeps every rule in one folder for CODEOWNERS. |
 | 2026-10-24 | Building-block metrics use `hidden: true` (stored as `is_private`), not `status: draft` | They drop out of `mf list`, the OSI document and later the agent; `draft` keeps its meaning of "not yet approved". |
@@ -99,6 +104,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-26 (step 4)
+- Done: `decisions/` with TEMPLATE, README index and DR-001 to DR-010, each with a real worked example; `days_of_cover` linked to DR-010; decision record tests
+- Verified: `make build` green, `make metrics` 0 errors, `make test` 77 pass; tests fail when a section, a front matter key or a metric link is broken (tried and restored); worked examples match MetricFlow: available_stock NW001/100031 229, NW014/100002 2,326, NW004/100010 477; near_expiry_value NW001/100031 83,120 and NW013/100149 4,896,318; net_revenue NW001 August 236,303,956.71 and chain August 7,373,442,762.59; sell_through_rate NW014 August 1.1169; days_of_cover NW001 26.32
+- Next: step 5, starting in plan mode: reference computations over source extracts, about 30 golden questions including every reserved id, and the runner
+- Notes: `near_expiry_value` returns None (not 0) for a store and SKU with no short-dated batch; the runner must treat a missing value as 0 where the question expects 0. The 24-hour store sale used in DR-004 sits in vendor A's file for 2026-07-31 although its business day is 2026-08-01.
 
 ### 2026-10-24 (step 3)
 - Done: dbt-metricflow added and verified on DuckDB (validate-configs, query, saved query, Python engine, group and meta, filter, non-additive, cumulative window, offset). Semantic models on all 7 marts; 6 certified metrics plus deprecated `revenue_v1`; 10 hidden building blocks; groups; time spine; weighted average cost; `make metrics`, `make export-osi`; 10 semantic layer smoke tests
