@@ -21,5 +21,5 @@ package = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["example", "golden", "golden/reference"]
+pythonpath = ["example", "golden", "golden/reference", "governance"]
 addopts = "-q"

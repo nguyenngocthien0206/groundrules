@@ -1,19 +1,19 @@
-"""Golden questions: complete, linked, frozen from an independent reference.
+"""Golden questions: complete and frozen from an independent reference.
 
 The runner itself (golden/run_golden.py) asks the semantic layer; these tests
-check everything around it, without the warehouse where possible.
+check everything around it, without the warehouse where possible. Links
+between questions, decision records and metrics are the governance lint's
+job (governance/lint.py, tested in tests/test_lint.py).
 """
 
-import json
 import re
 from datetime import date
-from pathlib import Path
 
 import pytest
 import yaml
 
 import freeze
-from catalog import KINDS, QUESTION_FIELDS, ROOT, data_fingerprint, load_expected, load_questions
+from catalog import EXPECTED_DIR, KINDS, QUESTION_FIELDS, ROOT, data_fingerprint, load_expected, load_questions
 from reference import DEFAULT_DATA_DIR, Reference
 from run_golden import Answer, build_query, check, lag_caveats
 
@@ -26,9 +26,9 @@ def ref() -> Reference:
     return Reference()
 
 
-def _record(dr: str) -> dict:
-    text = (ROOT / "decisions" / f"{dr}.md").read_text(encoding="utf-8")
-    return yaml.safe_load(re.match(r"^---\n(.*?)\n---\n", text, re.DOTALL).group(1))
+@pytest.fixture(scope="module")
+def fresh() -> dict:
+    return freeze.compute()
 
 
 # Questions
@@ -50,28 +50,11 @@ def test_every_kind_is_covered():
     assert {q["kind"] for q in QUESTIONS} == set(KINDS)
 
 
-def test_every_certified_metric_has_golden_questions():
-    manifest = json.loads((ROOT / "dbt" / "target" / "semantic_manifest.json").read_text(encoding="utf-8"))
-    certified = {
-        m["name"] for m in manifest["metrics"]
-        if ((m.get("config") or {}).get("meta") or {}).get("status") == "certified"
-    }
-    assert certified <= {q["metric"] for q in QUESTIONS}
-
-
-def test_questions_and_decision_records_point_to_each_other():
-    ids = {q["id"] for q in QUESTIONS}
-    for q in QUESTIONS:
-        assert q["id"] in _record(q["decision"])["linked_golden_questions"], q["id"]
-    for path in sorted((ROOT / "decisions").glob("DR-*.md")):
-        missing = set(_record(path.stem)["linked_golden_questions"]) - ids
-        assert not missing, f"{path.stem} reserves questions that do not exist: {missing}"
-
-
 # Expected values
 
 
-def test_expected_file_has_exactly_one_answer_per_question():
+def test_expected_files_mirror_question_files_with_one_answer_per_question():
+    assert sorted(p.name for p in EXPECTED_DIR.glob("*.yml")) == sorted({q["file"] for q in QUESTIONS})
     assert set(load_expected()["answers"]) == {q["id"] for q in QUESTIONS}
 
 
@@ -79,9 +62,10 @@ def test_expected_values_were_frozen_from_the_current_data():
     assert load_expected()["data_fingerprint"] == data_fingerprint(DEFAULT_DATA_DIR)
 
 
-def test_expected_values_equal_a_fresh_reference_run():
-    """Nobody edits expected.yml by hand: it is exactly what the reference says."""
-    assert freeze.compute()["answers"] == load_expected()["answers"]
+def test_expected_values_equal_a_fresh_reference_run(fresh):
+    """Nobody edits golden/expected/ by hand: it is exactly what the reference says."""
+    merged = {qid: answer for frozen in fresh.values() for qid, answer in frozen["answers"].items()}
+    assert merged == load_expected()["answers"]
 
 
 # Reference: independent, and it reproduces each decision record's worked example
@@ -186,7 +170,8 @@ def test_a_deprecated_metric_must_be_refused_with_a_certified_replacement():
     assert check(q, want, Answer(7929135600.0), True) is not None
 
 
-def test_expected_answers_are_plain_yaml():
-    rendered = freeze.render(freeze.compute())
-    assert yaml.safe_load(rendered)["answers"] == load_expected()["answers"]
-    assert Path(freeze.EXPECTED_FILE).read_text(encoding="utf-8") == rendered
+def test_expected_files_are_plain_yaml_written_by_freeze(fresh):
+    for name, frozen in fresh.items():
+        rendered = freeze.render(frozen)
+        assert yaml.safe_load(rendered)["answers"] == frozen["answers"]
+        assert (EXPECTED_DIR / name).read_text(encoding="utf-8") == rendered

@@ -1,4 +1,4 @@
-.PHONY: setup data data-manifest build metrics export-osi golden golden-freeze test
+.PHONY: setup data data-manifest build metrics export-osi golden golden-freeze lint registry affected test
 
 DATA_DIR := example/data
 export DBT_SEND_ANONYMOUS_USAGE_STATS := false
@@ -38,9 +38,27 @@ golden:
 	uv run python golden/run_golden.py
 
 # Recompute expected answers from the reference SQL over the raw extracts.
-# Review the diff of golden/expected.yml before committing it.
+# Review the diff of golden/expected/ before committing it.
 golden-freeze:
 	uv run python golden/reference/freeze.py
 
-test: golden
+# Ownership, decision links, proof and hygiene. Pass a real date in CI:
+#   make lint LINT_ARGS="--today 2027-01-04 --fail-on-stale"
+LINT_ARGS ?=
+lint:
+	$(DBT) parse --profiles-dir . --quiet
+	uv run python governance/lint.py $(LINT_ARGS)
+
+# Regenerate the page a manager reads; the lint fails when it is stale.
+registry:
+	$(DBT) parse --profiles-dir . --quiet
+	uv run python governance/registry.py
+
+# Metrics and exposures touched since BASE, for the pull request template.
+BASE ?= origin/main
+affected:
+	$(DBT) parse --profiles-dir . --quiet
+	uv run python governance/affected.py --base $(BASE)
+
+test: lint golden
 	uv run pytest

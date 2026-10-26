@@ -1,10 +1,12 @@
-"""Freeze expected values and caveats from the reference into golden/expected.yml.
+"""Freeze expected values and caveats from the reference into golden/expected/.
 
 Usage: python golden/reference/freeze.py   (or `make golden-freeze`)
 
-Run it when a golden question is added or the synthetic data changes on
-purpose, then review the diff of expected.yml like any other definition
-change: a moved number needs the question's owner to sign it off again.
+Writes one file per question file (golden/expected/stock.yml for
+golden/questions/stock.yml, and so on). Run it when a golden question is
+added or the synthetic data changes on purpose, then review the diff like
+any other definition change: a moved number needs the domain owner to sign
+it off again.
 """
 
 import os
@@ -15,7 +17,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 
-from catalog import EXPECTED_FILE, data_fingerprint, load_questions  # noqa: E402
+from catalog import EXPECTED_DIR, data_fingerprint, load_questions  # noqa: E402
 from reference import DEFAULT_DATA_DIR, Reference  # noqa: E402
 
 HEADER = (
@@ -24,20 +26,25 @@ HEADER = (
 )
 
 
-def compute() -> dict:
+def compute() -> dict[str, dict]:
+    """Frozen answers per question file name: {file: {data_fingerprint, answers}}."""
     data_dir = Path(os.environ.get("GROUNDRULES_DATA_DIR", DEFAULT_DATA_DIR)).resolve()
+    fingerprint = data_fingerprint(data_dir)
     ref = Reference(data_dir)
-    answers = {}
+    by_file: dict[str, dict] = {}
     for q in load_questions():
         if q["kind"] == "deprecated":
-            answers[q["id"]] = {"expected": q["expected_replacement"], "expected_caveats": []}
-            continue
-        value = ref.value(q["metric"], q["filters"], q["as_of"])
-        answers[q["id"]] = {
-            "expected": None if value is None else round(value, 6),
-            "expected_caveats": ref.caveats(q["metric"], q["filters"], q["as_of"]),
-        }
-    return {"data_fingerprint": data_fingerprint(data_dir), "answers": dict(sorted(answers.items()))}
+            answer = {"expected": q["expected_replacement"], "expected_caveats": []}
+        else:
+            value = ref.value(q["metric"], q["filters"], q["as_of"])
+            answer = {
+                "expected": None if value is None else round(value, 6),
+                "expected_caveats": ref.caveats(q["metric"], q["filters"], q["as_of"]),
+            }
+        by_file.setdefault(q["file"], {"data_fingerprint": fingerprint, "answers": {}})["answers"][q["id"]] = answer
+    for frozen in by_file.values():
+        frozen["answers"] = dict(sorted(frozen["answers"].items()))
+    return dict(sorted(by_file.items()))
 
 
 def render(frozen: dict) -> str:
@@ -45,15 +52,18 @@ def render(frozen: dict) -> str:
     for qid, answer in frozen["answers"].items():
         lines.append(f"  {qid}:\n")
         lines.append(f"    expected: {answer['expected']}\n")
-        caveats = answer["expected_caveats"]
-        lines.append(f"    expected_caveats: [{', '.join(caveats)}]\n")
+        lines.append(f"    expected_caveats: [{', '.join(answer['expected_caveats'])}]\n")
     return "".join(lines)
 
 
 def main() -> int:
-    frozen = compute()
-    EXPECTED_FILE.write_text(render(frozen), encoding="utf-8", newline="\n")
-    print(f"Froze {len(frozen['answers'])} answers into {EXPECTED_FILE}")
+    by_file = compute()
+    EXPECTED_DIR.mkdir(exist_ok=True)
+    for stale in set(p.name for p in EXPECTED_DIR.glob("*.yml")) - set(by_file):
+        (EXPECTED_DIR / stale).unlink()  # a question file was removed
+    for name, frozen in by_file.items():
+        (EXPECTED_DIR / name).write_text(render(frozen), encoding="utf-8", newline="\n")
+    print(f"Froze {sum(len(f['answers']) for f in by_file.values())} answers into {len(by_file)} files in {EXPECTED_DIR}")
     return 0
 
 
