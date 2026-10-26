@@ -14,11 +14,6 @@ table 'Sell-through by store'
 		summarizeBy: none
 		sourceColumn: month
 
-		variation Variation
-			isDefault
-			relationship: 54f1f671-fe58-492d-84da-bee01a8c7c53
-			defaultHierarchy: LocalDateTable_d8f21f48-8995-4a9d-9204-5374a6a0f544.'Date Hierarchy'
-
 		annotation UnderlyingDateTimeDataType = Date
 
 	column Store
@@ -37,10 +32,10 @@ table 'Sell-through by store'
 		dataType: double
 		isHidden
 		lineageTag: 2b9c8d84-5379-4921-a81c-1b7b1db271b9
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: sell_through_rate
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column 'Data through'
 		dataType: dateTime
@@ -48,11 +43,6 @@ table 'Sell-through by store'
 		lineageTag: d34f3987-dc3f-43a6-b420-884a95621918
 		summarizeBy: none
 		sourceColumn: data_through
-
-		variation Variation
-			isDefault
-			relationship: 84eb6277-9e68-49ca-9e5d-bf69bb420b81
-			defaultHierarchy: LocalDateTable_69cb69a2-dbe9-4f08-b394-4991cc2e98e3.'Date Hierarchy'
 
 		annotation UnderlyingDateTimeDataType = Date
 
@@ -69,11 +59,6 @@ table 'Sell-through by store'
 		lineageTag: 62aec264-20c1-475f-ad2c-de6c721ffc7a
 		summarizeBy: none
 		sourceColumn: as_of
-
-		variation Variation
-			isDefault
-			relationship: 670bd2bc-bf21-4c88-9e13-606f39785068
-			defaultHierarchy: LocalDateTable_ea31f16e-c084-4a61-8f93-881e36a9cff6.'Date Hierarchy'
 
 		annotation UnderlyingDateTimeDataType = Date
 

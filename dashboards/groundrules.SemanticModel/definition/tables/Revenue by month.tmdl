@@ -20,30 +20,25 @@ table 'Revenue by month'
 		summarizeBy: none
 		sourceColumn: month
 
-		variation Variation
-			isDefault
-			relationship: dc59073d-1141-4463-bbc6-3095e959eeee
-			defaultHierarchy: LocalDateTable_77adc8e1-76f3-4471-8259-60b59e0e4f7c.'Date Hierarchy'
-
 		annotation UnderlyingDateTimeDataType = Date
 
 	column net_revenue
 		dataType: double
 		isHidden
 		lineageTag: c8853a65-fa83-43f6-a355-7b26ea61a19a
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: net_revenue
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column gross_margin
 		dataType: double
 		isHidden
 		lineageTag: bec46659-135f-4b4b-9f61-d20b359aba54
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: gross_margin
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column 'Data through'
 		dataType: dateTime
@@ -51,11 +46,6 @@ table 'Revenue by month'
 		lineageTag: 05c26100-3439-498e-a2fd-22c5742aa6a3
 		summarizeBy: none
 		sourceColumn: data_through
-
-		variation Variation
-			isDefault
-			relationship: 5da39d56-889c-4339-b193-2de77c700a75
-			defaultHierarchy: LocalDateTable_9d77fcf6-e281-4ac8-a98d-6b3aed54bdaa.'Date Hierarchy'
 
 		annotation UnderlyingDateTimeDataType = Date
 
@@ -72,11 +62,6 @@ table 'Revenue by month'
 		lineageTag: b6ad3d99-608a-4cef-9f96-1cf9c9a5e9e7
 		summarizeBy: none
 		sourceColumn: as_of
-
-		variation Variation
-			isDefault
-			relationship: e0409d07-652b-4523-a0d9-0c0d05b320d0
-			defaultHierarchy: LocalDateTable_511078b6-3ba0-4e95-b6fd-134d86ec0adc.'Date Hierarchy'
 
 		annotation UnderlyingDateTimeDataType = Date
 

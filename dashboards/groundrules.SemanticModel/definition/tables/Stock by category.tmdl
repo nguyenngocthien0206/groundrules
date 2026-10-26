@@ -29,19 +29,19 @@ table 'Stock by category'
 		dataType: double
 		isHidden
 		lineageTag: 7f458545-de1f-40c9-b202-6d3f7df686ae
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: available_stock
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column near_expiry_value
 		dataType: double
 		isHidden
 		lineageTag: 37562f69-9a1f-43c0-b637-d68dce1c5520
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: near_expiry_value
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column 'As of'
 		dataType: dateTime
@@ -49,11 +49,6 @@ table 'Stock by category'
 		lineageTag: 4e31a05d-f549-42c0-9f69-b836c891b054
 		summarizeBy: none
 		sourceColumn: as_of
-
-		variation Variation
-			isDefault
-			relationship: a6cfbb65-83df-4126-9ff6-4739152e8c20
-			defaultHierarchy: LocalDateTable_2a305526-dc69-4629-8433-f994975438c6.'Date Hierarchy'
 
 		annotation UnderlyingDateTimeDataType = Date
 

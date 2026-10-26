@@ -17,10 +17,10 @@ table 'Metric versions'
 		dataType: int64
 		formatString: 0
 		lineageTag: bc04f63e-67f8-49ee-9724-6681171ab71b
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: version
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column Status
 		dataType: string
@@ -46,11 +46,6 @@ table 'Metric versions'
 		lineageTag: 8b90323e-cde0-4d98-b6a6-1cd6413aed49
 		summarizeBy: none
 		sourceColumn: as_of
-
-		variation Variation
-			isDefault
-			relationship: 56dafa9f-0271-49db-9763-6bae00a60551
-			defaultHierarchy: LocalDateTable_0e03856d-c5b2-488e-a1fe-2d852c6d7504.'Date Hierarchy'
 
 		annotation UnderlyingDateTimeDataType = Date
 

@@ -41,28 +41,28 @@ table 'Stock by store'
 		dataType: double
 		isHidden
 		lineageTag: fce86112-f07f-48ee-b6a5-4b11c19d2d6d
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: available_stock
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column near_expiry_value
 		dataType: double
 		isHidden
 		lineageTag: bd29035c-7e05-45c5-9cf5-7e6c4be17344
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: near_expiry_value
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column days_of_cover
 		dataType: double
 		isHidden
 		lineageTag: 534e7eef-c874-4afd-8c22-3b016b037064
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: days_of_cover
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column 'As of'
 		dataType: dateTime
@@ -70,11 +70,6 @@ table 'Stock by store'
 		lineageTag: 68bcd91c-a2a0-4048-ae65-0ce2fee8d489
 		summarizeBy: none
 		sourceColumn: as_of
-
-		variation Variation
-			isDefault
-			relationship: 68a2624a-dc33-4c8c-b708-68fce8111b09
-			defaultHierarchy: LocalDateTable_b0d8273b-0400-4786-a574-0a4fe36849ab.'Date Hierarchy'
 
 		annotation UnderlyingDateTimeDataType = Date
 

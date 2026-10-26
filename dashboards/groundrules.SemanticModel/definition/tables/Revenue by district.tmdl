@@ -20,11 +20,6 @@ table 'Revenue by district'
 		summarizeBy: none
 		sourceColumn: month
 
-		variation Variation
-			isDefault
-			relationship: 51302e38-660e-4280-a332-8b27bc2cfca8
-			defaultHierarchy: LocalDateTable_db044c52-9d7e-43db-b4b7-00945e5c5383.'Date Hierarchy'
-
 		annotation UnderlyingDateTimeDataType = Date
 
 	column 'District code'
@@ -43,19 +38,19 @@ table 'Revenue by district'
 		dataType: double
 		isHidden
 		lineageTag: 031c88f0-5ad0-4e2e-bf77-dc019c48def3
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: net_revenue
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column gross_margin
 		dataType: double
 		isHidden
 		lineageTag: dc438757-9f48-4eca-8fc9-8d427832f167
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: gross_margin
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column 'Data through'
 		dataType: dateTime
@@ -63,11 +58,6 @@ table 'Revenue by district'
 		lineageTag: 6ee63bdd-95e0-4ae3-916c-f9128e1c8b64
 		summarizeBy: none
 		sourceColumn: data_through
-
-		variation Variation
-			isDefault
-			relationship: e662195d-3e0f-4907-99a3-d98a9d89e3ce
-			defaultHierarchy: LocalDateTable_aadc3ac5-4576-400b-98b2-0195e1cdcb3c.'Date Hierarchy'
 
 		annotation UnderlyingDateTimeDataType = Date
 
@@ -84,11 +74,6 @@ table 'Revenue by district'
 		lineageTag: eb1b3487-2cc0-4dd8-9934-486aaf46c5a3
 		summarizeBy: none
 		sourceColumn: as_of
-
-		variation Variation
-			isDefault
-			relationship: 173b948d-9007-484a-ad40-657c2ec08fc4
-			defaultHierarchy: LocalDateTable_635bf5ad-8017-4ff0-afbc-8f5bb1894af1.'Date Hierarchy'
 
 		annotation UnderlyingDateTimeDataType = Date
 

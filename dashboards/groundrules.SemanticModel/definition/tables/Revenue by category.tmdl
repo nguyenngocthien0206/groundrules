@@ -20,11 +20,6 @@ table 'Revenue by category'
 		summarizeBy: none
 		sourceColumn: month
 
-		variation Variation
-			isDefault
-			relationship: 5114dec6-e303-4053-b354-6aaf2073a276
-			defaultHierarchy: LocalDateTable_db7d3ba0-c9e7-49b5-9ad5-f930ed414fb7.'Date Hierarchy'
-
 		annotation UnderlyingDateTimeDataType = Date
 
 	column 'Category code'
@@ -43,19 +38,19 @@ table 'Revenue by category'
 		dataType: double
 		isHidden
 		lineageTag: d18f6823-560e-4b9c-8873-ced057da33dc
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: net_revenue
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column gross_margin
 		dataType: double
 		isHidden
 		lineageTag: 5cae8480-714e-4556-88a3-15e2e1fbecd7
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: gross_margin
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column 'Data through'
 		dataType: dateTime
@@ -63,11 +58,6 @@ table 'Revenue by category'
 		lineageTag: d495e315-130a-42b5-a79e-921b1bf76c75
 		summarizeBy: none
 		sourceColumn: data_through
-
-		variation Variation
-			isDefault
-			relationship: ed3f9187-4fca-48a9-9372-0e69189fae50
-			defaultHierarchy: LocalDateTable_f0f15a53-1700-4c83-9612-e2c4535b2196.'Date Hierarchy'
 
 		annotation UnderlyingDateTimeDataType = Date
 
@@ -84,11 +74,6 @@ table 'Revenue by category'
 		lineageTag: 513b8c6d-76e7-46ae-9b4e-40c678dad06b
 		summarizeBy: none
 		sourceColumn: as_of
-
-		variation Variation
-			isDefault
-			relationship: d772398e-d2e2-46e4-a96b-5fe64a06ada6
-			defaultHierarchy: LocalDateTable_b3d8632b-058b-435b-a484-e901dcba556e.'Date Hierarchy'
 
 		annotation UnderlyingDateTimeDataType = Date
 
