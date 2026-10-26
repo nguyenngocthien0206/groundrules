@@ -166,6 +166,23 @@ def test_a_summing_metric_column_fails(broken):
     assert any("must have summarizeBy: none" in m for m in errors(lint.check_powerbi(broken)))
 
 
+def test_a_metric_column_power_bi_may_reset_to_sum_fails(broken):
+    # Power BI Desktop did exactly this on the first save: Automatic became sum after a refresh.
+    table = next(t for t in broken.powerbi["tables"] if t["name"] == "Revenue by month")
+    next(c for c in table["columns"] if c["sourceColumn"] == "net_revenue")["summarizationSetBy"] = "Automatic"
+    assert any("'net_revenue' holds a metric" in m for m in errors(lint.check_powerbi(broken)))
+
+
+def test_a_local_export_folder_fails(broken):
+    broken.powerbi["expressions"] = broken.powerbi["expressions"].replace(r"C:\path\to", r"C:\Users\someone")
+    assert any("ExportFolder in expressions.tmdl holds someone's local path" in m for m in errors(lint.check_powerbi(broken)))
+
+
+def test_auto_date_time_fails(broken):
+    broken.powerbi["tables"].append({"name": "LocalDateTable_0e03856d", "file": "x.tmdl", "measures": [], "columns": []})
+    assert any("Auto date/time is on (1 hidden date tables)" in m for m in errors(lint.check_powerbi(broken)))
+
+
 def test_implicit_measures_must_be_discouraged(broken):
     broken.powerbi["model"] = broken.powerbi["model"].replace("\tdiscourageImplicitMeasures\n", "")
     assert any("discourageImplicitMeasures" in m for m in errors(lint.check_powerbi(broken)))
