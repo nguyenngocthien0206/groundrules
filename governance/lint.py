@@ -218,6 +218,22 @@ def check_registry(repo: Repo) -> list[Issue]:
     return []
 
 
+def check_changelog(repo: Repo) -> list[Issue]:
+    """Every governed metric's current version has a Definitions entry in CHANGELOG.md."""
+    if not repo.text_files:
+        return []  # loaded without text files
+    text = repo.text_files.get("CHANGELOG.md")
+    if text is None:
+        return [_error("changelog", "CHANGELOG.md is missing; it records when a number's meaning changed")]
+    issues = []
+    for m in governed(repo).values():
+        version = m.meta.get("version")
+        # `name` v2 in prose, or `name` | v2 in a table.
+        if not re.search(rf"`{re.escape(m.name)}`[\s|]*v{version}\b", text):
+            issues.append(_error("changelog", f"CHANGELOG.md has no entry for {m.name} v{version}; add one under Definitions"))
+    return issues
+
+
 DISPLAY_ONLY = re.compile(r"^(SELECTEDVALUE|MAX|MIN)\(\s*('[^']+'|\w+)\[[^\]]+\]\s*\)$")
 METRIC_TAG = re.compile(r"metric:\s*(\w+)\s+v(\d+)")
 EXPORT_FOLDER_PLACEHOLDER = r"C:\path\to\groundrules\dashboards\exports"
@@ -295,7 +311,7 @@ def check_staleness(repo: Repo, today: date, fail_on_stale: bool = False) -> lis
 
 CHECKS = (
     check_ownership, check_decisions, check_golden_questions, check_lifecycle,
-    check_contracts, check_codeowners, check_em_dash, check_registry, check_powerbi,
+    check_contracts, check_codeowners, check_em_dash, check_registry, check_changelog, check_powerbi,
 )
 
 
