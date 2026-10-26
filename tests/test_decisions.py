@@ -79,7 +79,7 @@ def test_linked_metrics_exist(path, metrics):
 
 def test_every_governed_metric_points_to_a_record_that_lists_it(metrics):
     for name, metric in metrics.items():
-        decision = metric["config"]["meta"].get("decision")
+        decision = ((metric.get("config") or {}).get("meta") or {}).get("decision")
         if decision is None:
             continue
         path = ROOT / decision
