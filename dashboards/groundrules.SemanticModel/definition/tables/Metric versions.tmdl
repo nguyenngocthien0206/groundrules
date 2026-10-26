@@ -1,0 +1,64 @@
+table 'Metric versions'
+	lineageTag: c0027a3c-e895-4f7d-a623-7924e791905c
+
+	column Metric
+		dataType: string
+		lineageTag: 48c12b8b-ffd6-4d0c-8476-249fc153a767
+		summarizeBy: none
+		sourceColumn: metric
+
+	column Label
+		dataType: string
+		lineageTag: 8f3e4723-25f7-4612-a97e-9739160ed48c
+		summarizeBy: none
+		sourceColumn: label
+
+	column Version
+		dataType: int64
+		formatString: 0
+		lineageTag: bc04f63e-67f8-49ee-9724-6681171ab71b
+		summarizeBy: sum
+		sourceColumn: version
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		lineageTag: 11a01ad0-aaa1-4281-b131-fe8267e85ce5
+		summarizeBy: none
+		sourceColumn: status
+
+	column Owner
+		dataType: string
+		lineageTag: 405c57ce-feaa-43e7-bef7-f89c8625b856
+		summarizeBy: none
+		sourceColumn: owner
+
+	column Decision
+		dataType: string
+		lineageTag: 58b40689-3543-473e-ad89-155832db33d4
+		summarizeBy: none
+		sourceColumn: decision
+
+	column 'As of'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		lineageTag: 8b90323e-cde0-4d98-b6a6-1cd6413aed49
+		summarizeBy: none
+		sourceColumn: as_of
+
+		variation Variation
+			isDefault
+			relationship: 56dafa9f-0271-49db-9763-6bae00a60551
+			defaultHierarchy: LocalDateTable_0e03856d-c5b2-488e-a1fe-2d852c6d7504.'Date Hierarchy'
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition 'Metric versions' = m
+		mode: import
+		source =
+				let
+				    Source = Parquet.Document(File.Contents(ExportFolder & "\metric_versions.parquet"))
+				in
+				    Source
+

@@ -1,0 +1,108 @@
+table 'Revenue by category'
+	lineageTag: 5e1e83a9-5b6c-43e6-87c5-e377b6fe67cc
+
+	/// metric: net_revenue v2 (owner: finance). Shows the exported certified value;
+	/// a total that was not exported stays blank on purpose.
+	measure 'Net revenue by category' = SELECTEDVALUE('Revenue by category'[net_revenue])
+		formatString: #,##0
+		lineageTag: 098847eb-ba6e-4a34-b232-9ae4e2a9bfd0
+
+	/// metric: gross_margin v1 (owner: finance). Shows the exported certified value;
+	/// a total that was not exported stays blank on purpose.
+	measure 'Gross margin by category' = SELECTEDVALUE('Revenue by category'[gross_margin])
+		formatString: #,##0
+		lineageTag: 2080fadc-9cca-4ef6-9d2e-7ecd778a5d73
+
+	column Month
+		dataType: dateTime
+		formatString: mmm yyyy
+		lineageTag: be5f4697-d2c6-4c18-b0cd-48f0f800403a
+		summarizeBy: none
+		sourceColumn: month
+
+		variation Variation
+			isDefault
+			relationship: 5114dec6-e303-4053-b354-6aaf2073a276
+			defaultHierarchy: LocalDateTable_db7d3ba0-c9e7-49b5-9ad5-f930ed414fb7.'Date Hierarchy'
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Category code'
+		dataType: string
+		lineageTag: f460ffe9-c148-4143-a678-4f900f54aee9
+		summarizeBy: none
+		sourceColumn: category_code
+
+	column Category
+		dataType: string
+		lineageTag: de2d17e9-6c35-4da0-aa27-4c88441988e7
+		summarizeBy: none
+		sourceColumn: category
+
+	column net_revenue
+		dataType: double
+		isHidden
+		lineageTag: d18f6823-560e-4b9c-8873-ced057da33dc
+		summarizeBy: sum
+		sourceColumn: net_revenue
+
+		annotation SummarizationSetBy = Automatic
+
+	column gross_margin
+		dataType: double
+		isHidden
+		lineageTag: 5cae8480-714e-4556-88a3-15e2e1fbecd7
+		summarizeBy: sum
+		sourceColumn: gross_margin
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Data through'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		lineageTag: d495e315-130a-42b5-a79e-921b1bf76c75
+		summarizeBy: none
+		sourceColumn: data_through
+
+		variation Variation
+			isDefault
+			relationship: ed3f9187-4fca-48a9-9372-0e69189fae50
+			defaultHierarchy: LocalDateTable_f0f15a53-1700-4c83-9612-e2c4535b2196.'Date Hierarchy'
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	/// True for the current month: its numbers run only to Data through.
+	column 'Month to date'
+		dataType: boolean
+		lineageTag: a59423f6-7502-4561-9059-ac2cca62305b
+		summarizeBy: none
+		sourceColumn: is_month_to_date
+
+	column 'As of'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		lineageTag: 513b8c6d-76e7-46ae-9b4e-40c678dad06b
+		summarizeBy: none
+		sourceColumn: as_of
+
+		variation Variation
+			isDefault
+			relationship: d772398e-d2e2-46e4-a96b-5fe64a06ada6
+			defaultHierarchy: LocalDateTable_b3d8632b-058b-435b-a484-e901dcba556e.'Date Hierarchy'
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Caveats
+		dataType: string
+		lineageTag: 2f64e8c4-641f-4322-8f18-7e003a40113c
+		summarizeBy: none
+		sourceColumn: caveats
+
+	partition 'Revenue by category' = m
+		mode: import
+		source =
+				let
+				    Source = Parquet.Document(File.Contents(ExportFolder & "\revenue_by_category_month.parquet"))
+				in
+				    Source
+

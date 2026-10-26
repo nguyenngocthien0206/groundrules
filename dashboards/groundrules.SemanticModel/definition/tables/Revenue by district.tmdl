@@ -1,0 +1,108 @@
+table 'Revenue by district'
+	lineageTag: 4f51cd81-a094-4f4a-af69-5f8469c2db57
+
+	/// metric: net_revenue v2 (owner: finance). Shows the exported certified value;
+	/// a total that was not exported stays blank on purpose.
+	measure 'Net revenue by district' = SELECTEDVALUE('Revenue by district'[net_revenue])
+		formatString: #,##0
+		lineageTag: 75b99a9a-95ed-43e6-b5dc-157b10c1b495
+
+	/// metric: gross_margin v1 (owner: finance). Shows the exported certified value;
+	/// a total that was not exported stays blank on purpose.
+	measure 'Gross margin by district' = SELECTEDVALUE('Revenue by district'[gross_margin])
+		formatString: #,##0
+		lineageTag: e0035e04-d77c-4c5f-a768-18a73a1d45f1
+
+	column Month
+		dataType: dateTime
+		formatString: mmm yyyy
+		lineageTag: fa75aa8d-ac4b-4b43-8a3d-6f3080d1ca4a
+		summarizeBy: none
+		sourceColumn: month
+
+		variation Variation
+			isDefault
+			relationship: 51302e38-660e-4280-a332-8b27bc2cfca8
+			defaultHierarchy: LocalDateTable_db044c52-9d7e-43db-b4b7-00945e5c5383.'Date Hierarchy'
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'District code'
+		dataType: string
+		lineageTag: 53f760d8-ae31-4c9d-81ea-b2ed47afd05f
+		summarizeBy: none
+		sourceColumn: district_code
+
+	column District
+		dataType: string
+		lineageTag: 0d11f2ab-7aef-44f3-9f05-30ec25973975
+		summarizeBy: none
+		sourceColumn: district
+
+	column net_revenue
+		dataType: double
+		isHidden
+		lineageTag: 031c88f0-5ad0-4e2e-bf77-dc019c48def3
+		summarizeBy: sum
+		sourceColumn: net_revenue
+
+		annotation SummarizationSetBy = Automatic
+
+	column gross_margin
+		dataType: double
+		isHidden
+		lineageTag: dc438757-9f48-4eca-8fc9-8d427832f167
+		summarizeBy: sum
+		sourceColumn: gross_margin
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Data through'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		lineageTag: 6ee63bdd-95e0-4ae3-916c-f9128e1c8b64
+		summarizeBy: none
+		sourceColumn: data_through
+
+		variation Variation
+			isDefault
+			relationship: e662195d-3e0f-4907-99a3-d98a9d89e3ce
+			defaultHierarchy: LocalDateTable_aadc3ac5-4576-400b-98b2-0195e1cdcb3c.'Date Hierarchy'
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	/// True for the current month: its numbers run only to Data through.
+	column 'Month to date'
+		dataType: boolean
+		lineageTag: 66424ea9-8aca-40a0-9971-d1b9afd8786c
+		summarizeBy: none
+		sourceColumn: is_month_to_date
+
+	column 'As of'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		lineageTag: eb1b3487-2cc0-4dd8-9934-486aaf46c5a3
+		summarizeBy: none
+		sourceColumn: as_of
+
+		variation Variation
+			isDefault
+			relationship: 173b948d-9007-484a-ad40-657c2ec08fc4
+			defaultHierarchy: LocalDateTable_635bf5ad-8017-4ff0-afbc-8f5bb1894af1.'Date Hierarchy'
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Caveats
+		dataType: string
+		lineageTag: 78cdc826-f615-4458-aaf9-1eb4bdddebac
+		summarizeBy: none
+		sourceColumn: caveats
+
+	partition 'Revenue by district' = m
+		mode: import
+		source =
+				let
+				    Source = Parquet.Document(File.Contents(ExportFolder & "\revenue_by_district_month.parquet"))
+				in
+				    Source
+

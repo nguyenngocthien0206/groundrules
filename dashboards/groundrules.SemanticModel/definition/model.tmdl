@@ -1,0 +1,41 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	discourageImplicitMeasures
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["ExportFolder", "Revenue by month", "Revenue by district", "Revenue by category", "Sell-through by store", "Stock by store", "Stock by category", "Metric versions"]
+
+annotation __PBI_TimeIntelligenceEnabled = 1
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table 'Revenue by month'
+ref table 'Revenue by district'
+ref table 'Revenue by category'
+ref table 'Sell-through by store'
+ref table 'Stock by store'
+ref table 'Stock by category'
+ref table 'Metric versions'
+ref table DateTableTemplate_09425877-3027-48bb-b0c9-1e70fb7d063c
+ref table LocalDateTable_77adc8e1-76f3-4471-8259-60b59e0e4f7c
+ref table LocalDateTable_9d77fcf6-e281-4ac8-a98d-6b3aed54bdaa
+ref table LocalDateTable_511078b6-3ba0-4e95-b6fd-134d86ec0adc
+ref table LocalDateTable_db044c52-9d7e-43db-b4b7-00945e5c5383
+ref table LocalDateTable_aadc3ac5-4576-400b-98b2-0195e1cdcb3c
+ref table LocalDateTable_635bf5ad-8017-4ff0-afbc-8f5bb1894af1
+ref table LocalDateTable_db7d3ba0-c9e7-49b5-9ad5-f930ed414fb7
+ref table LocalDateTable_f0f15a53-1700-4c83-9612-e2c4535b2196
+ref table LocalDateTable_b3d8632b-058b-435b-a484-e901dcba556e
+ref table LocalDateTable_d8f21f48-8995-4a9d-9204-5374a6a0f544
+ref table LocalDateTable_69cb69a2-dbe9-4f08-b394-4991cc2e98e3
+ref table LocalDateTable_ea31f16e-c084-4a61-8f93-881e36a9cff6
+ref table LocalDateTable_b0d8273b-0400-4786-a574-0a4fe36849ab
+ref table LocalDateTable_2a305526-dc69-4629-8433-f994975438c6
+ref table LocalDateTable_0e03856d-c5b2-488e-a1fe-2d852c6d7504
+
+ref cultureInfo en-US
+

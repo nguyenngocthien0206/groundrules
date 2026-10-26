@@ -1,0 +1,263 @@
+cultureInfo en-US
+
+	linguisticMetadata =
+			{
+			  "Version": "2.0.0",
+			  "Language": "en-US",
+			  "Entities": {
+			    "revenue_by_category.net_revenue_by_category": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "Revenue by category",
+			          "ConceptualProperty": "Net revenue by category"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Net revenue": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "revenue_by_category.gross_margin_by_category": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "Revenue by category",
+			          "ConceptualProperty": "Gross margin by category"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Gross margin": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "revenue_by_district.net_revenue_by_district": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "Revenue by district",
+			          "ConceptualProperty": "Net revenue by district"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Net revenue": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "revenue_by_district.gross_margin_by_district": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "Revenue by district",
+			          "ConceptualProperty": "Gross margin by district"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Gross margin": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "revenue_by_month.net_revenue_by_month": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "Revenue by month",
+			          "ConceptualProperty": "Net revenue by month"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Net revenue": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "revenue_by_month.gross_margin_by_month": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "Revenue by month",
+			          "ConceptualProperty": "Gross margin by month"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Gross margin": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "stock_by_category.available_stock_by_category": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "Stock by category",
+			          "ConceptualProperty": "Available stock by category"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Available stock": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "stock_by_category.nearexpiry_value_by_category": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "Stock by category",
+			          "ConceptualProperty": "Near-expiry value by category"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Near-expiry value": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "stock_by_store.available_stock_by_store": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "Stock by store",
+			          "ConceptualProperty": "Available stock by store"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Available stock": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "stock_by_store.nearexpiry_value_by_store": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "Stock by store",
+			          "ConceptualProperty": "Near-expiry value by store"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Near-expiry value": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "stock_by_store.days_of_cover_by_store": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "Stock by store",
+			          "ConceptualProperty": "Days of cover by store"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Days of cover": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "sellthrough_by_store.sellthrough_rate_by_store": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "Sell-through by store",
+			          "ConceptualProperty": "Sell-through rate by store"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Sell-through rate": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    }
+			  }
+			}
+		contentType: json
+

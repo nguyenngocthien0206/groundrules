@@ -1,0 +1,93 @@
+table 'Sell-through by store'
+	lineageTag: 914af5ab-6433-4b08-9cc6-a9ebe38549b3
+
+	/// metric: sell_through_rate v1 (owner: supply_chain_ops). Shows the exported certified value;
+	/// a total that was not exported stays blank on purpose.
+	measure 'Sell-through rate by store' = SELECTEDVALUE('Sell-through by store'[sell_through_rate])
+		formatString: 0.000
+		lineageTag: 9d376afa-e2da-4f94-891f-c97a2a03050c
+
+	column Month
+		dataType: dateTime
+		formatString: mmm yyyy
+		lineageTag: 56acde36-7d99-4b61-b768-d11e1d222186
+		summarizeBy: none
+		sourceColumn: month
+
+		variation Variation
+			isDefault
+			relationship: 54f1f671-fe58-492d-84da-bee01a8c7c53
+			defaultHierarchy: LocalDateTable_d8f21f48-8995-4a9d-9204-5374a6a0f544.'Date Hierarchy'
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Store
+		dataType: string
+		lineageTag: 022da5d4-e672-43e8-bc1b-cc3959bcae31
+		summarizeBy: none
+		sourceColumn: store_code
+
+	column 'Store name'
+		dataType: string
+		lineageTag: 54b8a250-ad06-4237-ad2d-def344d4561a
+		summarizeBy: none
+		sourceColumn: store_name
+
+	column sell_through_rate
+		dataType: double
+		isHidden
+		lineageTag: 2b9c8d84-5379-4921-a81c-1b7b1db271b9
+		summarizeBy: sum
+		sourceColumn: sell_through_rate
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Data through'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		lineageTag: d34f3987-dc3f-43a6-b420-884a95621918
+		summarizeBy: none
+		sourceColumn: data_through
+
+		variation Variation
+			isDefault
+			relationship: 84eb6277-9e68-49ca-9e5d-bf69bb420b81
+			defaultHierarchy: LocalDateTable_69cb69a2-dbe9-4f08-b394-4991cc2e98e3.'Date Hierarchy'
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	/// True for the current month: its numbers run only to Data through.
+	column 'Month to date'
+		dataType: boolean
+		lineageTag: 3d781987-01c0-4127-820d-d5dc410df3a9
+		summarizeBy: none
+		sourceColumn: is_month_to_date
+
+	column 'As of'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		lineageTag: 62aec264-20c1-475f-ad2c-de6c721ffc7a
+		summarizeBy: none
+		sourceColumn: as_of
+
+		variation Variation
+			isDefault
+			relationship: 670bd2bc-bf21-4c88-9e13-606f39785068
+			defaultHierarchy: LocalDateTable_ea31f16e-c084-4a61-8f93-881e36a9cff6.'Date Hierarchy'
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Caveats
+		dataType: string
+		lineageTag: b0296c0c-e26d-4d98-aa16-f98cd26bafb6
+		summarizeBy: none
+		sourceColumn: caveats
+
+	partition 'Sell-through by store' = m
+		mode: import
+		source =
+				let
+				    Source = Parquet.Document(File.Contents(ExportFolder & "\sell_through_by_store_month.parquet"))
+				in
+				    Source
+
