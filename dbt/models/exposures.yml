@@ -1,0 +1,60 @@
+# What already reads the data, declared the way a company catalogs it. Each
+# legacy dashboard computes "net revenue" its own way; step 7 rebuilds them
+# in legacy/ to show the conflict. `make affected` lists the exposures a
+# change touches, for the pull request template.
+exposures:
+  - name: finance_dashboard
+    label: Finance monthly dashboard (legacy)
+    type: dashboard
+    maturity: low
+    url: legacy/finance_dashboard.sql
+    description: >
+      Monthly revenue for the finance team. Counts returns in the month of the
+      original sale, so closed months keep moving. Superseded by net_revenue
+      (DR-002).
+    owner:
+      name: Finance
+      email: finance@example.com
+    depends_on:
+      - ref('fct_sales')
+      - ref('fct_returns')
+    config:
+      meta:
+        replaced_by_metric: net_revenue
+
+  - name: sales_dashboard
+    label: Store sales dashboard (legacy)
+    type: dashboard
+    maturity: low
+    url: legacy/sales_dashboard.sql
+    description: >
+      Daily and monthly sales for store managers. Ignores returns entirely,
+      so it overstates revenue. Superseded by net_revenue (DR-002, DR-005).
+    owner:
+      name: Retail operations
+      email: retail-operations@example.com
+    depends_on:
+      - ref('fct_sales')
+    config:
+      meta:
+        replaced_by_metric: net_revenue
+
+  - name: ops_weekly_report
+    label: Operations weekly report (legacy)
+    type: analysis
+    maturity: low
+    url: legacy/ops_weekly_report.sql
+    description: >
+      Weekly stock and sales review for operations. Reports revenue before
+      discounts and reads stock from batches as they are, without the
+      90-day line. Superseded by net_revenue and available_stock.
+    owner:
+      name: Supply chain operations
+      email: supply-chain-ops@example.com
+    depends_on:
+      - ref('fct_sales')
+      - ref('fct_returns')
+      - ref('fct_inventory_batch')
+    config:
+      meta:
+        replaced_by_metric: net_revenue
