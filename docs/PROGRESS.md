@@ -5,8 +5,8 @@ Living status of the build. Claude reads this at the start of every session and 
 ## Current status
 - Phase: v0.1 Core
 - Current step: 9. Playbook + adoption guide
-- State: not started (step 8 built; opening the report in Power BI Desktop is the owner's manual check)
-- Last verified green: 2026-10-26 (`make build`: 97 dbt nodes, 1 expected warning; `make test`: lint 0 errors 0 warnings, 28 golden questions, 7 Parquet exports, 132 pytest)
+- State: not started (fix for sell-through of new stores built on `fix-sell-through-new-stores`; step 9 uses it as the playbook's worked example)
+- Last verified green: 2026-10-26 (`make build`: 97 dbt nodes, 1 expected warning; `make test`: lint 0 errors 0 warnings, 30 golden questions, 7 Parquet exports, 149 pytest)
 
 ## Build checklist (v0.1)
 Tick a step only when it runs end to end and its checks pass.
@@ -46,6 +46,11 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-26 | DR-011 supersedes DR-009: sell-through has no value when net received is zero or negative, and stores opened after the period began and within 7 days after it carry `new_store:<store>`; `sell_through_rate` v2 | Step 8's export showed NW030 at -20.43 (September) and 0 (August, opening stock only). The owner chose a caveat over hiding new stores on the dashboard, so agents warn too. |
+| 2026-10-26 | `dim_store.opened_on` became a time dimension; the runner reads opening days from the semantic layer, the reference from `raw_stores` | Same pattern as the lag caveat: the runner asks what an agent would ask, the reference stays independent. |
+| 2026-10-26 | The dashboard's `caveats` column uses the golden caveat strings (`new_store:NW030, pos_sync_lag:NW030`) | One caveat vocabulary for agents, tests and managers once there is more than one kind. |
+| 2026-10-26 | Lint: a governed metric must link an accepted record, and `supersedes` / `superseded_by` must point at each other | A rule changes by a new record replacing the old one; the old record stays as history and nothing may keep pointing at it. |
+| 2026-10-26 | Freeze writes `null` for no value | Python's `None` written as text reads back from YAML as the string "None". |
 | 2026-10-26 | Dashboard slices are six saved queries in `saved_queries_finance.yml` and `saved_queries_supply_chain.yml`, each at the grain its visual shows; the lint requires each file to be owned by its metrics' teams | A saved query decides which slice managers see, so it is a rule like any other. Re-aggregating a ratio or a stock position in DAX gives a wrong number. |
 | 2026-10-26 | `pyarrow==26.0.0` in the dev group; `dashboards/export.py` writes one Parquet per saved query plus `metric_versions.parquet`, with `as_of` and `caveats` on every row, and refuses non-certified metrics | Power BI reads Parquet with its built-in connector; versions sit in their own table instead of a column on every row. Approved by the owner. |
 | 2026-10-26 | Power BI project in PBIP (TMDL + PBIR, Desktop 2.159); measures are `SELECTEDVALUE` over one column, named `<metric> by <slice>` (visuals show the short label through `displayName`), with a `/// metric: <name> v<version>` description, metric columns hidden with `summarizeBy: none`, `discourageImplicitMeasures` on, totals blank | The model only displays certified numbers; the lint reads the TMDL and fails on anything that computes. Power BI refuses a model where two measures share a name, even in different tables (found on the first open), so the lint checks that too. PBIR files were checked against Microsoft's JSON schemas; TMDL has no public schema, so Desktop is the check. |
@@ -127,6 +132,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-26 (fix: sell-through for new stores)
+- Done: DR-011 superseding DR-009, `sell_through_rate` v2 (no value when net received is not positive), `new_store` caveat in the reference, runner and export, GQ-SELL-04 and 05, lint checks for superseded records, Power BI description at v2, registry, 17 new tests
+- Verified: `mf query`: NW030 September empty, August 0, NW014 August 1.117; freeze diff only in `golden/expected/sell_through.yml` (SELL-02 and 03 gain `new_store:NW029, new_store:NW030` with unchanged values, SELL-04 null, SELL-05 0.0), stable on a second run; the lint failed on the v1 Power BI description and the stale registry until both were updated; `make test`: lint clean, golden 30/30, 149 pytest; no negative sell-through in the export; both demos pass; v2 parser parses; no em dash
+- Next: step 9, starting in plan mode, with this change as the playbook's worked example of a rule change
+- Notes: opening stock arrives the day before a store opens in the data (NW029 on 17 August, NW030 on 31 August); DR-011 states a 7-day window as the business assumption.
 
 ### 2026-10-26 (step 8)
 - Done: six saved queries split by owner, `dashboards/export.py` and `make dashboard-data`, `saved_query()` in the shared MetricFlow client, the Power BI project (`groundrules.pbip`: TMDL model with 7 tables, PBIR report with 3 pages and 7 visuals), `check_powerbi` and saved query owners in the lint, the report as an exposure, CODEOWNERS and `.gitignore` entries, 28 new tests
