@@ -24,6 +24,9 @@
 /dbt/models/semantic/fct_returns.yml               @your-org/finance
 # fct_sales.yml holds revenue rules (finance) and units sold (supply chain).
 /dbt/models/semantic/fct_sales.yml                 @your-org/finance @your-org/supply-chain-ops
+# Saved queries decide which slice of a metric a dashboard shows.
+/dbt/models/semantic/saved_queries_finance.yml     @your-org/finance
+/dbt/models/semantic/saved_queries_supply_chain.yml @your-org/supply-chain-ops
 
 # The data under the rules: the data platform builds it, the teams that rely
 # on it can approve too.

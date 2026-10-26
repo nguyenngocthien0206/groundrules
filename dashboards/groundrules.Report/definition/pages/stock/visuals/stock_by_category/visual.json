@@ -1,0 +1,142 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "stock_by_category",
+  "position": {
+    "x": 860,
+    "y": 20,
+    "z": 2000,
+    "height": 320,
+    "width": 400,
+    "tabOrder": 2000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Stock by category"
+                    }
+                  },
+                  "Property": "Category"
+                }
+              },
+              "queryRef": "Stock by category.Category",
+              "nativeQueryRef": "Category"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Stock by category"
+                    }
+                  },
+                  "Property": "Caveats"
+                }
+              },
+              "queryRef": "Stock by category.Caveats",
+              "nativeQueryRef": "Caveats"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Stock by category"
+                    }
+                  },
+                  "Property": "Available stock by category"
+                }
+              },
+              "queryRef": "Stock by category.Available stock by category",
+              "nativeQueryRef": "Available stock by category",
+              "displayName": "Available stock"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Stock by category"
+                    }
+                  },
+                  "Property": "Near-expiry value by category"
+                }
+              },
+              "queryRef": "Stock by category.Near-expiry value by category",
+              "nativeQueryRef": "Near-expiry value by category",
+              "displayName": "Near-expiry value"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "5a5ba556ab07e0f535f4",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Stock by category"
+              }
+            },
+            "Property": "Category"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "ea57624ac986309f5d25",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Stock by category"
+              }
+            },
+            "Property": "Caveats"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "eb8f481778056a3bea01",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Stock by category"
+              }
+            },
+            "Property": "Available stock by category"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "473bfa78b27a7c431d01",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Stock by category"
+              }
+            },
+            "Property": "Near-expiry value by category"
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
+  }
+}

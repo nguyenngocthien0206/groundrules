@@ -1,0 +1,198 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "revenue_by_district",
+  "position": {
+    "x": 20,
+    "y": 340,
+    "z": 2000,
+    "height": 360,
+    "width": 610,
+    "tabOrder": 2000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Revenue by district"
+                    }
+                  },
+                  "Property": "Month"
+                }
+              },
+              "queryRef": "Revenue by district.Month",
+              "nativeQueryRef": "Month"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Revenue by district"
+                    }
+                  },
+                  "Property": "Data through"
+                }
+              },
+              "queryRef": "Revenue by district.Data through",
+              "nativeQueryRef": "Data through"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Revenue by district"
+                    }
+                  },
+                  "Property": "District"
+                }
+              },
+              "queryRef": "Revenue by district.District",
+              "nativeQueryRef": "District"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Revenue by district"
+                    }
+                  },
+                  "Property": "Caveats"
+                }
+              },
+              "queryRef": "Revenue by district.Caveats",
+              "nativeQueryRef": "Caveats"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Revenue by district"
+                    }
+                  },
+                  "Property": "Net revenue by district"
+                }
+              },
+              "queryRef": "Revenue by district.Net revenue by district",
+              "nativeQueryRef": "Net revenue by district",
+              "displayName": "Net revenue"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Revenue by district"
+                    }
+                  },
+                  "Property": "Gross margin by district"
+                }
+              },
+              "queryRef": "Revenue by district.Gross margin by district",
+              "nativeQueryRef": "Gross margin by district",
+              "displayName": "Gross margin"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "6a9b10814059a6e22daf",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Revenue by district"
+              }
+            },
+            "Property": "Month"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "2430473b99ea65a53709",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Revenue by district"
+              }
+            },
+            "Property": "Data through"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "8eee5490bceb6194ba70",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Revenue by district"
+              }
+            },
+            "Property": "District"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "af0067419d4b902064df",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Revenue by district"
+              }
+            },
+            "Property": "Caveats"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "9d10ae907f712b5c84e2",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Revenue by district"
+              }
+            },
+            "Property": "Net revenue by district"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "02a8d7ee41c709957d3e",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Revenue by district"
+              }
+            },
+            "Property": "Gross margin by district"
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
+  }
+}

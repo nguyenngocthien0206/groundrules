@@ -148,6 +148,13 @@ def required_rule_owners(repo: Repo) -> dict[str, set[str]]:
             team = repo.group_teams.get(repo.metrics[name].group or "")
             if team:
                 required.setdefault(m.file, set()).add(team)
+    # A saved query decides which slice of a metric a dashboard shows.
+    for sq in repo.saved_queries.values():
+        for name in sq["metrics"]:
+            metric = repo.metrics.get(name)
+            team = repo.group_teams.get(metric.group or "") if metric else None
+            if team:
+                required.setdefault(sq["file"], set()).add(team)
     return required
 
 
@@ -199,6 +206,66 @@ def check_registry(repo: Repo) -> list[Issue]:
     return []
 
 
+DISPLAY_ONLY = re.compile(r"^(SELECTEDVALUE|MAX|MIN)\(\s*('[^']+'|\w+)\[[^\]]+\]\s*\)$")
+METRIC_TAG = re.compile(r"metric:\s*(\w+)\s+v(\d+)")
+EXPORT_FOLDER_PLACEHOLDER = r"C:\path\to\groundrules\dashboards\exports"
+AUTO_DATE_TABLE = re.compile(r"^(LocalDateTable|DateTableTemplate)_")
+
+
+def check_powerbi(repo: Repo) -> list[Issue]:
+    """The Power BI model shows certified exports and never computes a metric itself."""
+    if not repo.powerbi:
+        return []
+    issues = []
+    if not re.search(r"^\tdiscourageImplicitMeasures\s*$", repo.powerbi["model"], re.MULTILINE):
+        issues.append(_error("powerbi", "the Power BI model must set discourageImplicitMeasures, so nobody can sum a metric by dragging a column"))
+    # Saving in Power BI Desktop writes the saver's own folder into the parameter.
+    if f'expression ExportFolder = "{EXPORT_FOLDER_PLACEHOLDER}"' not in repo.powerbi["expressions"]:
+        issues.append(_error("powerbi", f"ExportFolder in expressions.tmdl holds someone's local path; put back {EXPORT_FOLDER_PLACEHOLDER} before committing"))
+    # Auto date/time adds a hidden date table and relationship for every date column.
+    auto_dates = [t["name"] for t in repo.powerbi["tables"] if AUTO_DATE_TABLE.match(t["name"])]
+    if auto_dates or "annotation __PBI_TimeIntelligenceEnabled = 0" not in repo.powerbi["model"]:
+        issues.append(_error("powerbi", f"Auto date/time is on ({len(auto_dates)} hidden date tables): turn it off in "
+                                        "File > Options > Current file > Data load, and remove the LocalDateTable files"))
+    # Power BI refuses to open a model where two measures share a name, even in
+    # different tables (names are case-insensitive), or a measure is named like a column.
+    measure_tables = {}
+    for table in repo.powerbi["tables"]:
+        for m in table["measures"]:
+            measure_tables.setdefault(m["name"].lower(), []).append(table["name"])
+    columns = {c["name"].lower() for t in repo.powerbi["tables"] for c in t["columns"]}
+    for name, owners in sorted(measure_tables.items()):
+        if len(owners) > 1:
+            issues.append(_error("powerbi", f"measure '{name}' is defined in {', '.join(owners)}; measure names must be unique in the model, like 'Net revenue by month'"))
+        if name in columns:
+            issues.append(_error("powerbi", f"measure '{name}' has the same name as a column; Power BI will not open the model"))
+    for table in repo.powerbi["tables"]:
+        shown = set()
+        for m in table["measures"]:
+            where = f"{table['file']}: measure '{m['name']}'"
+            if not DISPLAY_ONLY.match(m["expression"]):
+                issues.append(_error("powerbi", f"{where} computes `{m['expression']}`; only SELECTEDVALUE, MAX or MIN of one exported column is allowed"))
+            else:
+                shown.add(re.search(r"\[([^\]]+)\]", m["expression"]).group(1))
+            tag = METRIC_TAG.search(m["description"])
+            if not tag:
+                issues.append(_error("powerbi", f"{where} needs a /// description naming its metric and version, like `metric: net_revenue v2`"))
+                continue
+            metric = repo.metrics.get(tag.group(1))
+            if metric is None or metric.meta.get("status") != "certified":
+                issues.append(_error("powerbi", f"{where} shows {tag.group(1)}, which is not a certified metric"))
+            elif str(metric.meta.get("version")) != tag.group(2):
+                issues.append(_error("powerbi", f"{where} says {tag.group(1)} v{tag.group(2)}, but the certified version is v{metric.meta.get('version')}"))
+        for c in table["columns"]:
+            if (c["sourceColumn"] in shown or c["sourceColumn"] in repo.metrics) and (
+                c["summarizeBy"] != "none" or c["summarizationSetBy"] != "User"
+            ):
+                # Without the User annotation, a refresh in Power BI resets the column to sum.
+                issues.append(_error("powerbi", f"{table['file']}: column '{c['name']}' holds a metric and must have "
+                                                "summarizeBy: none with `annotation SummarizationSetBy = User`"))
+    return issues
+
+
 def check_staleness(repo: Repo, today: date, fail_on_stale: bool = False) -> list[Issue]:
     issues = []
     for m in governed(repo).values():
@@ -216,7 +283,7 @@ def check_staleness(repo: Repo, today: date, fail_on_stale: bool = False) -> lis
 
 CHECKS = (
     check_ownership, check_decisions, check_golden_questions, check_lifecycle,
-    check_contracts, check_codeowners, check_em_dash, check_registry,
+    check_contracts, check_codeowners, check_em_dash, check_registry, check_powerbi,
 )
 
 

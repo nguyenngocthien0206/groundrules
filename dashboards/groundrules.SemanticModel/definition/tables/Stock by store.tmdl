@@ -1,0 +1,89 @@
+table 'Stock by store'
+	lineageTag: 2c96f048-b41e-4428-9406-15e338d33de5
+
+	/// metric: available_stock v3 (owner: supply_chain_ops). Shows the exported certified value;
+	/// a total that was not exported stays blank on purpose.
+	measure 'Available stock by store' = SELECTEDVALUE('Stock by store'[available_stock])
+		formatString: #,##0
+		lineageTag: 7e0fc982-ae61-4ad5-97cd-e849a8efcb77
+
+	/// metric: near_expiry_value v1 (owner: supply_chain_ops). Shows the exported certified value;
+	/// a total that was not exported stays blank on purpose.
+	measure 'Near-expiry value by store' = SELECTEDVALUE('Stock by store'[near_expiry_value])
+		formatString: #,##0
+		lineageTag: a390cac6-0c6c-4828-9d2f-66c7bfaa2f32
+
+	/// metric: days_of_cover v1 (owner: supply_chain_ops). Shows the exported certified value;
+	/// a total that was not exported stays blank on purpose.
+	measure 'Days of cover by store' = SELECTEDVALUE('Stock by store'[days_of_cover])
+		formatString: 0.0
+		lineageTag: 3da2c60b-5cde-4002-9ed2-8dfa34c904c3
+
+	column Store
+		dataType: string
+		lineageTag: a6fe4b47-0b99-48db-8fa7-b245b5f21920
+		summarizeBy: none
+		sourceColumn: store_code
+
+	column 'Store name'
+		dataType: string
+		lineageTag: 47f9663d-44de-4428-8ca2-b48919152c31
+		summarizeBy: none
+		sourceColumn: store_name
+
+	column District
+		dataType: string
+		lineageTag: 6fd086a8-4c7f-4d1f-a330-8abba51e7391
+		summarizeBy: none
+		sourceColumn: district
+
+	column available_stock
+		dataType: double
+		isHidden
+		lineageTag: fce86112-f07f-48ee-b6a5-4b11c19d2d6d
+		summarizeBy: none
+		sourceColumn: available_stock
+
+		annotation SummarizationSetBy = User
+
+	column near_expiry_value
+		dataType: double
+		isHidden
+		lineageTag: bd29035c-7e05-45c5-9cf5-7e6c4be17344
+		summarizeBy: none
+		sourceColumn: near_expiry_value
+
+		annotation SummarizationSetBy = User
+
+	column days_of_cover
+		dataType: double
+		isHidden
+		lineageTag: 534e7eef-c874-4afd-8c22-3b016b037064
+		summarizeBy: none
+		sourceColumn: days_of_cover
+
+		annotation SummarizationSetBy = User
+
+	column 'As of'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		lineageTag: 68bcd91c-a2a0-4048-ae65-0ce2fee8d489
+		summarizeBy: none
+		sourceColumn: as_of
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Caveats
+		dataType: string
+		lineageTag: e7536d4d-2144-4029-b2a9-bf2252078c93
+		summarizeBy: none
+		sourceColumn: caveats
+
+	partition 'Stock by store' = m
+		mode: import
+		source =
+				let
+				    Source = Parquet.Document(File.Contents(ExportFolder & "\stock_by_store.parquet"))
+				in
+				    Source
+

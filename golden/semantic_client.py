@@ -40,6 +40,12 @@ class SemanticLayer:
         names = [c.column_name for c in table.column_descriptions]
         return [dict(zip(names, row)) for row in table.rows]
 
+    def saved_query(self, name: str) -> list[dict]:
+        """Run a dbt saved query by name, exactly as it is defined in the project."""
+        table = self._cfg.mf.query(self._request.create(saved_query_name=name)).result_df
+        names = [c.column_name for c in table.column_descriptions]
+        return [dict(zip(names, row)) for row in table.rows]
+
     def governance(self, metric: str) -> dict:
         """The metric's governance fields, or {} for a building block or an unknown name."""
         found = self.metrics.get(metric) or {}

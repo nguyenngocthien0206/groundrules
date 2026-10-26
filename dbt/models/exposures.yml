@@ -1,8 +1,30 @@
 # What already reads the data, declared the way a company catalogs it. Each
-# legacy dashboard computes "net revenue" its own way; step 7 rebuilds them
-# in legacy/ to show the conflict. `make affected` lists the exposures a
-# change touches, for the pull request template.
+# legacy dashboard computes "net revenue" its own way (rebuilt in legacy/ to
+# show the conflict); the Power BI report reads certified exports only.
+# `make affected` lists the exposures a change touches, for the pull request
+# template.
 exposures:
+  - name: groundrules_powerbi_report
+    label: Groundrules Power BI report
+    type: dashboard
+    maturity: medium
+    url: dashboards/groundrules.pbip
+    description: >
+      Revenue, margin, stock and sell-through for managers. Every number is a
+      dbt saved query exported by MetricFlow (`make dashboard-data`); the
+      Power BI model only displays it, and the governance lint checks that.
+    owner:
+      name: Data platform
+      email: data-platform@example.com
+    depends_on:
+      - metric('net_revenue')
+      - metric('gross_margin')
+      - metric('sell_through_rate')
+      - metric('available_stock')
+      - metric('near_expiry_value')
+      - metric('days_of_cover')
+
+
   - name: finance_dashboard
     label: Finance monthly dashboard (legacy)
     type: dashboard

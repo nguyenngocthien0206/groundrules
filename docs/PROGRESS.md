@@ -4,9 +4,9 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: 8. Dashboard (optional) or 9. Playbook + adoption guide: owner to choose
-- State: not started
-- Last verified green: 2026-10-26 (`make build`: 90 dbt nodes, 1 expected warning; `make test`: lint 0 errors 0 warnings, 28 golden questions, 104 pytest; both demos pass)
+- Current step: 9. Playbook + adoption guide
+- State: not started (step 8 built; opening the report in Power BI Desktop is the owner's manual check)
+- Last verified green: 2026-10-26 (`make build`: 97 dbt nodes, 1 expected warning; `make test`: lint 0 errors 0 warnings, 28 golden questions, 7 Parquet exports, 132 pytest)
 
 ## Build checklist (v0.1)
 Tick a step only when it runs end to end and its checks pass.
@@ -18,7 +18,7 @@ Tick a step only when it runs end to end and its checks pass.
 - [x] 5. Reference computations + golden questions + runner
 - [x] 6. Governance lint, registry, groups, exposures, CODEOWNERS, PR template
 - [x] 7. Demos (`make demo-conflict`, `make demo-drift`)
-- [ ] 8. Dashboard: saved queries, Parquet export, Power BI project, TMDL lint (optional)
+- [x] 8. Dashboard: saved queries, Parquet export, Power BI project, TMDL lint (optional)
 - [ ] 9. Playbook + adoption guide
 - [ ] 10. README + CHANGELOG
 - [ ] 11. CI
@@ -33,7 +33,7 @@ Copied from SPEC section 20. Tick when verified on a fresh clone.
 - [x] `make lint` fails clearly on: removed owner group, broken DR link, certified metric with no golden question, deprecated metric with no replacement, em dash
 - [x] `make lint` gives the same result on any calendar day with the default `--today`
 - [ ] CI fails when `registry.md` is out of date
-- [ ] (Optional dashboard) `make dashboard-data` matches golden expected values; Power BI report opens and refreshes on Windows (manual)
+- [x] (Optional dashboard) `make dashboard-data` matches golden expected values; Power BI report opens and refreshes on Windows (manual)
 - [ ] Warehouse switch documented, needs no model changes
 - [ ] No real company names or rules, no em dash character anywhere
 
@@ -46,6 +46,13 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-26 | Dashboard slices are six saved queries in `saved_queries_finance.yml` and `saved_queries_supply_chain.yml`, each at the grain its visual shows; the lint requires each file to be owned by its metrics' teams | A saved query decides which slice managers see, so it is a rule like any other. Re-aggregating a ratio or a stock position in DAX gives a wrong number. |
+| 2026-10-26 | `pyarrow==26.0.0` in the dev group; `dashboards/export.py` writes one Parquet per saved query plus `metric_versions.parquet`, with `as_of` and `caveats` on every row, and refuses non-certified metrics | Power BI reads Parquet with its built-in connector; versions sit in their own table instead of a column on every row. Approved by the owner. |
+| 2026-10-26 | Power BI project in PBIP (TMDL + PBIR, Desktop 2.159); measures are `SELECTEDVALUE` over one column, named `<metric> by <slice>` (visuals show the short label through `displayName`), with a `/// metric: <name> v<version>` description, metric columns hidden with `summarizeBy: none`, `discourageImplicitMeasures` on, totals blank | The model only displays certified numbers; the lint reads the TMDL and fails on anything that computes. Power BI refuses a model where two measures share a name, even in different tables (found on the first open), so the lint checks that too. PBIR files were checked against Microsoft's JSON schemas; TMDL has no public schema, so Desktop is the check. |
+| 2026-10-26 | Monthly saved queries start in April 2026, the first full month of POS data; monthly exports carry `data_through` and `is_month_to_date`; the export refuses a month that starts before the POS history | The first export showed 168 rows of sell-through 0 for September 2025 to February 2026 (ERP receipts, no tills yet) and a half-month March. "No data" must not read as 0, and the running month must say it is month to date. Confirmed by the owner. |
+| 2026-10-26 | The Power BI files are committed as Desktop saves them (lineage tags, `.platform`, `.pbi/editorSettings.json`, `cultures/`), with Auto date/time off, relationship autodetect off, metric columns marked `SummarizationSetBy = User`, and `ExportFolder` back on the placeholder; the lint checks the last three | The first save in Desktop reset all 12 metric columns to `sum`, added 16 hidden date tables and wrote the owner's local path. The lint caught the `sum` columns at once; the new checks cover the rest. |
+| 2026-10-26 | `make test` runs `make dashboard-data` before pytest | The dashboard tests compare exports with golden expected values and need fresh files; it adds a few seconds. |
+| 2026-10-26 | The Power BI report is exposure `groundrules_powerbi_report`, depending on the six certified metrics | `make affected` lists it when any of them changes. |
 | 2026-10-26 | Each legacy dashboard differs from `net_revenue` by exactly one recorded rule: finance puts refunds on the sale month (DR-002), sales leaves returns out (DR-002), the ops report uses till amounts with VAT (DR-006, replacing SPEC's "discounts ignored") | The demo names the record behind every gap; no record covers discounts. Confirmed by the owner. |
 | 2026-10-26 | Legacy SQL reads the marts directly; the conflict demo exits 1 if two answers agree | That is how an old dashboard reads the warehouse; the demo cannot silently stop making its point. |
 | 2026-10-26 | The drift demo shows the lint (0 errors), `affected` and CODEOWNERS before the golden questions, and restores the rule file byte for byte in `finally` | The point: every formal check passes, a reviewer would have to spot 60 vs 90, and only the golden questions catch the meaning change. |
@@ -108,8 +115,6 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 ## Open questions and blockers
 Things that need the owner's input. Remove an item once it is answered, and record the answer under Implementation decisions.
 
-- Approve `pyarrow` as a dependency for Parquet exports (step 8).
-- Does Power BI Desktop's built-in Parquet connector read the local export files with no extra setup? Verify in step 8.
 - Do `dbt-mcp` semantic layer tools work against local MetricFlow, or only the dbt platform? Verify before v0.2.
 
 ## Session log
@@ -122,6 +127,13 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-26 (step 8)
+- Done: six saved queries split by owner, `dashboards/export.py` and `make dashboard-data`, `saved_query()` in the shared MetricFlow client, the Power BI project (`groundrules.pbip`: TMDL model with 7 tables, PBIR report with 3 pages and 7 visuals), `check_powerbi` and saved query owners in the lint, the report as an exposure, CODEOWNERS and `.gitignore` entries, 28 new tests
+- Verified: `make build` 97 nodes green; `mf validate-configs` 0 errors; exports 36/30/6/172/6/30/6 rows (April to September; September marked month to date, data through 9/14); exports match GQ-REV-01, GQ-POS-03 (caveat NW030), GQ-POS-04, GQ-REV-03, GQ-MARGIN-03, GQ-SELL-01, GQ-COVER-01, GQ-COVER-02 (caveat NW029), GQ-STOCK-08; every visual field exists in the TMDL; 16 PBIR files pass Microsoft's schemas; `make test`: lint clean, golden 28/28, 132 pytest; removing the April filter makes the export refuse with a clear message; v2 parser parses (own `--target-path`); no em dash
+- Verified by the owner: `groundrules.pbip` opens in Power BI Desktop 2.159, refreshes from the Parquet exports after setting `ExportFolder`, and the numbers match the golden questions on all three pages
+- Next: step 9, starting in plan mode
+- Notes: the first open failed because measure names must be unique across the whole model, not per table; the first save reset every metric column to `sum` (caught by the lint), added Auto date/time tables and wrote a local path. The first export had 368 sell-through rows, 168 of them a false 0 before the tills' history began; reading every row, not only the golden slices, caught it. Saved queries also work through MetricFlow's Python engine (`saved_query_name=`). The stock saved queries group by the snapshot day and filter on it; the export drops that column, since `as_of` already says the day. Totals in the report stay blank by design.
 
 ### 2026-10-26 (step 7)
 - Done: `legacy/` with the three dashboards, `demos/conflict.py` and `demos/drift.py`, `make demo-conflict` and `make demo-drift`, legacy files in CODEOWNERS, ops exposure description updated, `store_sync_state` factored out of the runner, 11 demo tests

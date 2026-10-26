@@ -60,6 +60,8 @@ class Repo:
     codeowners: list[tuple[str, list[str]]]
     text_files: dict[str, str] = field(default_factory=dict)
     model_children: dict[str, list[str]] = field(default_factory=dict)  # model -> models built on it
+    saved_queries: dict[str, dict] = field(default_factory=dict)  # name -> {file, metrics}
+    powerbi: dict = field(default_factory=dict)  # {"model": text, "tables": [parsed TMDL tables]}
 
     def teams_for(self, path: str) -> list[str]:
         return owners_of(self.codeowners, path)
@@ -113,6 +115,56 @@ def owners_of(rules: list[tuple[str, list[str]]], path: str) -> list[str]:
         if _matches(pattern, path):
             owners = rule_owners
     return owners
+
+
+def parse_tmdl_table(path: Path) -> dict:
+    """The parts of a TMDL table file the lint reads: measures and columns.
+
+    Handles the TMDL this repo writes and Power BI Desktop saves: tab
+    indentation, `///` descriptions right above an object, one-line measures,
+    and the `SummarizationSetBy` annotation on columns.
+    """
+    table = {"file": path.relative_to(ROOT).as_posix(), "name": None, "measures": [], "columns": []}
+    description: list[str] = []
+    current = None
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.rstrip()
+        depth = len(line) - len(line.lstrip("\t"))
+        text = line.strip()
+        if depth == 0 and text.startswith("table "):
+            table["name"] = text[len("table "):].strip("'")
+        elif depth == 1 and text.startswith("///"):
+            description.append(text[3:].strip())
+        elif depth == 1 and text.startswith("measure "):
+            name, _, expression = text[len("measure "):].partition("=")
+            current = {"name": name.strip().strip("'"), "expression": expression.strip(), "description": " ".join(description)}
+            table["measures"].append(current)
+            description = []
+        elif depth == 1 and text.startswith("column "):
+            current = {"name": text[len("column "):].strip("'"), "summarizeBy": None, "sourceColumn": None,
+                       "summarizationSetBy": None, "description": " ".join(description)}
+            table["columns"].append(current)
+            description = []
+        elif depth == 1 and text:
+            current, description = None, []
+        elif depth == 2 and current is not None and text.startswith("annotation SummarizationSetBy") and current in table["columns"]:
+            current["summarizationSetBy"] = text.partition("=")[2].strip()
+        elif depth == 2 and current is not None and ":" in text and current in table["columns"]:
+            key, _, value = text.partition(":")
+            if key in ("summarizeBy", "sourceColumn"):
+                current[key] = value.strip()
+    return table
+
+
+def load_powerbi() -> dict:
+    definition = ROOT / "dashboards" / "groundrules.SemanticModel" / "definition"
+    if not definition.exists():
+        return {}
+    return {
+        "model": (definition / "model.tmdl").read_text(encoding="utf-8"),
+        "expressions": (definition / "expressions.tmdl").read_text(encoding="utf-8"),
+        "tables": [parse_tmdl_table(p) for p in sorted((definition / "tables").glob("*.tmdl"))],
+    }
 
 
 def tracked_text_files() -> dict[str, str]:
@@ -195,6 +247,11 @@ def load(with_text_files: bool = True) -> Repo:
         codeowners=parse_codeowners(codeowners_file.read_text(encoding="utf-8")) if codeowners_file.exists() else [],
         text_files=tracked_text_files() if with_text_files else {},
         model_children=model_children,
+        saved_queries={
+            sq["name"]: {"file": _repo_path(sq["original_file_path"]), "metrics": list(sq["query_params"]["metrics"])}
+            for sq in manifest.get("saved_queries", {}).values()
+        },
+        powerbi=load_powerbi(),
     )
 
 

@@ -25,5 +25,6 @@ deprecated one points to its replacement.
 | Exposure | Type | Maturity | Owner | Reads | Moving to |
 | --- | --- | --- | --- | --- | --- |
 | `finance_dashboard` (Finance monthly dashboard (legacy)) | dashboard | low | Finance | fct_returns, fct_sales | net_revenue |
+| `groundrules_powerbi_report` (Groundrules Power BI report) | dashboard | medium | Data platform | available_stock, days_of_cover, gross_margin, near_expiry_value, net_revenue, sell_through_rate | - |
 | `ops_weekly_report` (Operations weekly report (legacy)) | analysis | low | Supply chain operations | fct_inventory_batch, fct_returns, fct_sales | net_revenue |
 | `sales_dashboard` (Store sales dashboard (legacy)) | dashboard | low | Retail operations | fct_sales | net_revenue |

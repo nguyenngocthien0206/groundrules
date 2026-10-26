@@ -10,6 +10,11 @@ example/data/
 # Golden question runner report (CI uploads it)
 golden/report/
 
+# Dashboard exports (rebuild with `make dashboard-data`) and Power BI's local files
+dashboards/exports/
+dashboards/**/.pbi/localSettings.json
+dashboards/**/.pbi/cache.abf
+
 # dbt and the local DuckDB warehouse
 dbt/target/
 dbt/logs/

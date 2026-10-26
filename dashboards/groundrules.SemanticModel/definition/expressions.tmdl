@@ -1,0 +1,7 @@
+/// Full path to dashboards\exports in your clone. Power BI has no relative paths,
+/// so set it once: Transform data > Edit parameters.
+expression ExportFolder = "C:\path\to\groundrules\dashboards\exports" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: ee80c098-ea5e-45e7-a4a1-bd17298c2fb0
+
+	annotation PBI_ResultType = Text
+

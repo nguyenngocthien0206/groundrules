@@ -12,6 +12,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "pyarrow==26.0.0",
     "pytest==9.1.1",
     "pyyaml==6.0.3",
 ]
@@ -21,5 +22,5 @@ package = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["example", "golden", "golden/reference", "governance", "demos"]
+pythonpath = ["example", "golden", "golden/reference", "governance", "demos", "dashboards"]
 addopts = "-q"

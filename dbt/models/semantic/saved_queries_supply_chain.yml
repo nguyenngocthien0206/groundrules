@@ -1,0 +1,47 @@
+# Slices of supply chain's certified metrics that the Power BI report shows.
+# Stock positions and ratios are exported at exactly the grain the visual
+# shows: summing available stock across days, or a ratio across stores, in
+# the BI tool gives a wrong number. Stock slices are read at the snapshot.
+saved_queries:
+  - name: sell_through_by_store_month
+    description: Sell-through rate by store and month.
+    query_params:
+      metrics:
+        - sell_through_rate
+      group_by:
+        - "TimeDimension('metric_time', 'month')"
+        - "Entity('store')"
+        - "Dimension('store__store_name')"
+      # From the first full month of POS data (2026-03-15 onwards). Before it
+      # the ERP has receipts but the tills have no sales yet, which would show
+      # as a sell-through of 0 instead of "no data".
+      where:
+        - "{{ TimeDimension('metric_time', 'month') }} >= '2026-04-01'"
+
+  - name: stock_by_store
+    description: Available stock, near-expiry value and days of cover by store at the snapshot.
+    query_params:
+      metrics:
+        - available_stock
+        - near_expiry_value
+        - days_of_cover
+      group_by:
+        - "TimeDimension('metric_time', 'day')"
+        - "Entity('store')"
+        - "Dimension('store__store_name')"
+        - "Dimension('store__district_name')"
+      where:
+        - "{{ TimeDimension('metric_time', 'day') }} = '2026-09-15'"
+
+  - name: stock_by_category
+    description: Available stock and near-expiry value by product category at the snapshot.
+    query_params:
+      metrics:
+        - available_stock
+        - near_expiry_value
+      group_by:
+        - "TimeDimension('metric_time', 'day')"
+        - "Dimension('sku__category_code')"
+        - "Dimension('sku__category_name')"
+      where:
+        - "{{ TimeDimension('metric_time', 'day') }} = '2026-09-15'"
