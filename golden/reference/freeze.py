@@ -51,7 +51,8 @@ def render(frozen: dict) -> str:
     lines = [HEADER, f"data_fingerprint: {frozen['data_fingerprint']}\n", "answers:\n"]
     for qid, answer in frozen["answers"].items():
         lines.append(f"  {qid}:\n")
-        lines.append(f"    expected: {answer['expected']}\n")
+        expected = "null" if answer["expected"] is None else answer["expected"]  # no value, as YAML reads it
+        lines.append(f"    expected: {expected}\n")
         lines.append(f"    expected_caveats: [{', '.join(answer['expected_caveats'])}]\n")
     return "".join(lines)
 

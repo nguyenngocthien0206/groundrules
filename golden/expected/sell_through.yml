@@ -7,7 +7,13 @@ answers:
     expected_caveats: []
   GQ-SELL-02:
     expected: 0.96986
-    expected_caveats: []
+    expected_caveats: [new_store:NW029, new_store:NW030]
   GQ-SELL-03:
     expected: 0.973503
-    expected_caveats: []
+    expected_caveats: [new_store:NW029, new_store:NW030]
+  GQ-SELL-04:
+    expected: null
+    expected_caveats: [pos_sync_lag:NW030]
+  GQ-SELL-05:
+    expected: 0.0
+    expected_caveats: [new_store:NW030]

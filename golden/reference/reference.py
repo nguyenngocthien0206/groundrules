@@ -23,6 +23,9 @@ METRICS = ("available_stock", "near_expiry_value", "net_revenue", "gross_margin"
 STOCK_METRICS = frozenset({"available_stock", "near_expiry_value", "days_of_cover"})
 SCOPE_KEYS = ("store", "sku", "district", "category")
 CAVEAT_POS_SYNC_LAG = "pos_sync_lag"
+CAVEAT_NEW_STORE = "new_store"
+# Metrics whose answer counts a new store's opening stock (DR-011).
+NEW_STORE_METRICS = frozenset({"sell_through_rate"})
 
 
 def period(filters: dict, as_of: date) -> tuple[date, date]:
@@ -65,20 +68,24 @@ class Reference:
         return None if value is None else float(value)
 
     def caveats(self, metric: str, filters: dict, as_of: date) -> list[str]:
-        """DR-004: name every lagging store the answer depends on.
+        """Name every store whose data makes the answer need a warning.
 
-        A store counts when it is in the scope and either the metric is a
-        stock position at the as-of day (its ERP stock has not seen the
-        unsynced sales) or the period asked about reaches past the last day
-        its data covers.
+        DR-004: a lagging store in scope counts when the metric is a stock
+        position at the as-of day (its ERP stock has not seen the unsynced
+        sales) or the period asked about reaches past the last day its data
+        covers. DR-011: for sell-through, a store in scope that opened in the
+        period or within 7 days after it (new_stores.sql).
         """
         start, end = period(filters, as_of)
-        lagging = self._run("lagging_stores", self._params(filters, as_of))
-        return sorted(
+        params = self._params(filters, as_of)
+        caveats = [
             f"{CAVEAT_POS_SYNC_LAG}:{store}"
-            for store, data_through in lagging
+            for store, data_through in self._run("lagging_stores", params)
             if metric in STOCK_METRICS or (data_through < end and start <= as_of - timedelta(days=1))
-        )
+        ]
+        if metric in NEW_STORE_METRICS:
+            caveats += [f"{CAVEAT_NEW_STORE}:{store}" for store, _ in self._run("new_stores", params)]
+        return sorted(caveats)
 
 
 def main(argv: list[str]) -> int:

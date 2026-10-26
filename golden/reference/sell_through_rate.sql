@@ -1,8 +1,9 @@
 -- sell_through_rate from $start to $end.
--- DR-009: base units sold (returns not subtracted, they are destroyed)
---         divided by base units received net: everything received (from
---         suppliers and other stores, on the receipt day) minus what the
---         store sent to other stores (on the delivery day).
+-- DR-011 (keeping DR-009's formula): base units sold (returns not
+--         subtracted, they are destroyed) divided by base units received
+--         net: everything received (from suppliers and other stores, on the
+--         receipt day) minus what the store sent to other stores (on the
+--         delivery day). No value when net received is zero or negative.
 -- DR-007: base units.
 with sold as (
     select sum(units) as units
@@ -32,5 +33,6 @@ sent_away as (
 )
 
 select coalesce(sold.units, 0) * 1.0
-    / nullif(coalesce(received.units, 0) - coalesce(sent_away.units, 0), 0) as value
+    / case when coalesce(received.units, 0) - coalesce(sent_away.units, 0) > 0
+           then coalesce(received.units, 0) - coalesce(sent_away.units, 0) end as value
 from sold, received, sent_away

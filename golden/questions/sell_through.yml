@@ -1,4 +1,4 @@
-# Golden questions about sell-through. Expected values: golden/expected.yml.
+# Golden questions about sell-through. Expected values: golden/expected/sell_through.yml.
 questions:
   - id: GQ-SELL-01
     question: What was NW014's sell-through in August 2026?
@@ -10,7 +10,7 @@ questions:
     why: >
       53,782 units sold / (48,852 from suppliers + 140 by transfer - 840 sent
       to other stores) = 53,782 / 48,152 = 1.117. Supplier-only would say 1.101.
-    decision: DR-009
+    decision: DR-011
     signed_off_by: Head of Supply Chain
     signed_off_on: 2026-09-12
 
@@ -25,7 +25,7 @@ questions:
       For the chain, transfers in and out cancel out, so only supplier
       deliveries remain in the denominator. Counting transfers in alone would
       count every moved unit twice.
-    decision: DR-009
+    decision: DR-011
     signed_off_by: Head of Supply Chain
     signed_off_on: 2026-09-12
 
@@ -39,6 +39,37 @@ questions:
     why: >
       One ratio over the whole two months, both sides in base units (tablets
       and bottles), not the average of two monthly ratios.
-    decision: DR-009
+    decision: DR-011
     signed_off_by: Head of Supply Chain
     signed_off_on: 2026-09-12
+
+  - id: GQ-SELL-04
+    question: What was NW030's sell-through in September 2026?
+    kind: tacit_rule
+    metric: sell_through_rate
+    filters: {month: 2026-09, store: NW030}
+    as_of: 2026-09-15
+    tolerance: 0.0001
+    why: >
+      NW030 received 590 units and sent 1,012 to other stores, so net received
+      is -422. A ratio over stock that never came in means nothing: there is no
+      value, not -20.43 and not 0. Its POS data lags, so the answer also names
+      it (DR-004).
+    decision: DR-011
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-10-26
+
+  - id: GQ-SELL-05
+    question: What was NW030's sell-through in August 2026?
+    kind: caveat_required
+    metric: sell_through_rate
+    filters: {month: 2026-08, store: NW030}
+    as_of: 2026-09-15
+    tolerance: 0.0001
+    why: >
+      NW030 opened on 1 September. Its opening stock of 36,154 units arrived on
+      31 August and it sold nothing, so the ratio is 0. That 0 is not a slow
+      store: the answer must say NW030 is a new store.
+    decision: DR-011
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-10-26

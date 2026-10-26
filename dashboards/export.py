@@ -4,7 +4,7 @@ Usage: python dashboards/export.py   (or `make dashboard-data`)
 
 Each dbt saved query runs through MetricFlow and lands as one Parquet file in
 dashboards/exports/, at exactly the grain the report shows. Every row says
-which day it is as of and which lagging stores it depends on (DR-004), and
+which day it is as of and which caveats it carries (DR-004, DR-011), and
 metric_versions.parquet says which certified version each number is. Monthly
 rows also say how far their month's data goes, so the current month reads as
 month to date, not as a bad month. Only certified metrics, and only months
@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "golden"))
 sys.path.insert(0, str(ROOT / "governance"))
 
-from run_golden import STOCK_METRICS, lag_caveats, store_sync_state  # noqa: E402
+from run_golden import STOCK_METRICS, caveats, store_sync_state  # noqa: E402
 from semantic_client import DBT_DIR, SemanticLayer  # noqa: E402
 
 EXPORTS = ROOT / "dashboards" / "exports"
@@ -70,7 +70,7 @@ def saved_queries() -> dict[str, list[str]]:
 
 
 def row_caveats(row: dict, metrics: list[str], as_of: date, stores: list[dict]) -> str:
-    """Lagging stores this row depends on, by the stores-and-days rule (DR-004)."""
+    """The caveats this row carries, in the golden questions' words (DR-004, DR-011)."""
     filters = {}
     if row.get("store_code"):
         filters["store"] = row["store_code"]
@@ -78,11 +78,11 @@ def row_caveats(row: dict, metrics: list[str], as_of: date, stores: list[dict]) 
         filters["district"] = row["district_code"]
     if row.get("month"):
         filters["month"] = row["month"].strftime("%Y-%m")
-    lagging = set()
+    found = set()
     for metric in metrics:
         metric_filters = {k: v for k, v in filters.items() if not (metric in STOCK_METRICS and k == "month")}
-        lagging |= {c.split(":", 1)[1] for c in lag_caveats(metric, metric_filters, as_of, stores)}
-    return ", ".join(sorted(lagging))
+        found |= set(caveats(metric, metric_filters, as_of, stores))
+    return ", ".join(sorted(found))
 
 
 def shape(name: str, rows: list[dict], metrics: list[str], as_of: date, stores: list[dict],

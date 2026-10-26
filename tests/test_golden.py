@@ -15,7 +15,7 @@ import yaml
 import freeze
 from catalog import EXPECTED_DIR, KINDS, QUESTION_FIELDS, ROOT, data_fingerprint, load_expected, load_questions
 from reference import DEFAULT_DATA_DIR, Reference
-from run_golden import Answer, build_query, check, lag_caveats
+from run_golden import Answer, build_query, caveats, check, lag_caveats, new_store_caveats
 
 QUESTIONS = load_questions()
 AS_OF = date(2026, 9, 15)
@@ -95,7 +95,8 @@ def test_reference_reads_raw_extracts_only():
         ("available_stock", {"store": "NW004", "sku": "100010"}, 477, 0),                # DR-003
         ("net_revenue", {"store": "NW001", "month": "2026-08"}, 236303956.71, 1),        # DR-002
         ("net_revenue", {"month": "2026-08"}, 7373442762.59, 1),                         # DR-005
-        ("sell_through_rate", {"store": "NW014", "month": "2026-08"}, 1.117, 0.0005),    # DR-009
+        ("sell_through_rate", {"store": "NW014", "month": "2026-08"}, 1.117, 0.0005),    # DR-011
+        ("sell_through_rate", {"store": "NW029", "month": "2026-08"}, 0.340, 0.0005),    # DR-011
         ("days_of_cover", {"store": "NW001"}, 26.32, 0.005),                             # DR-010
     ],
 )
@@ -109,12 +110,25 @@ def test_reference_names_lagging_stores_only_when_they_matter(ref):
     assert ref.caveats("available_stock", {"district": "D02"}, AS_OF) == ["pos_sync_lag:NW029"]
 
 
+def test_reference_sell_through_has_no_value_when_net_received_is_not_positive(ref):
+    # DR-011: NW030 received 590 and sent away 1,012 in September.
+    assert ref.value("sell_through_rate", {"store": "NW030", "month": "2026-09"}, AS_OF) is None
+    assert ref.value("sell_through_rate", {"store": "NW030", "month": "2026-08"}, AS_OF) == 0.0
+
+
+def test_reference_names_new_stores_for_sell_through_only(ref):
+    assert ref.caveats("sell_through_rate", {"store": "NW030", "month": "2026-08"}, AS_OF) == ["new_store:NW030"]
+    assert ref.caveats("sell_through_rate", {"month": "2026-08", "district": "D02"}, AS_OF) == ["new_store:NW029"]
+    assert ref.caveats("sell_through_rate", {"store": "NW029", "month": "2026-09"}, AS_OF) == ["pos_sync_lag:NW029"]
+    assert ref.caveats("net_revenue", {"store": "NW030", "month": "2026-08"}, AS_OF) == []
+
+
 # Runner logic, without the warehouse
 
 STORES = [
-    {"store": "NW001", "district": "D02", "data_through": date(2026, 9, 14)},
-    {"store": "NW029", "district": "D02", "data_through": date(2026, 9, 11)},
-    {"store": "NW030", "district": "D05", "data_through": date(2026, 9, 11)},
+    {"store": "NW001", "district": "D02", "opened_on": date(2019, 3, 4), "data_through": date(2026, 9, 14)},
+    {"store": "NW029", "district": "D02", "opened_on": date(2026, 8, 18), "data_through": date(2026, 9, 11)},
+    {"store": "NW030", "district": "D05", "opened_on": date(2026, 9, 1), "data_through": date(2026, 9, 11)},
 ]
 
 
@@ -152,6 +166,33 @@ def test_a_date_range_is_one_number_without_a_time_grain():
 )
 def test_runner_caveats_follow_stores_and_days(metric, filters, expected):
     assert lag_caveats(metric, filters, AS_OF, STORES) == expected
+
+
+@pytest.mark.parametrize(
+    ("filters", "expected"),
+    [
+        ({"month": "2026-08", "store": "NW030"}, ["new_store:NW030"]),     # opened the day after
+        ({"month": "2026-09", "store": "NW030"}, []),                      # opened on the first day
+        ({"month": "2026-08", "store": "NW029"}, ["new_store:NW029"]),     # opened mid-month
+        ({"month": "2026-07"}, []),                                        # both opened over 7 days later
+        ({"month": "2026-08", "district": "D05"}, ["new_store:NW030"]),
+        ({"start": "2026-07-01", "end": "2026-08-31"}, ["new_store:NW029", "new_store:NW030"]),
+    ],
+)
+def test_runner_flags_new_stores_by_opening_day(filters, expected):
+    assert new_store_caveats("sell_through_rate", filters, AS_OF, STORES) == expected
+
+
+def test_new_store_caveats_are_for_sell_through_only_and_merge_with_lag():
+    assert new_store_caveats("net_revenue", {"month": "2026-08"}, AS_OF, STORES) == []
+    assert caveats("sell_through_rate", {"month": "2026-09"}, AS_OF, STORES) == ["pos_sync_lag:NW029", "pos_sync_lag:NW030"]
+    assert caveats("sell_through_rate", {"month": "2026-08"}, AS_OF, STORES) == ["new_store:NW029", "new_store:NW030"]
+
+
+def test_no_value_is_frozen_as_null_and_read_back_as_none():
+    rendered = freeze.render({"data_fingerprint": "x", "answers": {"GQ-X-01": {"expected": None, "expected_caveats": []}}})
+    assert "expected: null" in rendered
+    assert yaml.safe_load(rendered)["answers"]["GQ-X-01"]["expected"] is None
 
 
 def test_tolerance_and_caveats_both_decide():

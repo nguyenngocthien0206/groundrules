@@ -40,10 +40,14 @@ metrics:
     label: Sell-through rate
     description: >
       Base units sold divided by base units received net in the same period:
-      received from suppliers and other stores, minus units transferred out
-      (DR-009). Returned units are not subtracted from sales.
+      received from suppliers and other stores, minus units transferred out.
+      Returned units are not subtracted from sales. No value when net
+      received is zero or negative (DR-011).
     type: derived
-    expr: coalesce(units_sold, 0) * 1.0 / nullif(coalesce(units_received, 0) - coalesce(units_transferred_out, 0), 0)
+    expr: >
+      coalesce(units_sold, 0) * 1.0
+      / case when coalesce(units_received, 0) - coalesce(units_transferred_out, 0) > 0
+             then coalesce(units_received, 0) - coalesce(units_transferred_out, 0) end
     input_metrics:
       - name: units_sold
       - name: units_received
@@ -51,15 +55,18 @@ metrics:
     config:
       group: supply_chain_ops
       meta:
-        version: 1
+        version: 2
         status: certified
-        certified_on: 2026-09-10
+        certified_on: 2026-10-26
         recertify_every_days: 180
-        decision: decisions/DR-009.md
+        decision: decisions/DR-011.md
         replaced_by: null
         agent_notes: >
           A ratio, not a percentage. Only meaningful over a period of weeks
-          or more; for one day it swings with delivery days.
+          or more; for one day it swings with delivery days. No value means
+          the store took in no stock overall: say so, never report 0. A
+          new_store caveat means a store's opening stock is in the period but
+          its sales are not; do not compare it with established stores.
 
   - name: units_sold_28d
     description: Base units sold over a rolling 28-day window. Not for direct use; see days_of_cover.

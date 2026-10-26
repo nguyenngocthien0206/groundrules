@@ -58,6 +58,27 @@ def test_a_decision_record_that_does_not_list_its_metric_fails(broken):
     assert any("DR-002.md does not list it" in m for m in errors(lint.check_decisions(broken)))
 
 
+def test_a_metric_linking_a_superseded_record_fails(broken):
+    broken.metrics["sell_through_rate"].meta["decision"] = "decisions/DR-009.md"
+    broken.decisions["DR-009"].front["linked_metrics"] = ["sell_through_rate"]
+    assert any("decisions/DR-009.md is superseded, not accepted; link decisions/DR-011.md" in m
+               for m in errors(lint.check_decisions(broken)))
+
+
+def test_a_one_sided_supersede_fails(broken):
+    broken.decisions["DR-011"].front["supersedes"] = None
+    assert any("DR-009.md is superseded_by DR-011, but DR-011 does not say it supersedes DR-009" in m
+               for m in errors(lint.check_decisions(broken)))
+    broken.decisions["DR-008"].front["supersedes"] = "DR-006"
+    assert any("DR-008.md supersedes DR-006, but DR-006 does not say superseded_by: DR-008" in m
+               for m in errors(lint.check_decisions(broken)))
+
+
+def test_a_superseded_record_must_say_so_in_its_status(broken):
+    broken.decisions["DR-009"].front["status"] = "accepted"
+    assert any("DR-009.md is superseded_by DR-011, so its status must be superseded" in m for m in errors(lint.check_decisions(broken)))
+
+
 def test_a_decision_record_missing_a_section_fails(broken):
     del broken.decisions["DR-003"].sections["Options considered"]
     assert any("DR-003.md needs the sections" in m for m in errors(lint.check_decisions(broken)))

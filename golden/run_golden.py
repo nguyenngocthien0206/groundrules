@@ -26,6 +26,11 @@ STOCK_METRICS = frozenset({"available_stock", "near_expiry_value", "days_of_cove
 # Sums over nothing are zero; a ratio over nothing has no value.
 ADDITIVE_METRICS = frozenset({"available_stock", "near_expiry_value", "net_revenue", "gross_margin"})
 CAVEAT_POS_SYNC_LAG = "pos_sync_lag"
+CAVEAT_NEW_STORE = "new_store"
+# Metrics whose answer counts a new store's opening stock, and how long before
+# opening that stock arrives (DR-011).
+NEW_STORE_METRICS = frozenset({"sell_through_rate"})
+OPENING_STOCK_DAYS = 7
 
 SCOPE_FILTERS = {
     "store": "{{ Entity('store') }} = '%s'",
@@ -86,6 +91,25 @@ def lag_caveats(metric: str, filters: dict, as_of: date, stores: list[dict]) -> 
     return sorted(caveats)
 
 
+def new_store_caveats(metric: str, filters: dict, as_of: date, stores: list[dict]) -> list[str]:
+    """DR-011: name each store in scope that opened in the period or within a week after it."""
+    if metric not in NEW_STORE_METRICS:
+        return []
+    start, end = period(filters, as_of)
+    return sorted(
+        f"{CAVEAT_NEW_STORE}:{s['store']}"
+        for s in stores
+        if not ("store" in filters and s["store"] != filters["store"])
+        and not ("district" in filters and s["district"] != filters["district"])
+        and start < s["opened_on"] <= end + timedelta(days=OPENING_STOCK_DAYS)
+    )
+
+
+def caveats(metric: str, filters: dict, as_of: date, stores: list[dict]) -> list[str]:
+    """Every caveat an answer must carry, sorted."""
+    return sorted(lag_caveats(metric, filters, as_of, stores) + new_store_caveats(metric, filters, as_of, stores))
+
+
 def answer(sl, question: dict, stores: list[dict]) -> Answer:
     metric, filters, as_of = question["metric"], question["filters"], question["as_of"]
     meta = sl.governance(metric)
@@ -98,7 +122,7 @@ def answer(sl, question: dict, stores: list[dict]) -> Answer:
     value = rows[0][metric] if rows else None
     if value is None and metric in ADDITIVE_METRICS:
         value = 0.0
-    return Answer(value, lag_caveats(metric, filters, as_of, stores))
+    return Answer(value, caveats(metric, filters, as_of, stores))
 
 
 def check(question: dict, expected: dict, got: Answer, replacement_certified: bool) -> str | None:
@@ -139,10 +163,15 @@ def write_junit(results: list[tuple[dict, Answer, str | None]], seconds: float) 
 
 
 def store_sync_state(sl) -> list[dict]:
-    """Each store's district and last day of POS data, from the semantic layer."""
+    """Each store's district, opening day and last day of POS data, from the semantic layer."""
     return [
-        {"store": r["store"], "district": r["store__district_code"], "data_through": r["store__pos_data_through__day"].date()}
-        for r in sl.query([], ["store", "store__district_code", "store__pos_data_through__day"])
+        {
+            "store": r["store"],
+            "district": r["store__district_code"],
+            "opened_on": r["store__opened_on__day"].date(),
+            "data_through": r["store__pos_data_through__day"].date(),
+        }
+        for r in sl.query([], ["store", "store__district_code", "store__opened_on__day", "store__pos_data_through__day"])
     ]
 
 
