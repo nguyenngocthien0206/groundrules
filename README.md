@@ -93,6 +93,30 @@ reads the Power BI files and fails on any measure that computes instead of
 displaying. See [BI tools](adoption/bi-tools.md) for the pattern and what
 it took to make it hold.
 
+## An agent, with and without the rules
+The same AI agent (Claude Sonnet 5.5) answered all 30 golden questions,
+three times each, two ways: through the governed MCP server in
+[`mcp_server/`](mcp_server/), and with read-only SQL over the same tables.
+The golden runner's own check graded every answer.
+
+| | Raw SQL over the tables | Governed MCP server |
+| --- | --- | --- |
+| Correct (number and caveats) | **8%** (95% interval 0% to 18%) | **99%** (97% to 100%) |
+| Right number | 13% (3% to 27%) | 99% (97% to 100%) |
+| Right caveats | 52% (36% to 70%) | 100% |
+| Median tool calls | 5 | 2.5 |
+
+With only the tables, the agent counted a bottle that expires in 71 days,
+left returns out of revenue, answered a margin as a percentage, invented its
+own sell-through formula, and answered a deprecated metric
+instead of refusing it. Each mistake is a rule a decision record settles.
+The governed agent's one miss in 90 answers came from its own instructions,
+not the data, and is written up with the results.
+
+Every answer, its tool calls and its grade are in
+[`agent_eval/results/v0.2.0/`](agent_eval/results/v0.2.0/summary.md).
+`make agent-eval` reruns it; see [Agents](adoption/agents.md).
+
 ## The example company
 Northwind Pharmacy is fictional: a chain of 30 pharmacies in five invented
 districts, with 150 products and six months of data. Its extracts look like
@@ -113,6 +137,8 @@ decisions/          decision records: the why behind every rule
 golden/             golden questions, the independent reference, the runner
 governance/         lint, registry, affected metrics
 dashboards/         optional Power BI report on certified exports
+mcp_server/         MCP servers for agents: governed access, and raw SQL as the eval's control arm
+agent_eval/         the golden questions through an agent, graded; results/ holds the evidence
 legacy/, demos/     the conflicting dashboards and the two demos
 example/            the synthetic data generator
 playbook/           how a team runs this week to week
@@ -139,11 +165,10 @@ docs/               the spec and build log
   BI tool you already own.
 
 ## Roadmap
-- **v0.1 (this release):** the core loop above, plus CI.
-- **v0.2, agent-ready (not started):** MCP access built on `dbt-mcp`, with
-  deprecated and draft metrics refused with a pointer to the certified
-  one, and an evaluation that runs the golden questions through an agent
-  and scores accuracy and caveat handling.
+- **v0.1:** the core loop above, plus CI.
+- **v0.2, agent-ready:** an MCP server that answers only with certified
+  metrics and refuses deprecated ones, and an agent eval on the golden
+  questions (results above).
 - **v0.3, actions (not started):** one action an agent may propose, with
   preconditions on certified metrics, a simulation, an approval step and an
   audit log of the metric versions used.
