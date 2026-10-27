@@ -4,8 +4,8 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: v0.2 complete; release 0.2.0 next. v0.3 stays locked until the owner says go
-- State: step 14 (real run and results) built on `step-14-agent-eval-run`
+- Current step: v0.2 complete; release 0.2.0 (`release-0.2.0`). v0.3 stays locked until the owner says go
+- State: steps 12 to 14 merged (#14, #15, #16); release branch with CHANGELOG `[0.2.0]` and version 0.2.0
 - Last verified green: 2026-10-26 on GitHub Actions, run 40357875267 on main (`make build`: 97 dbt nodes, 1 expected warning; lint 0 errors 0 warnings as of 2026-10-26; golden 30/30; 185 pytest; both demos; v2 parser)
 
 ## Build checklist (v0.1)
