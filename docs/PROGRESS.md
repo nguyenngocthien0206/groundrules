@@ -4,8 +4,8 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: v0.1 complete; release v0.1.0 (`release-0.1.0`). v0.2 and v0.3 stay locked until the owner says go
-- State: all 11 steps merged; CI green on GitHub (Ubuntu) for PR #12 and on main
+- Current step: v0.2, step 13 (agent eval harness). v0.3 stays locked until the owner says go
+- State: step 12 (MCP server) built on `step-12-mcp-server`
 - Last verified green: 2026-10-26 on GitHub Actions, run 40357875267 on main (`make build`: 97 dbt nodes, 1 expected warning; lint 0 errors 0 warnings as of 2026-10-26; golden 30/30; 185 pytest; both demos; v2 parser)
 
 ## Build checklist (v0.1)
@@ -39,6 +39,9 @@ Copied from SPEC section 20. Tick when verified on a fresh clone.
 
 ## Later phases (locked until the owner says go)
 - [ ] v0.2 Agent-ready: MCP server + agent eval harness
+  - [x] 12. MCP server (`mcp_server/semantic.py`, raw SQL control arm)
+  - [ ] 13. Agent eval harness (`agent_eval/`, providers `claude-code` and `anthropic-api`)
+  - [ ] 14. Real run (Sonnet, 30 questions x 3 reps x 2 arms), results, release 0.2.0
 - [ ] v0.3 Actions: action contract, shadow table, approval, write-back, audit log
 
 ## Implementation decisions
@@ -46,6 +49,11 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-27 | v0.2 builds its own thin MCP server on the official `mcp` SDK (2.3.0) instead of `dbt-mcp` | `dbt-mcp`'s semantic layer tools need the dbt platform (`DBT_HOST`, `DBT_TOKEN`, `DBT_PROD_ENV_ID`; "works without dbt platform: no") and it needs Python 3.12+; locally it only offers dbt CLI tools, which would let an agent compute metrics in SQL. |
+| 2026-10-27 | `mcp_server/`, not SPEC's `mcp/` | A top-level `mcp` folder can shadow the `mcp` SDK package on `sys.path`. |
+| 2026-10-27 | MetricFlow readers open DuckDB with `access_mode: READ_ONLY` (profile `config_options` from `GROUNDRULES_DUCKDB_ACCESS`, set by `SemanticLayer`); direct connections pass the same config | DuckDB allows one read-write process, so several MCP servers (one per agent session) and the tests' stdio servers could not share the file. In one process every connection must carry the same config. `dbt build` keeps the default and writes. |
+| 2026-10-27 | `query_metric` reuses `run_golden.answer()`; codes are checked against the dimensions before querying | One code path for agents and golden questions. An unknown code would otherwise return 0 for an additive metric. |
+| 2026-10-27 | Eval runs on Claude Code headless (the owner's subscription, Sonnet); an `anthropic-api` provider is written but not run until there is an API key | The Claude API is billed separately from a subscription; the owner has no key. `--bare` only accepts an API key, so the headless run keeps the agent's context clean another way and checks it with a probe. |
 | 2026-10-26 | CI is one GitHub Actions job with one step per promise, each calling the same `make` target people run locally; actions pinned by commit SHA to releases at least two weeks old; uv pinned to 0.11.14 | A red step names the broken promise; local and CI cannot drift apart. The newest setup-uv was four days old, so the release before it is used. |
 | 2026-10-26 | Overdue recertification warns on pull requests; a weekly scheduled run adds `--fail-on-stale` | Owner's choice: one late metric should not block every team's pull request, but its owner must hear about it. |
 | 2026-10-26 | `make check-v2` parses with dbt's v2 parser into `target_v2/` | The v2 parser overwrites `target/`; one target keeps that knowledge in one place. |
@@ -130,7 +138,6 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 ## Open questions and blockers
 Things that need the owner's input. Remove an item once it is answered, and record the answer under Implementation decisions.
 
-- Do `dbt-mcp` semantic layer tools work against local MetricFlow, or only the dbt platform? Verify before v0.2.
 
 ## Session log
 One entry per working session. Format:
@@ -142,6 +149,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-27 (step 12)
+- Done: `mcp_server/semantic.py` (list, describe, find values, query; refusals; caveats; null stays null), `mcp_server/raw_sql.py` (read-only, one SELECT, 200-row cap), read-only warehouse access for MetricFlow readers, `make mcp-server` and `make mcp-server-raw`, `adoption/agents.md`, 17 tests including a stdio round trip per server
+- Verified: answers match GQ-SELL-01, GQ-SELL-04 (null with `pos_sync_lag:NW030`), GQ-STOCK-01 (48) and GQ-POS-04; `revenue_v1` refused with `net_revenue`; `units_sold` refused with the certified list; a name instead of a code is explained, not answered; raw SQL rejects writes and multiple statements; a stdio round trip takes about 12 seconds including the MetricFlow load
+- Next: step 13, the agent eval harness
+- Notes: `dbt-mcp` was checked against its docs before writing anything. mcp 2.x renamed FastMCP to MCPServer and already diverts stray stdout to stderr while serving; MetricFlow loads on the first call so nothing it prints reaches the protocol. The 70ml saline spray is named "Sodium chloride 0.9% nasal spray 70ml", a realistic case for `find_values` (the question also gives the code).
 
 ### 2026-10-26 (step 11 and release 0.1.0)
 - Done: `.github/workflows/governance.yml` (locked install, data, build, lint as of today with the result in the job summary, registry diff, affected metrics on PRs, golden with the JUnit report as an artifact, export, pytest, both demos with a clean-tree check, v2 parser; weekly run with `--fail-on-stale`), `make check-v2`, CI badge, branch protection guidance in the adoption guide; release branch with CHANGELOG `[0.1.0]` and version 0.1.0
