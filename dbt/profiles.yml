@@ -8,3 +8,7 @@ groundrules:
       type: duckdb
       path: "{{ env_var('GROUNDRULES_DUCKDB', 'groundrules.duckdb') }}"
       threads: 4
+      # Readers (golden runner, export, MCP servers) open the file read-only,
+      # so several can share it; `dbt build` keeps the default and writes.
+      config_options:
+        access_mode: "{{ env_var('GROUNDRULES_DUCKDB_ACCESS', 'automatic') }}"

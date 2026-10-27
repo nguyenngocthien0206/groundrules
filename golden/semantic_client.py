@@ -6,6 +6,8 @@ The same engine `mf query` uses, with two rules learned in step 3:
 - pass each filter as its own where constraint. Joined with "and" into one
   string, MetricFlow pushes a time filter below a derived metric's offset
   and days_of_cover comes back empty.
+Every user of this client only reads, so the warehouse is opened read-only:
+the golden runner, the export and several MCP servers can share the file.
 """
 
 import json
@@ -15,6 +17,9 @@ from pathlib import Path
 DBT_DIR = Path(__file__).resolve().parent.parent / "dbt"
 DUCKDB_FILE = DBT_DIR / "groundrules.duckdb"
 SEMANTIC_MANIFEST = DBT_DIR / "target" / "semantic_manifest.json"
+# DuckDB refuses a second connection in one process with a different config,
+# so direct connections next to this client must pass exactly this.
+READ_ONLY = {"access_mode": "READ_ONLY"}
 
 
 class SemanticLayer:
@@ -22,6 +27,7 @@ class SemanticLayer:
         if not (dbt_dir / "groundrules.duckdb").exists() or not (dbt_dir / "target" / "semantic_manifest.json").exists():
             raise FileNotFoundError("No warehouse or semantic manifest: run `make data && make build` first.")
         os.environ["GROUNDRULES_DUCKDB"] = str(dbt_dir / "groundrules.duckdb")
+        os.environ["GROUNDRULES_DUCKDB_ACCESS"] = READ_ONLY["access_mode"]  # read by profiles.yml
         from dbt_metricflow.cli.cli_configuration import CLIConfiguration
         from metricflow.engine.metricflow_engine import MetricFlowQueryRequest
 
