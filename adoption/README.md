@@ -16,6 +16,7 @@ there.
 | [Existing dbt project](existing-dbt-project.md) | which folders to copy, what to adopt in dbt, what to delete |
 | [Warehouses](warehouses.md) | exactly what changes when you leave DuckDB |
 | [BI tools](bi-tools.md) | how to keep your BI tool from becoming a second place where metrics are defined |
+| [Agents](agents.md) | how an AI agent asks the semantic layer over MCP instead of writing SQL |
 | [Cost and roles](cost-and-roles.md) | where the hours go and who to involve |
 
 ## If you only have one afternoon
