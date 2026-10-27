@@ -64,23 +64,31 @@ before this date are the owners' history and are not recorded here.
 
 ### [Unreleased]
 
+Nothing yet.
+
+### [0.2.0] - 2026-10-27
+
+Agent-ready: the certified definitions can be used by AI agents, and the
+gain is measured.
+
 #### Added
 - MCP server for agents (`mcp_server/semantic.py`): list, describe and query
   certified metrics, resolve names to codes, refuse deprecated metrics with
   their replacement, and carry the same caveats as the golden questions.
-  A raw SQL server is the control arm for the agent eval.
+  A raw SQL server is the control arm for the agent eval; it is read-only
+  and cannot reach files or the network (#14, #15).
 - Agent eval (`agent_eval/`): the golden questions through an agent on
   either server, graded with the golden runner's own check, with resume,
   traces, failure classes and bootstrap intervals. Runs on Claude Code
-  headless; a Claude API provider is included.
+  headless; a Claude API provider is included (#15).
 - Agent eval results (`agent_eval/results/v0.2.0/`): on the 30 golden
   questions, three times each with Sonnet 5.5, the governed MCP server
   gave 99% correct answers (95% interval 97% to 100%) and raw SQL over
-  the same tables 8% (0% to 18%). Every answer and its trace is included.
+  the same tables 8% (0% to 18%). Every answer and its trace is included (#16).
 
 #### Changed
 - MetricFlow readers open the DuckDB warehouse read-only, so several
-  processes can read at once; `dbt build` still writes.
+  processes can read at once; `dbt build` still writes (#14).
 
 ### [0.1.0] - 2026-10-26
 
