@@ -1,0 +1,47 @@
+[
+  {
+    "role": "tool_call",
+    "name": "mcp__groundrules__list_metrics",
+    "content": "{}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__groundrules__find_values",
+    "content": "{\n  \"kind\": \"district\",\n  \"search\": \"Old Quarter\"\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__groundrules__find_values",
+    "content": "{\n  \"kind\": \"store\",\n  \"search\": \"Old Quarter\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"data_as_of\": \"2026-09-15\",\n  \"metrics\": [\n    {\n      \"name\": \"available_stock\",\n      \"label\": \"Available stock\",\n      \"status\": \"certified\",\n      \"version\": 3,\n      \"owner\": \"supply_chain_ops\",\n      \"description\": \"Base units a store can sell or transfer: on hand in batches with at least 90 days to expiry (DR-001), minus stock it has shipped to other stores that has not arrived yet (in transit; cancelled transfers are not subtracted, DR-003). A stock position at the snapshot date.\",\n      \"replaced_by\": null\n    },\n    {\n      \"name\": \"days_of_cover\",\n      \"label\": \"Days of cover\",\n      \"status\": \"certified\",\n      \"version\": 1,\n      \"owner\": \"supply_chain_ops\",\n      \"description\": \"How many days available stock lasts at the recent pace: available stock at the snapshot divided by average daily base units sold over the 28 full days before it.\",\n      \"replaced_by\": null\n    },\n    {\n      \"name\": \"gross_margin\",\n      \"label\": \"Gross margin\",\n      \"status\": \"certified\",\n      \"version\": 1,\n      \"owner\": \"finance\",\n      \"description\": \"Net revenue minus the cost of goods sold at each store's weighted average cost for the SKU (DR-008). Returned goods are destroyed, so their cost is not reversed.\",\n      \"replaced_by\": null\n    },\n    {\n      \"name\": \"near_expiry_value\",\n      \"label\": \"Near-expiry stock value\",\n      \"status\": \"certified\",\n      \"version\": 1,\n      \"owner\": \"supply_chain_ops\",\n      \"description\": \"Cost value (VND, VAT excluded) of stock in batches with fewer than 90 days to expiry, including expired stock not yet written off.\",\n      \"replaced_by\": null\n    },\n    {\n      \"name\": \"net_revenue\",\n      \"label\": \"Net revenue\",\n      \"status\": \"certified\",\n      \"version\": 2,\n      \"owner\": \"finance\",\n      \"description\": \"Sales after discounts and before VAT, counted on the sale date, minus refunds before VAT, counted on the return date (DR-002, DR-006). A return in August of a July sale lowers August.\",\n      \"replaced_by\": null\n    },\n    {\n      \"name\": \"revenue_v1\",\n      \"label\": \"Revenue (v1, deprecated)\",\n      \"status\": \"deprecated\",\n      \"version\": 1,\n      \"owner\": \"finance\",\n      \"description\": \"The old revenue number: what customers paid, VAT included, by sale date, with returns ignored. Kept so old questions get a pointer to net_revenue instead of a silent wrong answer.\",\n      \"replaced_by\": \"net_revenue\"\n    },\n    {\n      \"name\": \"sell_through_rate\",\n      \"label\": \"Sell-through rate\",\n      \"status\": \"certified\",\n      \"version\": 2,\n      \"owner\": \"supply_chain_ops\",\n      \"description\": \"Base units sold divided by base units received net in the same period: received from suppliers and other stores, minus units transferred out. Returned units are not subtracted from sales. No value when net received is zero or negative (DR-011).\",\n      \"replaced_by\": null\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"kind\": \"district\",\n  \"matches\": [\n    {\n      \"district_code\": \"D02\",\n      \"district_name\": \"Old Quarter\"\n    }\n  ],\n  \"total\": 1\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"kind\": \"store\",\n  \"matches\": [\n    {\n      \"store\": \"NW001\",\n      \"store_name\": \"Northwind Pharmacy Old Quarter 1\",\n      \"district_code\": \"D02\",\n      \"district_name\": \"Old Quarter\"\n    },\n    {\n      \"store\": \"NW003\",\n      \"store_name\": \"Northwind Pharmacy Old Quarter 2\",\n      \"district_code\": \"D02\",\n      \"district_name\": \"Old Quarter\"\n    },\n    {\n      \"store\": \"NW014\",\n      \"store_name\": \"Northwind Pharmacy Old Quarter 3\",\n      \"district_code\": \"D02\",\n      \"district_name\": \"Old Quarter\"\n    },\n    {\n      \"store\": \"NW019\",\n      \"store_name\": \"Northwind Pharmacy Old Quarter 4\",\n      \"district_code\": \"D02\",\n      \"district_name\": \"Old Quarter\"\n    },\n    {\n      \"store\": \"NW026\",\n      \"store_name\": \"Northwind Pharmacy Old Quarter 5\",\n      \"district_code\": \"D02\",\n      \"district_name\": \"Old Quarter\"\n    },\n    {\n      \"store\": \"NW029\",\n      \"store_name\": \"Northwind Pharmacy Old Quarter 6\",\n      \"district_code\": \"D02\",\n      \"district_name\": \"Old Quarter\"\n    }\n  ],\n  \"total\": 6\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__groundrules__query_metric",
+    "content": "{\n  \"metric\": \"available_stock\",\n  \"district\": \"D02\",\n  \"sku\": \"100002\",\n  \"as_of\": \"2026-09-15\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"metric\": \"available_stock\",\n  \"version\": 3,\n  \"filters\": {\n    \"district\": \"D02\",\n    \"sku\": \"100002\"\n  },\n  \"as_of\": \"2026-09-15\",\n  \"value\": 8604,\n  \"caveats\": [\n    \"pos_sync_lag:NW029\"\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "StructuredOutput",
+    "content": "{\n  \"value\": 8604,\n  \"replacement_metric\": null,\n  \"caveats\": [\n    \"pos_sync_lag:NW029\"\n  ],\n  \"explanation\": \"I queried the certified available_stock metric for SKU 100002 in the Old Quarter district (D02), as of 2026-09-15. It returned 8604 base units, with one caveat for store NW029.\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "Structured output provided successfully"
+  }
+]

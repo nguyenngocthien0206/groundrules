@@ -1,0 +1,29 @@
+[
+  {
+    "role": "tool_call",
+    "name": "mcp__groundrules__describe_metric",
+    "content": "{\n  \"name\": \"revenue_v1\"\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__groundrules__query_metric",
+    "content": "{\n  \"metric\": \"revenue_v1\",\n  \"store\": \"NW001\",\n  \"month\": \"2026-07\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"name\": \"revenue_v1\",\n  \"label\": \"Revenue (v1, deprecated)\",\n  \"description\": \"The old revenue number: what customers paid, VAT included, by sale date, with returns ignored. Kept so old questions get a pointer to net_revenue instead of a silent wrong answer.\",\n  \"status\": \"deprecated\",\n  \"version\": 1,\n  \"owner\": \"finance\",\n  \"owner_team\": \"@your-org/finance\",\n  \"certified_on\": \"2026-03-01\",\n  \"recertify_by\": \"2026-05-30\",\n  \"agent_notes\": \"Deprecated. Do not answer with this metric; use net_revenue and say why.\",\n  \"decision\": {\n    \"id\": \"DR-005\",\n    \"title\": \"Deprecate revenue_v1 in favor of net_revenue\",\n    \"decision\": \"`revenue_v1` stays defined (`dbt/models/semantic/fct_sales.yml`) with\\n`status: deprecated` and `replaced_by: net_revenue`. It is not certified.\\nAgents and dashboards must not answer with it: they say it is deprecated,\\nname `net_revenue`, and explain the difference (VAT and returns).\"\n  },\n  \"golden_questions\": 2,\n  \"caveats\": [\n    \"pos_sync_lag:<store>: the store's POS data does not cover the whole period yet (DR-004)\"\n  ],\n  \"replaced_by\": \"net_revenue\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"metric\": \"revenue_v1\",\n  \"refused\": true,\n  \"reason\": \"revenue_v1 is deprecated; use net_revenue\",\n  \"use_instead\": \"net_revenue\"\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "StructuredOutput",
+    "content": "{\n  \"value\": null,\n  \"replacement_metric\": \"net_revenue\",\n  \"caveats\": [],\n  \"explanation\": \"revenue_v1 is deprecated and the tool refused the query, so I gave no value. Use net_revenue instead. It differs from revenue_v1 because it excludes VAT and accounts for returns, whereas revenue_v1 included VAT and ignored returns.\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "Structured output provided successfully"
+  }
+]

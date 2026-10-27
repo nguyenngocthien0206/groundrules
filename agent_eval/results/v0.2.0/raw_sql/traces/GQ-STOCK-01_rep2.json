@@ -1,0 +1,83 @@
+[
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__list_tables",
+    "content": "{}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"tables\": [\n    {\n      \"table\": \"marts.dim_sku\",\n      \"description\": \"One row per SKU with its units and VAT rate.\"\n    },\n    {\n      \"table\": \"marts.dim_store\",\n      \"description\": \"One row per store, with its POS sync state at the snapshot.\"\n    },\n    {\n      \"table\": \"marts.fct_goods_received\",\n      \"description\": \"Stock received by each store, one row per batch, from suppliers or from other stores. Includes the opening stock received before the sales window.\"\n    },\n    {\n      \"table\": \"marts.fct_inventory_batch\",\n      \"description\": \"Stock at the snapshot, one row per batch, in base units. On-hand still includes stock reserved for transfers in transit and expired stock that waits for the monthly write-off.\"\n    },\n    {\n      \"table\": \"marts.fct_returns\",\n      \"description\": \"One row per returned item, with the return date and the original sale date when known.\"\n    },\n    {\n      \"table\": \"marts.fct_sales\",\n      \"description\": \"One row per sales line from both POS vendors, retries removed, base units, with and without VAT.\"\n    },\n    {\n      \"table\": \"marts.fct_transfers\",\n      \"description\": \"Store to store transfers in base units.\"\n    },\n    {\n      \"table\": \"marts.metricflow_time_spine\",\n      \"description\": \"One row per day for MetricFlow's cumulative windows and time offsets.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__describe_table",
+    "content": "{\n  \"table\": \"marts.fct_inventory_batch\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"table\": \"marts.fct_inventory_batch\",\n  \"columns\": [\n    {\n      \"name\": \"batch_id\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"ERP batch id.\"\n    },\n    {\n      \"name\": \"store_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Store holding the batch.\"\n    },\n    {\n      \"name\": \"sku_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"ERP item number.\"\n    },\n    {\n      \"name\": \"lot_no\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Supplier lot number.\"\n    },\n    {\n      \"name\": \"received_on\",\n      \"type\": \"DATE\",\n      \"description\": \"Date the batch arrived at this store.\"\n    },\n    {\n      \"name\": \"expires_on\",\n      \"type\": \"DATE\",\n      \"description\": \"Expiry date of the lot.\"\n    },\n    {\n      \"name\": \"days_to_expiry\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Days from the snapshot date to expiry. Negative when already expired.\"\n    },\n    {\n      \"name\": \"source_type\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"purchase_order or transfer.\"\n    },\n    {\n      \"name\": \"source_doc\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Purchase order or transfer number.\"\n    },\n    {\n      \"name\": \"on_hand_qty_base\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Quantity on hand at the snapshot, base units.\"\n    },\n    {\n      \"name\": \"unit_cost_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Cost of one base unit from this batch, VND, VAT excluded.\"\n    },\n    {\n      \"name\": \"on_hand_value_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"on_hand_qty_base times unit_cost_excl_vat.\"\n    },\n    {\n      \"name\": \"snapshot_date\",\n      \"type\": \"DATE\",\n      \"description\": \"Date the stock position refers to.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__describe_table",
+    "content": "{\n  \"table\": \"marts.dim_sku\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"table\": \"marts.dim_sku\",\n  \"columns\": [\n    {\n      \"name\": \"sku_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"ERP item number.\"\n    },\n    {\n      \"name\": \"sku_name\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Current name.\"\n    },\n    {\n      \"name\": \"category_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Category code.\"\n    },\n    {\n      \"name\": \"category_name\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Category name.\"\n    },\n    {\n      \"name\": \"base_uom\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Base unit all quantities in the marts are counted in.\"\n    },\n    {\n      \"name\": \"purchase_uom\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Unit suppliers deliver in.\"\n    },\n    {\n      \"name\": \"purchase_uom_factor\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Base units in one purchase unit.\"\n    },\n    {\n      \"name\": \"vat_rate\",\n      \"type\": \"DECIMAL(5,4)\",\n      \"description\": \"VAT rate as a fraction.\"\n    },\n    {\n      \"name\": \"list_price_incl_vat\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Shelf price per base unit, VND, VAT included.\"\n    },\n    {\n      \"name\": \"shelf_life_days\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Shelf life of a fresh lot, days.\"\n    },\n    {\n      \"name\": \"created_on\",\n      \"type\": \"DATE\",\n      \"description\": \"Date the SKU was created.\"\n    },\n    {\n      \"name\": \"updated_on\",\n      \"type\": \"DATE\",\n      \"description\": \"Date the SKU was last changed.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__describe_table",
+    "content": "{\n  \"table\": \"marts.dim_store\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"table\": \"marts.dim_store\",\n  \"columns\": [\n    {\n      \"name\": \"store_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Store code, for example NW001.\"\n    },\n    {\n      \"name\": \"store_name\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Store name.\"\n    },\n    {\n      \"name\": \"district_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"District the store belongs to.\"\n    },\n    {\n      \"name\": \"district_name\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"District name.\"\n    },\n    {\n      \"name\": \"opened_on\",\n      \"type\": \"DATE\",\n      \"description\": \"Date the store opened. Sell-through answers use it to flag new stores (DR-011).\"\n    },\n    {\n      \"name\": \"days_open\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Days between opening and the snapshot date.\"\n    },\n    {\n      \"name\": \"is_newly_opened\",\n      \"type\": \"BOOLEAN\",\n      \"description\": \"Opened in the 31 days before the snapshot.\"\n    },\n    {\n      \"name\": \"is_open_24h\",\n      \"type\": \"BOOLEAN\",\n      \"description\": \"Open around the clock.\"\n    },\n    {\n      \"name\": \"pos_vendor\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"POS vendor, A or B.\"\n    },\n    {\n      \"name\": \"last_synced_at\",\n      \"type\": \"TIMESTAMP\",\n      \"description\": \"Last successful POS sync, local time.\"\n    },\n    {\n      \"name\": \"last_sync_attempt_at\",\n      \"type\": \"TIMESTAMP\",\n      \"description\": \"Last sync attempt, local time.\"\n    },\n    {\n      \"name\": \"last_sync_error\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Error of the last attempt, null when it worked.\"\n    },\n    {\n      \"name\": \"pos_data_through\",\n      \"type\": \"DATE\",\n      \"description\": \"Last business day whose sales have reached the warehouse. Answers use it to name lagging stores (DR-004).\"\n    },\n    {\n      \"name\": \"pos_lag_days\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Business days of sales still missing at the snapshot. 0 for a store synced through the day before.\"\n    },\n    {\n      \"name\": \"is_pos_sync_lagging\",\n      \"type\": \"BOOLEAN\",\n      \"description\": \"True when any day of sales is missing. Answers that include such a store must say so (DR-004).\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__run_sql",
+    "content": "{\n  \"query\": \"select i.batch_id,i.lot_no,i.expires_on,i.days_to_expiry,i.on_hand_qty_base,i.snapshot_date,s.sku_name,s.base_uom from marts.fct_inventory_batch i join marts.dim_sku s using(sku_code) where store_code='NW001' and sku_code='100075'\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"columns\": [\n    \"batch_id\",\n    \"lot_no\",\n    \"expires_on\",\n    \"days_to_expiry\",\n    \"on_hand_qty_base\",\n    \"snapshot_date\",\n    \"sku_name\",\n    \"base_uom\"\n  ],\n  \"rows\": [\n    [\n      \"B0000108\",\n      \"L25D2707\",\n      \"2026-11-25\",\n      71,\n      1,\n      \"2026-09-15\",\n      \"Sodium chloride 0.9% nasal spray 70ml\",\n      \"BOTTLE\"\n    ],\n    [\n      \"B0000109\",\n      \"L26D6367\",\n      \"2027-03-25\",\n      191,\n      48,\n      \"2026-09-15\",\n      \"Sodium chloride 0.9% nasal spray 70ml\",\n      \"BOTTLE\"\n    ]\n  ],\n  \"truncated\": false\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__run_sql",
+    "content": "{\n  \"query\": \"select * from marts.dim_store where store_code='NW001'\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"columns\": [\n    \"store_code\",\n    \"store_name\",\n    \"district_code\",\n    \"district_name\",\n    \"opened_on\",\n    \"days_open\",\n    \"is_newly_opened\",\n    \"is_open_24h\",\n    \"pos_vendor\",\n    \"last_synced_at\",\n    \"last_sync_attempt_at\",\n    \"last_sync_error\",\n    \"pos_data_through\",\n    \"pos_lag_days\",\n    \"is_pos_sync_lagging\"\n  ],\n  \"rows\": [\n    [\n      \"NW001\",\n      \"Northwind Pharmacy Old Quarter 1\",\n      \"D02\",\n      \"Old Quarter\",\n      \"2016-03-04\",\n      3847,\n      false,\n      false,\n      \"A\",\n      \"2026-09-15T05:34:55\",\n      \"2026-09-15T05:34:55\",\n      null,\n      \"2026-09-14\",\n      0,\n      false\n    ]\n  ],\n  \"truncated\": false\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__run_sql",
+    "content": "{\n  \"query\": \"select * from marts.fct_transfers where (from_store='NW001' or to_store='NW001') limit 5\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"error\": \"Binder Error: Referenced column \\\"from_store\\\" not found in FROM clause!\\nCandidate bindings: \\\"from_store_code\\\", \\\"transfer_status\\\", \\\"lot_no\\\", \\\"transfer_no\\\", \\\"to_store_code\\\"\\n\\nLINE 1: select * from marts.fct_transfers where (from_store='NW001' or to_store='NW001') limit 5\\n                                                 ^^^^^^^^^^\"\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__run_sql",
+    "content": "{\n  \"query\": \"select * from marts.fct_transfers where from_store_code='NW001' and sku_code='100075' and transfer_status<>'received'\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"columns\": [\n    \"transfer_no\",\n    \"sku_code\",\n    \"lot_no\",\n    \"from_store_code\",\n    \"to_store_code\",\n    \"qty_base\",\n    \"transfer_status\",\n    \"created_on\",\n    \"shipped_on\",\n    \"received_on\",\n    \"updated_on\",\n    \"snapshot_date\"\n  ],\n  \"rows\": [],\n  \"truncated\": false\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "StructuredOutput",
+    "content": "{\n  \"value\": 49,\n  \"replacement_metric\": null,\n  \"caveats\": [],\n  \"explanation\": \"NW001 has two batches of SKU 100075 in the 2026-09-15 snapshot: 1 bottle (expires 2026-11-25) and 48 bottles (expires 2027-03-25). Neither is expired, and no transfers out of NW001 for this SKU are in transit, so all 49 can be sold.\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "Structured output provided successfully"
+  }
+]

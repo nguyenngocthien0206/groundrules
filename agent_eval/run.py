@@ -57,7 +57,8 @@ def run_arm(provider, arm: str, cases: list[dict], reps: int, out: Path, timeout
     def one(case: dict, rep: int) -> None:
         got: RunResult = provider.run(case["question"], arm, timeout_s)
         trace_file = out / "traces" / f"{case['id']}_rep{rep}.json"
-        trace_file.write_text(json.dumps(got.trace, indent=2, ensure_ascii=False), encoding="utf-8")
+        # Agent text is recorded verbatim; non-ASCII stays as JSON escapes (same content once parsed).
+        trace_file.write_text(json.dumps(got.trace, indent=2), encoding="utf-8")
         base = {"prompt_id": case["id"], "rep": rep, "arm": arm, "model": got.model, "usage": got.usage,
                 "latency_s": got.latency_s, "tool_calls": got.tool_calls, "turns": got.turns,
                 "cost_usd": got.cost_usd, "stop_reason": got.stop_reason}
@@ -87,7 +88,7 @@ def run_arm(provider, arm: str, cases: list[dict], reps: int, out: Path, timeout
 
 def append(path: Path, row: dict) -> None:
     with path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
+        f.write(json.dumps(row, default=str) + "\n")
 
 
 def now() -> str:

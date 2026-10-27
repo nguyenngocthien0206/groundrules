@@ -1,0 +1,65 @@
+[
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__list_tables",
+    "content": "{}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"tables\": [\n    {\n      \"table\": \"marts.dim_sku\",\n      \"description\": \"One row per SKU with its units and VAT rate.\"\n    },\n    {\n      \"table\": \"marts.dim_store\",\n      \"description\": \"One row per store, with its POS sync state at the snapshot.\"\n    },\n    {\n      \"table\": \"marts.fct_goods_received\",\n      \"description\": \"Stock received by each store, one row per batch, from suppliers or from other stores. Includes the opening stock received before the sales window.\"\n    },\n    {\n      \"table\": \"marts.fct_inventory_batch\",\n      \"description\": \"Stock at the snapshot, one row per batch, in base units. On-hand still includes stock reserved for transfers in transit and expired stock that waits for the monthly write-off.\"\n    },\n    {\n      \"table\": \"marts.fct_returns\",\n      \"description\": \"One row per returned item, with the return date and the original sale date when known.\"\n    },\n    {\n      \"table\": \"marts.fct_sales\",\n      \"description\": \"One row per sales line from both POS vendors, retries removed, base units, with and without VAT.\"\n    },\n    {\n      \"table\": \"marts.fct_transfers\",\n      \"description\": \"Store to store transfers in base units.\"\n    },\n    {\n      \"table\": \"marts.metricflow_time_spine\",\n      \"description\": \"One row per day for MetricFlow's cumulative windows and time offsets.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__describe_table",
+    "content": "{\n  \"table\": \"marts.fct_inventory_batch\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"table\": \"marts.fct_inventory_batch\",\n  \"columns\": [\n    {\n      \"name\": \"batch_id\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"ERP batch id.\"\n    },\n    {\n      \"name\": \"store_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Store holding the batch.\"\n    },\n    {\n      \"name\": \"sku_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"ERP item number.\"\n    },\n    {\n      \"name\": \"lot_no\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Supplier lot number.\"\n    },\n    {\n      \"name\": \"received_on\",\n      \"type\": \"DATE\",\n      \"description\": \"Date the batch arrived at this store.\"\n    },\n    {\n      \"name\": \"expires_on\",\n      \"type\": \"DATE\",\n      \"description\": \"Expiry date of the lot.\"\n    },\n    {\n      \"name\": \"days_to_expiry\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Days from the snapshot date to expiry. Negative when already expired.\"\n    },\n    {\n      \"name\": \"source_type\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"purchase_order or transfer.\"\n    },\n    {\n      \"name\": \"source_doc\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Purchase order or transfer number.\"\n    },\n    {\n      \"name\": \"on_hand_qty_base\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Quantity on hand at the snapshot, base units.\"\n    },\n    {\n      \"name\": \"unit_cost_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Cost of one base unit from this batch, VND, VAT excluded.\"\n    },\n    {\n      \"name\": \"on_hand_value_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"on_hand_qty_base times unit_cost_excl_vat.\"\n    },\n    {\n      \"name\": \"snapshot_date\",\n      \"type\": \"DATE\",\n      \"description\": \"Date the stock position refers to.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__describe_table",
+    "content": "{\n  \"table\": \"marts.dim_sku\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"table\": \"marts.dim_sku\",\n  \"columns\": [\n    {\n      \"name\": \"sku_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"ERP item number.\"\n    },\n    {\n      \"name\": \"sku_name\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Current name.\"\n    },\n    {\n      \"name\": \"category_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Category code.\"\n    },\n    {\n      \"name\": \"category_name\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Category name.\"\n    },\n    {\n      \"name\": \"base_uom\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Base unit all quantities in the marts are counted in.\"\n    },\n    {\n      \"name\": \"purchase_uom\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Unit suppliers deliver in.\"\n    },\n    {\n      \"name\": \"purchase_uom_factor\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Base units in one purchase unit.\"\n    },\n    {\n      \"name\": \"vat_rate\",\n      \"type\": \"DECIMAL(5,4)\",\n      \"description\": \"VAT rate as a fraction.\"\n    },\n    {\n      \"name\": \"list_price_incl_vat\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Shelf price per base unit, VND, VAT included.\"\n    },\n    {\n      \"name\": \"shelf_life_days\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Shelf life of a fresh lot, days.\"\n    },\n    {\n      \"name\": \"created_on\",\n      \"type\": \"DATE\",\n      \"description\": \"Date the SKU was created.\"\n    },\n    {\n      \"name\": \"updated_on\",\n      \"type\": \"DATE\",\n      \"description\": \"Date the SKU was last changed.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__run_sql",
+    "content": "{\n  \"query\": \"select category_code, category_name, count(*) from marts.dim_sku group by all\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"columns\": [\n    \"category_code\",\n    \"category_name\",\n    \"count_star()\"\n  ],\n  \"rows\": [\n    [\n      \"VITA\",\n      \"Vitamins and supplements\",\n      30\n    ],\n    [\n      \"RESP\",\n      \"Cough, cold and allergy\",\n      25\n    ],\n    [\n      \"ANTI\",\n      \"Antibiotics\",\n      25\n    ],\n    [\n      \"DIGE\",\n      \"Digestive health\",\n      20\n    ],\n    [\n      \"PAIN\",\n      \"Pain and fever\",\n      30\n    ],\n    [\n      \"CARE\",\n      \"Personal care and devices\",\n      20\n    ]\n  ],\n  \"truncated\": false\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__run_sql",
+    "content": "{\n  \"query\": \"select min(days_to_expiry), max(days_to_expiry), min(snapshot_date), max(snapshot_date) from marts.fct_inventory_batch\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"columns\": [\n    \"min(days_to_expiry)\",\n    \"max(days_to_expiry)\",\n    \"min(snapshot_date)\",\n    \"max(snapshot_date)\"\n  ],\n  \"rows\": [\n    [\n      -124,\n      1699,\n      \"2026-09-15\",\n      \"2026-09-15\"\n    ]\n  ],\n  \"truncated\": false\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__run_sql",
+    "content": "{\n  \"query\": \"select sum(case when days_to_expiry between 0 and 30 then on_hand_value_excl_vat end) d30, sum(case when days_to_expiry between 0 and 60 then on_hand_value_excl_vat end) d60, sum(case when days_to_expiry between 0 and 90 then on_hand_value_excl_vat end) d90, sum(case when days_to_expiry<0 then on_hand_value_excl_vat end) expired from marts.fct_inventory_batch b join marts.dim_sku s using(sku_code) where category_code='VITA'\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"columns\": [\n    \"d30\",\n    \"d60\",\n    \"d90\",\n    \"expired\"\n  ],\n  \"rows\": [\n    [\n      38644790.7916,\n      72316319.96,\n      98535371.8283,\n      2119766.0834\n    ]\n  ],\n  \"truncated\": false\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "StructuredOutput",
+    "content": "{\n  \"value\": 98535371.8283,\n  \"replacement_metric\": null,\n  \"caveats\": [],\n  \"explanation\": \"Summed on-hand value at cost (VAT excluded) for Vitamins and supplements batches in the 2026-09-15 snapshot that expire within 0\\u201390 days. The tools don't define \\\"near-expiry\\\", so the 90-day window is my assumption. Already-expired stock is excluded. The 30-day figure is 38,644,791 and the 60-day figure is 72,316,320.\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "Structured output provided successfully"
+  }
+]

@@ -1,0 +1,29 @@
+[
+  {
+    "role": "tool_call",
+    "name": "mcp__groundrules__list_metrics",
+    "content": "{}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"data_as_of\": \"2026-09-15\",\n  \"metrics\": [\n    {\n      \"name\": \"available_stock\",\n      \"label\": \"Available stock\",\n      \"status\": \"certified\",\n      \"version\": 3,\n      \"owner\": \"supply_chain_ops\",\n      \"description\": \"Base units a store can sell or transfer: on hand in batches with at least 90 days to expiry (DR-001), minus stock it has shipped to other stores that has not arrived yet (in transit; cancelled transfers are not subtracted, DR-003). A stock position at the snapshot date.\",\n      \"replaced_by\": null\n    },\n    {\n      \"name\": \"days_of_cover\",\n      \"label\": \"Days of cover\",\n      \"status\": \"certified\",\n      \"version\": 1,\n      \"owner\": \"supply_chain_ops\",\n      \"description\": \"How many days available stock lasts at the recent pace: available stock at the snapshot divided by average daily base units sold over the 28 full days before it.\",\n      \"replaced_by\": null\n    },\n    {\n      \"name\": \"gross_margin\",\n      \"label\": \"Gross margin\",\n      \"status\": \"certified\",\n      \"version\": 1,\n      \"owner\": \"finance\",\n      \"description\": \"Net revenue minus the cost of goods sold at each store's weighted average cost for the SKU (DR-008). Returned goods are destroyed, so their cost is not reversed.\",\n      \"replaced_by\": null\n    },\n    {\n      \"name\": \"near_expiry_value\",\n      \"label\": \"Near-expiry stock value\",\n      \"status\": \"certified\",\n      \"version\": 1,\n      \"owner\": \"supply_chain_ops\",\n      \"description\": \"Cost value (VND, VAT excluded) of stock in batches with fewer than 90 days to expiry, including expired stock not yet written off.\",\n      \"replaced_by\": null\n    },\n    {\n      \"name\": \"net_revenue\",\n      \"label\": \"Net revenue\",\n      \"status\": \"certified\",\n      \"version\": 2,\n      \"owner\": \"finance\",\n      \"description\": \"Sales after discounts and before VAT, counted on the sale date, minus refunds before VAT, counted on the return date (DR-002, DR-006). A return in August of a July sale lowers August.\",\n      \"replaced_by\": null\n    },\n    {\n      \"name\": \"revenue_v1\",\n      \"label\": \"Revenue (v1, deprecated)\",\n      \"status\": \"deprecated\",\n      \"version\": 1,\n      \"owner\": \"finance\",\n      \"description\": \"The old revenue number: what customers paid, VAT included, by sale date, with returns ignored. Kept so old questions get a pointer to net_revenue instead of a silent wrong answer.\",\n      \"replaced_by\": \"net_revenue\"\n    },\n    {\n      \"name\": \"sell_through_rate\",\n      \"label\": \"Sell-through rate\",\n      \"status\": \"certified\",\n      \"version\": 2,\n      \"owner\": \"supply_chain_ops\",\n      \"description\": \"Base units sold divided by base units received net in the same period: received from suppliers and other stores, minus units transferred out. Returned units are not subtracted from sales. No value when net received is zero or negative (DR-011).\",\n      \"replaced_by\": null\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__groundrules__query_metric",
+    "content": "{\n  \"metric\": \"sell_through_rate\",\n  \"month\": \"2026-08\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"metric\": \"sell_through_rate\",\n  \"version\": 2,\n  \"filters\": {\n    \"month\": \"2026-08\"\n  },\n  \"as_of\": \"2026-09-15\",\n  \"value\": 0.9698600568170634,\n  \"caveats\": [\n    \"new_store:NW029\",\n    \"new_store:NW030\"\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "StructuredOutput",
+    "content": "{\n  \"value\": 0.9698600568170634,\n  \"replacement_metric\": null,\n  \"caveats\": [\n    \"new_store:NW029\",\n    \"new_store:NW030\"\n  ],\n  \"explanation\": \"Queried the certified sell_through_rate metric (v2) for 2026-08 across the whole chain. It returned about 0.970, which is base units sold divided by net units received.\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "Structured output provided successfully"
+  }
+]

@@ -1,6 +1,7 @@
 """Summarize an agent eval run: how often each arm got the right answer.
 
 Usage: python agent_eval/summary.py <run-id>   (or `make agent-eval-summary RUN=<run-id>`)
+       python agent_eval/summary.py agent_eval/results/v0.2.0   (a folder of arms)
 
 Rates are means over questions (each question's reps averaged first), so a
 question asked three times counts once. The 95% interval is a bootstrap over
@@ -51,7 +52,7 @@ def arm_summary(arm_dir: Path) -> dict:
     out = {"arm": arm_dir.name, "rows": len(rows), "questions": len({r["prompt_id"] for r in rows}),
            "errors": len(open_errors), "error_classes": sorted({e["error"] for e in open_errors})}
     for metric, _ in METRICS:
-        values = list(per_question(rows, metric).values())
+        values = [v for _, v in sorted(per_question(rows, metric).items())]  # order-free, so intervals reproduce
         out[metric] = (statistics.fmean(values) if values else 0.0, *bootstrap(values))
     kinds = {r["prompt_id"]: r["tags"][0] for r in rows}
     out["by_kind"] = {}
@@ -60,8 +61,14 @@ def arm_summary(arm_dir: Path) -> dict:
         if values:
             out["by_kind"][kind] = (statistics.fmean(values), len(values))
     out["tool_calls"] = statistics.median([r["tool_calls"] for r in rows]) if rows else 0
-    out["latency_s"] = statistics.median([r["latency_s"] for r in rows]) if rows else 0
+    out["latency_s"] = round(statistics.median([r["latency_s"] for r in rows]), 1) if rows else 0
     out["models"] = sorted({r["model"] for r in rows if r.get("model")})
+    usage = [r.get("usage") or {} for r in rows]
+    out["tokens_in"] = sum(u.get(k) or 0 for u in usage
+                           for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
+    out["tokens_out"] = sum(u.get("output_tokens") or 0 for u in usage)
+    # Claude Code's own estimate of what the same tokens would cost on the API.
+    out["cost_usd"] = sum(r.get("cost_usd") or 0 for r in rows)
     return out
 
 
@@ -84,7 +91,11 @@ def render(run_id: str, arms: list[dict]) -> str:
     lines.append("| Median tool calls | " + " | ".join(str(a["tool_calls"]) for a in arms) + " |")
     lines.append("| Median seconds | " + " | ".join(str(a["latency_s"]) for a in arms) + " |")
     lines.append("| Model | " + " | ".join(", ".join(a["models"]) for a in arms) + " |")
-    lines += ["", "Rates are means over questions; brackets are 95% bootstrap intervals over questions."]
+    lines.append("| Tokens in / out | " + " | ".join(f"{a['tokens_in']:,} / {a['tokens_out']:,}" for a in arms) + " |")
+    lines.append("| API-equivalent cost | " + " | ".join(f"${a['cost_usd']:.2f}" for a in arms) + " |")
+    lines += ["", "Rates are means over questions; brackets are 95% bootstrap intervals over questions.",
+              "API-equivalent cost is the provider's estimate for the same tokens on the Claude API; a run on a",
+              "subscription is not billed per token."]
     return "\n".join(lines) + "\n"
 
 
@@ -92,12 +103,12 @@ def main(argv: list[str]) -> int:
     if not argv:
         print(__doc__)
         return 2
-    run_dir = RUNS / argv[0]
+    run_dir = Path(argv[0]) if Path(argv[0]).is_dir() else RUNS / argv[0]
     arms = [arm_summary(d) for d in sorted(p for p in run_dir.iterdir() if p.is_dir())] if run_dir.exists() else []
     if not arms:
         print(f"No results in {run_dir}")
         return 1
-    text = render(argv[0], arms)
+    text = render(run_dir.name, arms)
     (run_dir / "summary.md").write_text(text, encoding="utf-8")
     print(text)
     return 0

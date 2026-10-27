@@ -1,0 +1,47 @@
+[
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__list_tables",
+    "content": "{}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"tables\": [\n    {\n      \"table\": \"marts.dim_sku\",\n      \"description\": \"One row per SKU with its units and VAT rate.\"\n    },\n    {\n      \"table\": \"marts.dim_store\",\n      \"description\": \"One row per store, with its POS sync state at the snapshot.\"\n    },\n    {\n      \"table\": \"marts.fct_goods_received\",\n      \"description\": \"Stock received by each store, one row per batch, from suppliers or from other stores. Includes the opening stock received before the sales window.\"\n    },\n    {\n      \"table\": \"marts.fct_inventory_batch\",\n      \"description\": \"Stock at the snapshot, one row per batch, in base units. On-hand still includes stock reserved for transfers in transit and expired stock that waits for the monthly write-off.\"\n    },\n    {\n      \"table\": \"marts.fct_returns\",\n      \"description\": \"One row per returned item, with the return date and the original sale date when known.\"\n    },\n    {\n      \"table\": \"marts.fct_sales\",\n      \"description\": \"One row per sales line from both POS vendors, retries removed, base units, with and without VAT.\"\n    },\n    {\n      \"table\": \"marts.fct_transfers\",\n      \"description\": \"Store to store transfers in base units.\"\n    },\n    {\n      \"table\": \"marts.metricflow_time_spine\",\n      \"description\": \"One row per day for MetricFlow's cumulative windows and time offsets.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__describe_table",
+    "content": "{\n  \"table\": \"marts.fct_sales\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"table\": \"marts.fct_sales\",\n  \"columns\": [\n    {\n      \"name\": \"sales_line_id\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Vendor, receipt and line number joined.\"\n    },\n    {\n      \"name\": \"pos_vendor\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"POS vendor, A or B.\"\n    },\n    {\n      \"name\": \"receipt_no\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Receipt number. Not unique per SKU, a receipt can hold the same SKU twice.\"\n    },\n    {\n      \"name\": \"line_no\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Line number within the receipt.\"\n    },\n    {\n      \"name\": \"store_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Store code.\"\n    },\n    {\n      \"name\": \"sku_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"ERP item number.\"\n    },\n    {\n      \"name\": \"business_date\",\n      \"type\": \"DATE\",\n      \"description\": \"Local date of the sale.\"\n    },\n    {\n      \"name\": \"sold_at\",\n      \"type\": \"TIMESTAMP\",\n      \"description\": \"Local time of the sale.\"\n    },\n    {\n      \"name\": \"uom_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Unit sold.\"\n    },\n    {\n      \"name\": \"qty\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Quantity in uom_code.\"\n    },\n    {\n      \"name\": \"qty_base\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Quantity in base units.\"\n    },\n    {\n      \"name\": \"vat_rate\",\n      \"type\": \"DECIMAL(5,4)\",\n      \"description\": \"VAT rate as a fraction.\"\n    },\n    {\n      \"name\": \"unit_price_incl_vat\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Shelf price of one uom_code, VAT included.\"\n    },\n    {\n      \"name\": \"gross_incl_vat\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Before discount, VAT included.\"\n    },\n    {\n      \"name\": \"discount_incl_vat\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Discount, VAT included.\"\n    },\n    {\n      \"name\": \"amount_incl_vat\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Paid, VAT included.\"\n    },\n    {\n      \"name\": \"gross_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Before discount, VAT excluded.\"\n    },\n    {\n      \"name\": \"discount_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Discount, VAT excluded.\"\n    },\n    {\n      \"name\": \"amount_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Paid, VAT excluded.\"\n    },\n    {\n      \"name\": \"unit_cost_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Weighted average cost of one base unit of the SKU at this store (DR-008).\"\n    },\n    {\n      \"name\": \"cogs_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Cost of goods sold for the line, qty_base times unit_cost_excl_vat.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__describe_table",
+    "content": "{\n  \"table\": \"marts.dim_sku\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"table\": \"marts.dim_sku\",\n  \"columns\": [\n    {\n      \"name\": \"sku_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"ERP item number.\"\n    },\n    {\n      \"name\": \"sku_name\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Current name.\"\n    },\n    {\n      \"name\": \"category_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Category code.\"\n    },\n    {\n      \"name\": \"category_name\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Category name.\"\n    },\n    {\n      \"name\": \"base_uom\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Base unit all quantities in the marts are counted in.\"\n    },\n    {\n      \"name\": \"purchase_uom\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Unit suppliers deliver in.\"\n    },\n    {\n      \"name\": \"purchase_uom_factor\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Base units in one purchase unit.\"\n    },\n    {\n      \"name\": \"vat_rate\",\n      \"type\": \"DECIMAL(5,4)\",\n      \"description\": \"VAT rate as a fraction.\"\n    },\n    {\n      \"name\": \"list_price_incl_vat\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Shelf price per base unit, VND, VAT included.\"\n    },\n    {\n      \"name\": \"shelf_life_days\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Shelf life of a fresh lot, days.\"\n    },\n    {\n      \"name\": \"created_on\",\n      \"type\": \"DATE\",\n      \"description\": \"Date the SKU was created.\"\n    },\n    {\n      \"name\": \"updated_on\",\n      \"type\": \"DATE\",\n      \"description\": \"Date the SKU was last changed.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__run_sql",
+    "content": "{\n  \"query\": \"select d.category_code, d.category_name, count(*) n, sum(s.amount_excl_vat) rev, sum(s.cogs_excl_vat) cogs, 1 - sum(s.cogs_excl_vat)/sum(s.amount_excl_vat) m from marts.fct_sales s join marts.dim_sku d using(sku_code) where s.business_date between '2026-07-01' and '2026-07-31' and (d.category_name ilike '%vitamin%' or d.category_name ilike '%suppl%') group by 1,2\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"columns\": [\n    \"category_code\",\n    \"category_name\",\n    \"n\",\n    \"rev\",\n    \"cogs\",\n    \"m\"\n  ],\n  \"rows\": [\n    [\n      \"VITA\",\n      \"Vitamins and supplements\",\n      14688,\n      1164776545.4385,\n      843427273.7038,\n      0.2758892020904512\n    ]\n  ],\n  \"truncated\": false\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "StructuredOutput",
+    "content": "{\n  \"value\": 0.2758892020904512,\n  \"replacement_metric\": null,\n  \"caveats\": [],\n  \"explanation\": \"I joined July 2026 sales to the SKU table for the category \\\"Vitamins and supplements\\\". Margin is 1 \\u2212 COGS \\u00f7 revenue, with both excluding VAT: revenue was 1,164,776,545 VND and COGS was 843,427,274 VND. That gives a gross margin of about 27.6%.\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "Structured output provided successfully"
+  }
+]

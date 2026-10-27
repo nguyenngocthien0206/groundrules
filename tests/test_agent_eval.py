@@ -162,6 +162,29 @@ def test_rates_count_each_question_once_and_the_interval_is_reproducible(tmp_pat
     assert 0 <= low <= result["pass"][0] <= high <= 1
 
 
+def test_the_interval_does_not_depend_on_row_order(tmp_path):
+    rows = [{"prompt_id": f"Q{i}", "rep": r, "tags": ["tacit_rule", "a"], "tool_calls": 1, "latency_s": 1, "model": "m",
+             "grade": {"pass": float((i + r) % 3 == 0), "value": 1.0, "caveats": 1.0}} for i in range(12) for r in range(3)]
+    for name, ordered in (("a", rows), ("b", list(reversed(rows)))):
+        (tmp_path / name).mkdir()
+        (tmp_path / name / "results.jsonl").write_text("\n".join(json.dumps(r) for r in ordered), encoding="utf-8")
+    assert summary.arm_summary(tmp_path / "a")["pass"] == summary.arm_summary(tmp_path / "b")["pass"]
+
+
+def test_the_summary_totals_tokens_and_the_api_equivalent_cost(tmp_path):
+    arm = tmp_path / "raw_sql"
+    arm.mkdir()
+    rows = [{"prompt_id": q, "rep": 0, "tags": ["conflict", "raw_sql"], "tool_calls": 1, "latency_s": 5, "model": "m",
+             "grade": {"pass": 0.0, "value": 0.0, "caveats": 1.0}, "cost_usd": 0.05,
+             "usage": {"input_tokens": 10, "cache_creation_input_tokens": 100, "cache_read_input_tokens": 1000,
+                       "output_tokens": 50}} for q in ("A", "B")]
+    (arm / "results.jsonl").write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
+    result = summary.arm_summary(arm)
+    assert (result["tokens_in"], result["tokens_out"]) == (2220, 100)
+    assert result["cost_usd"] == pytest.approx(0.10)
+    assert "| API-equivalent cost | $0.10 |" in summary.render("x", [result])
+
+
 # Claude Code stream parser, on a recorded run
 
 

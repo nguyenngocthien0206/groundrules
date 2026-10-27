@@ -1,0 +1,46 @@
+[
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__list_tables",
+    "content": "{}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"tables\": [\n    {\n      \"table\": \"marts.dim_sku\",\n      \"description\": \"One row per SKU with its units and VAT rate.\"\n    },\n    {\n      \"table\": \"marts.dim_store\",\n      \"description\": \"One row per store, with its POS sync state at the snapshot.\"\n    },\n    {\n      \"table\": \"marts.fct_goods_received\",\n      \"description\": \"Stock received by each store, one row per batch, from suppliers or from other stores. Includes the opening stock received before the sales window.\"\n    },\n    {\n      \"table\": \"marts.fct_inventory_batch\",\n      \"description\": \"Stock at the snapshot, one row per batch, in base units. On-hand still includes stock reserved for transfers in transit and expired stock that waits for the monthly write-off.\"\n    },\n    {\n      \"table\": \"marts.fct_returns\",\n      \"description\": \"One row per returned item, with the return date and the original sale date when known.\"\n    },\n    {\n      \"table\": \"marts.fct_sales\",\n      \"description\": \"One row per sales line from both POS vendors, retries removed, base units, with and without VAT.\"\n    },\n    {\n      \"table\": \"marts.fct_transfers\",\n      \"description\": \"Store to store transfers in base units.\"\n    },\n    {\n      \"table\": \"marts.metricflow_time_spine\",\n      \"description\": \"One row per day for MetricFlow's cumulative windows and time offsets.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__describe_table",
+    "content": "{\n  \"table\": \"marts.fct_inventory_batch\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"table\": \"marts.fct_inventory_batch\",\n  \"columns\": [\n    {\n      \"name\": \"batch_id\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"ERP batch id.\"\n    },\n    {\n      \"name\": \"store_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Store holding the batch.\"\n    },\n    {\n      \"name\": \"sku_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"ERP item number.\"\n    },\n    {\n      \"name\": \"lot_no\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Supplier lot number.\"\n    },\n    {\n      \"name\": \"received_on\",\n      \"type\": \"DATE\",\n      \"description\": \"Date the batch arrived at this store.\"\n    },\n    {\n      \"name\": \"expires_on\",\n      \"type\": \"DATE\",\n      \"description\": \"Expiry date of the lot.\"\n    },\n    {\n      \"name\": \"days_to_expiry\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Days from the snapshot date to expiry. Negative when already expired.\"\n    },\n    {\n      \"name\": \"source_type\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"purchase_order or transfer.\"\n    },\n    {\n      \"name\": \"source_doc\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Purchase order or transfer number.\"\n    },\n    {\n      \"name\": \"on_hand_qty_base\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Quantity on hand at the snapshot, base units.\"\n    },\n    {\n      \"name\": \"unit_cost_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Cost of one base unit from this batch, VND, VAT excluded.\"\n    },\n    {\n      \"name\": \"on_hand_value_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"on_hand_qty_base times unit_cost_excl_vat.\"\n    },\n    {\n      \"name\": \"snapshot_date\",\n      \"type\": \"DATE\",\n      \"description\": \"Date the stock position refers to.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "assistant",
+    "content": "Near-expiry definition unknown; look at data."
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__run_sql",
+    "content": "{\n  \"query\": \"select * from marts.fct_inventory_batch where store_code='NW013' and sku_code='100149' order by expires_on\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"columns\": [\n    \"batch_id\",\n    \"store_code\",\n    \"sku_code\",\n    \"lot_no\",\n    \"received_on\",\n    \"expires_on\",\n    \"days_to_expiry\",\n    \"source_type\",\n    \"source_doc\",\n    \"on_hand_qty_base\",\n    \"unit_cost_excl_vat\",\n    \"on_hand_value_excl_vat\",\n    \"snapshot_date\"\n  ],\n  \"rows\": [\n    [\n      \"B0002680\",\n      \"NW013\",\n      \"100149\",\n      \"L25F1794\",\n      \"2025-09-23\",\n      \"2026-05-21\",\n      -117,\n      \"purchase_order\",\n      \"PO002680\",\n      0,\n      724091.0,\n      0.0,\n      \"2026-09-15\"\n    ],\n    [\n      \"B0002679\",\n      \"NW013\",\n      \"100149\",\n      \"L26K8908\",\n      \"2026-01-23\",\n      \"2026-09-14\",\n      -1,\n      \"purchase_order\",\n      \"PO002679\",\n      7,\n      699474.0,\n      4896318.0,\n      \"2026-09-15\"\n    ]\n  ],\n  \"truncated\": false\n}"
+  },
+  {
+    "role": "assistant",
+    "content": "NW013 holds 0 near-expiry units of the compressor nebulizer (100149). Its only batch with stock has 7 units, but that batch expired on 2026-09-14, so it counts as expired, not near-expiry."
+  },
+  {
+    "role": "tool_call",
+    "name": "StructuredOutput",
+    "content": "{\n  \"value\": 0,\n  \"replacement_metric\": null,\n  \"caveats\": [\n    \"On-hand still includes stock reserved for transfers in transit and expired stock that waits for the monthly write-off.\"\n  ],\n  \"explanation\": \"I checked the inventory batches for NW013 and SKU 100149 at the 2026-09-15 snapshot. The only batch with stock (7 units) expired on 2026-09-14 (days_to_expiry = -1), so no unexpired near-expiry stock remains. The warehouse defines no near-expiry window, so I treated near-expiry as unexpired stock.\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "Structured output provided successfully"
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__list_tables",
+    "content": "{}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"tables\": [\n    {\n      \"table\": \"marts.dim_sku\",\n      \"description\": \"One row per SKU with its units and VAT rate.\"\n    },\n    {\n      \"table\": \"marts.dim_store\",\n      \"description\": \"One row per store, with its POS sync state at the snapshot.\"\n    },\n    {\n      \"table\": \"marts.fct_goods_received\",\n      \"description\": \"Stock received by each store, one row per batch, from suppliers or from other stores. Includes the opening stock received before the sales window.\"\n    },\n    {\n      \"table\": \"marts.fct_inventory_batch\",\n      \"description\": \"Stock at the snapshot, one row per batch, in base units. On-hand still includes stock reserved for transfers in transit and expired stock that waits for the monthly write-off.\"\n    },\n    {\n      \"table\": \"marts.fct_returns\",\n      \"description\": \"One row per returned item, with the return date and the original sale date when known.\"\n    },\n    {\n      \"table\": \"marts.fct_sales\",\n      \"description\": \"One row per sales line from both POS vendors, retries removed, base units, with and without VAT.\"\n    },\n    {\n      \"table\": \"marts.fct_transfers\",\n      \"description\": \"Store to store transfers in base units.\"\n    },\n    {\n      \"table\": \"marts.metricflow_time_spine\",\n      \"description\": \"One row per day for MetricFlow's cumulative windows and time offsets.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__describe_table",
+    "content": "{\n  \"table\": \"marts.fct_inventory_batch\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"table\": \"marts.fct_inventory_batch\",\n  \"columns\": [\n    {\n      \"name\": \"batch_id\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"ERP batch id.\"\n    },\n    {\n      \"name\": \"store_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Store holding the batch.\"\n    },\n    {\n      \"name\": \"sku_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"ERP item number.\"\n    },\n    {\n      \"name\": \"lot_no\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Supplier lot number.\"\n    },\n    {\n      \"name\": \"received_on\",\n      \"type\": \"DATE\",\n      \"description\": \"Date the batch arrived at this store.\"\n    },\n    {\n      \"name\": \"expires_on\",\n      \"type\": \"DATE\",\n      \"description\": \"Expiry date of the lot.\"\n    },\n    {\n      \"name\": \"days_to_expiry\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Days from the snapshot date to expiry. Negative when already expired.\"\n    },\n    {\n      \"name\": \"source_type\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"purchase_order or transfer.\"\n    },\n    {\n      \"name\": \"source_doc\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Purchase order or transfer number.\"\n    },\n    {\n      \"name\": \"on_hand_qty_base\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Quantity on hand at the snapshot, base units.\"\n    },\n    {\n      \"name\": \"unit_cost_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Cost of one base unit from this batch, VND, VAT excluded.\"\n    },\n    {\n      \"name\": \"on_hand_value_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"on_hand_qty_base times unit_cost_excl_vat.\"\n    },\n    {\n      \"name\": \"snapshot_date\",\n      \"type\": \"DATE\",\n      \"description\": \"Date the stock position refers to.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__describe_table",
+    "content": "{\n  \"table\": \"marts.dim_sku\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"table\": \"marts.dim_sku\",\n  \"columns\": [\n    {\n      \"name\": \"sku_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"ERP item number.\"\n    },\n    {\n      \"name\": \"sku_name\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Current name.\"\n    },\n    {\n      \"name\": \"category_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Category code.\"\n    },\n    {\n      \"name\": \"category_name\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Category name.\"\n    },\n    {\n      \"name\": \"base_uom\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Base unit all quantities in the marts are counted in.\"\n    },\n    {\n      \"name\": \"purchase_uom\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Unit suppliers deliver in.\"\n    },\n    {\n      \"name\": \"purchase_uom_factor\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Base units in one purchase unit.\"\n    },\n    {\n      \"name\": \"vat_rate\",\n      \"type\": \"DECIMAL(5,4)\",\n      \"description\": \"VAT rate as a fraction.\"\n    },\n    {\n      \"name\": \"list_price_incl_vat\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Shelf price per base unit, VND, VAT included.\"\n    },\n    {\n      \"name\": \"shelf_life_days\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Shelf life of a fresh lot, days.\"\n    },\n    {\n      \"name\": \"created_on\",\n      \"type\": \"DATE\",\n      \"description\": \"Date the SKU was created.\"\n    },\n    {\n      \"name\": \"updated_on\",\n      \"type\": \"DATE\",\n      \"description\": \"Date the SKU was last changed.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__run_sql",
+    "content": "{\n  \"query\": \"select case when days_to_expiry<0 then 'expired' when days_to_expiry<=30 then '0-30' when days_to_expiry<=60 then '31-60' when days_to_expiry<=90 then '61-90' else '90+' end b, count(*), sum(on_hand_value_excl_vat), min(snapshot_date), max(snapshot_date) from marts.fct_inventory_batch group by 1 order by 1\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"columns\": [\n    \"b\",\n    \"count_star()\",\n    \"sum(on_hand_value_excl_vat)\",\n    \"min(snapshot_date)\",\n    \"max(snapshot_date)\"\n  ],\n  \"rows\": [\n    [\n      \"0-30\",\n      554,\n      76430314.7549,\n      \"2026-09-15\",\n      \"2026-09-15\"\n    ],\n    [\n      \"31-60\",\n      624,\n      52008053.2051,\n      \"2026-09-15\",\n      \"2026-09-15\"\n    ],\n    [\n      \"61-90\",\n      690,\n      106650412.92,\n      \"2026-09-15\",\n      \"2026-09-15\"\n    ],\n    [\n      \"90+\",\n      21431,\n      5088594487.0453,\n      \"2026-09-15\",\n      \"2026-09-15\"\n    ],\n    [\n      \"expired\",\n      1739,\n      42362106.6834,\n      \"2026-09-15\",\n      \"2026-09-15\"\n    ]\n  ],\n  \"truncated\": false\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "StructuredOutput",
+    "content": "{\n  \"value\": 235088780.88,\n  \"replacement_metric\": null,\n  \"caveats\": [\n    \"On-hand still includes stock reserved for transfers in transit and expired stock that waits for the monthly write-off.\"\n  ],\n  \"explanation\": \"I summed on_hand_value_excl_vat (VND, VAT excluded) in marts.fct_inventory_batch for batches expiring in 0\\u201390 days from the 2026-09-15 snapshot. The data doesn't define \\\"close to expiry\\\", so the 90-day cutoff is my assumption. Already-expired batches are excluded (about 42.4M VND). Using 30 days gives 76.4M, and 60 days gives 128.4M.\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "Structured output provided successfully"
+  }
+]

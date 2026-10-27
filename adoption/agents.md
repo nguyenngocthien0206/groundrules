@@ -107,11 +107,41 @@ Two providers run the agent:
   per token, after `uv sync --group eval-api`. It has not been run in this
   repo yet.
 
-One development run shows why the eval matters. Asked NW014's August
-sell-through, the agent with the semantic layer answered 1.117 in five tool
-calls. The agent with raw SQL wrote: "The warehouse has no sell-through
-definition, so I used units sold / (opening stock + units received)", left
-out transfers, and answered 0.556. Both sounded equally sure.
+### What it measured
+Claude Sonnet 5.5 answered the 30 golden questions three times each through
+each server: 180 answers, no failed runs
+([results](../agent_eval/results/v0.2.0/summary.md)).
+
+- **With the governed server, 89 of 90 answers were correct** (99%, 95%
+  interval 97% to 100%), with a median of 2.5 tool calls.
+- **With raw SQL, 7 of 90 were** (8%, interval 0% to 18%). Only 13% had the
+  right number, and none of the conflict, caveat or deprecated questions was
+  answered correctly.
+
+The raw SQL agent's mistakes read like a list of the decision records:
+- it counted a bottle that expires in 71 days, so 49 instead of 48 (DR-001)
+- it left returns out of revenue, so August came out as the old store
+  sales dashboard's number, while noting that returns were "about 68.9M VND
+  excl. VAT in August" (DR-002)
+- it answered two of three margin questions as a percentage (DR-008)
+- it wrote "The warehouse has no sell-through metric, so I calculated it
+  myself", divided units sold by opening stock plus receipts, and answered
+  0.579 instead of 1.117 (DR-009)
+- it gave NW030's September sell-through a number instead of no value
+  (DR-011)
+- it saw that NW029's sync was behind, but said so in a sentence a program
+  cannot read instead of `pos_sync_lag:NW029` (DR-004)
+- it answered `revenue_v1` with a number instead of refusing it (DR-005)
+
+It sounded just as sure every time.
+
+The governed agent's one miss is worth reading too. Asked "What margin did
+vitamins and supplements make in July 2026?", it fetched the right amount,
+then followed `gross_margin`'s own note ("For a margin rate, divide by
+net_revenue for the same scope and say so") and answered a rate. The other
+two runs of the same question answered the amount. The lesson is that
+`agent_notes` are instructions an agent will act on, so they need the same
+review as the rule itself.
 
 ## What to adapt in your company
 - **Point the server at your semantic layer.** It reuses
