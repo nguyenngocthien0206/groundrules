@@ -4,8 +4,8 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: v0.2, step 14 (real run, results, release 0.2.0). v0.3 stays locked until the owner says go
-- State: step 13 (agent eval harness) built on `step-13-agent-eval`
+- Current step: v0.2 complete; release 0.2.0 next. v0.3 stays locked until the owner says go
+- State: step 14 (real run and results) built on `step-14-agent-eval-run`
 - Last verified green: 2026-10-26 on GitHub Actions, run 40357875267 on main (`make build`: 97 dbt nodes, 1 expected warning; lint 0 errors 0 warnings as of 2026-10-26; golden 30/30; 185 pytest; both demos; v2 parser)
 
 ## Build checklist (v0.1)
@@ -38,10 +38,10 @@ Copied from SPEC section 20. Tick when verified on a fresh clone.
 - [ ] No real company names or rules, no em dash character anywhere
 
 ## Later phases (locked until the owner says go)
-- [ ] v0.2 Agent-ready: MCP server + agent eval harness
+- [x] v0.2 Agent-ready: MCP server + agent eval harness
   - [x] 12. MCP server (`mcp_server/semantic.py`, raw SQL control arm)
   - [x] 13. Agent eval harness (`agent_eval/`, providers `claude-code` and `anthropic-api`)
-  - [ ] 14. Real run (Sonnet, 30 questions x 3 reps x 2 arms), results, release 0.2.0
+  - [x] 14. Real run (Sonnet, 30 questions x 3 reps x 2 arms), results, release 0.2.0
 - [ ] v0.3 Actions: action contract, shadow table, approval, write-back, audit log
 
 ## Implementation decisions
@@ -49,6 +49,10 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-27 | Caveats are graded strictly against the caveat codes; the right number is scored separately | Owner's choice after the pilot: a program reading the answer needs `pos_sync_lag:NW029`, not a sentence; scoring the number on its own keeps the control arm from losing twice for one gap. |
+| 2026-10-27 | The full run was split into batches by measured usage (12-run probe batch, one rep for every question, then reps 2 and 3); the runner resumed each time | The owner's subscription was at 53% when the run started; a 12-run batch measured the cost per run before committing to the rest. |
+| 2026-10-27 | Recorded agent output keeps non-ASCII characters as JSON escapes | One raw SQL trace contained an em dash in the agent's own words; escaping keeps the evidence verbatim when parsed and keeps the repo free of the character. |
+| 2026-10-27 | The governed arm's one miss (GQ-MARGIN-03, a rate instead of the amount, caused by `gross_margin`'s `agent_notes`) stays in the results; changing the note is follow-up work | Changing it mid-run would have made the result look better than what was measured. |
 | 2026-10-27 | The raw SQL server sets `enable_external_access = false`; the claude-code provider strips `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` from the agent's environment | Found in a security check before merge: DuckDB's `read_text`, `read_csv` and `glob` let a read-only SELECT read any file on the machine (credentials could have reached committed traces), and an API key in the environment could turn subscription runs into per-token billing. Both are tested. |
 | 2026-10-27 | The agent eval grades with `run_golden.check()`; scores are pass, value and caveats; failures (timeout, harness error, MCP not connected, no answer, refusal, wrong model) go to `errors.jsonl`, never into the score | One definition of correct for agents and the semantic layer; a broken run must not read as a wrong answer. |
 | 2026-10-27 | Claude Code runs from an empty temp folder with `CLAUDE_CODE_DISABLE_CLAUDE_MDS`, `CLAUDE_CODE_DISABLE_AUTO_MEMORY`, `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS`, `--setting-sources project`, `--tools ""`, `--strict-mcp-config`; requires Claude Code 2.1.221+; the probe checks the agent's tools from the init event | `--bare` only accepts an API key. Before 2.1.221 `-p` does not wait for MCP servers, so the agent ran with no tools (found by the probe on 2.1.156; the owner updated to 2.1.311). Claude Code still injects its own current date, so every question carries "as of 2026-09-15". |
@@ -153,6 +157,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-27 (step 14)
+- Done: probe, pilot (4 questions, one per kind, both arms) reviewed by the owner, full run of 30 questions x 3 reps x 2 arms on Sonnet 5.5 through Claude Code 2.1.311, results and traces in `agent_eval/results/v0.2.0/`, summary with token totals and API-equivalent cost and order-independent intervals, README and agents guide updated
+- Verified: 180 graded answers, no errors, no duplicate (question, rep), every row with model, usage, latency and grade; governed 89/90 correct (99%, 97% to 100%), raw SQL 7/90 (8%, 0% to 18%); right number 99% versus 13%; raw SQL 0% on conflict, caveat and deprecated questions; API-equivalent cost $1.37 (governed) and $2.84 (raw SQL), not billed on the subscription; results scanned for personal data and the em dash
+- Next: release 0.2.0 (separate PR), then follow-up: tighten `gross_margin`'s `agent_notes` so "margin" without "rate" means the amount, and rerun GQ-MARGIN-03
+- Notes: usage went from 53% to 72% over the probe, pilot and full run (the conversation itself counted too). Latency rose from about 24 s per answer in the pilot to about 40 s during the full run, from load, not from the harness. The raw SQL agent quoted decision record numbers it found in column descriptions, yet still missed the rules.
 
 ### 2026-10-27 (step 13)
 - Done: `agent_eval/` (cases from the golden questions, one prompt and answer schema for both arms, grading through `run_golden.check()`, Claude Code and Claude API providers, resumable runner with traces and failure classes, probe, summary with bootstrap intervals), optional `eval-api` dependency group, `make agent-eval`, `agent-eval-probe`, `agent-eval-summary`, 13 tests with a recorded Claude Code stream
