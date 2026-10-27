@@ -8,6 +8,7 @@ dependencies = [
     "dbt-core==1.12.6",
     "dbt-duckdb==1.11.0",
     "dbt-metricflow[dbt-duckdb]==0.15.0",
+    "mcp==2.3.0",
 ]
 
 [dependency-groups]
@@ -22,5 +23,5 @@ package = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["example", "golden", "golden/reference", "governance", "demos", "dashboards"]
+pythonpath = ["example", "golden", "golden/reference", "governance", "demos", "dashboards", "mcp_server"]
 addopts = "-q"
