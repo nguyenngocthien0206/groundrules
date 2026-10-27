@@ -20,7 +20,7 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "golden"))
 
-from semantic_client import DUCKDB_FILE, SemanticLayer  # noqa: E402
+from semantic_client import DUCKDB_FILE, READ_ONLY, SemanticLayer  # noqa: E402
 
 # (exposure, label, what it gets wrong, decision record that settled it)
 LEGACY = (
@@ -39,10 +39,9 @@ def month_bounds(month: str) -> tuple[date, date]:
 
 def legacy_numbers(month: str) -> dict[str, float]:
     start, end = month_bounds(month)
-    # Default settings on purpose: in one process DuckDB refuses a read_only
-    # connection to a file that MetricFlow's adapter already holds. The
-    # queries only read.
-    with duckdb.connect(str(DUCKDB_FILE)) as con:
+    # The same read-only config as MetricFlow's connection: in one process
+    # DuckDB refuses a second connection to the file with a different one.
+    with duckdb.connect(str(DUCKDB_FILE), config=READ_ONLY) as con:
         return {
             name: float(con.execute((ROOT / "legacy" / f"{name}.sql").read_text(encoding="utf-8"),
                                     {"month_start": start, "month_end": end}).fetchone()[0])

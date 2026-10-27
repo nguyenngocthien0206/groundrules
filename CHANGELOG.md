@@ -64,7 +64,15 @@ before this date are the owners' history and are not recorded here.
 
 ### [Unreleased]
 
-Nothing yet.
+#### Added
+- MCP server for agents (`mcp_server/semantic.py`): list, describe and query
+  certified metrics, resolve names to codes, refuse deprecated metrics with
+  their replacement, and carry the same caveats as the golden questions.
+  A raw SQL server is the control arm for the agent eval.
+
+#### Changed
+- MetricFlow readers open the DuckDB warehouse read-only, so several
+  processes can read at once; `dbt build` still writes.
 
 ### [0.1.0] - 2026-10-26
 

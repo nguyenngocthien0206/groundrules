@@ -1,4 +1,4 @@
-.PHONY: setup data data-manifest build metrics export-osi golden golden-freeze lint registry affected dashboard-data demo-conflict demo-drift check-v2 test
+.PHONY: setup data data-manifest build metrics export-osi golden golden-freeze lint registry affected dashboard-data mcp-server mcp-server-raw demo-conflict demo-drift check-v2 test
 
 DATA_DIR := example/data
 export DBT_SEND_ANONYMOUS_USAGE_STATS := false
@@ -64,6 +64,14 @@ affected:
 # Power BI (dashboards/exports/). Needs `make build`.
 dashboard-data:
 	uv run python dashboards/export.py
+
+# MCP servers for agents, over stdio (see adoption/agents.md). Needs `make build`.
+# The raw SQL one is the agent eval's control arm, not for production.
+mcp-server:
+	uv run python mcp_server/semantic.py
+
+mcp-server-raw:
+	uv run python mcp_server/raw_sql.py
 
 # Demo 1: three legacy dashboards, three revenue numbers, one certified answer.
 MONTH ?= 2026-08

@@ -11,7 +11,7 @@ import pytest
 import conflict
 import drift
 from catalog import load_expected
-from semantic_client import DUCKDB_FILE
+from semantic_client import DUCKDB_FILE, READ_ONLY
 
 AUGUST = "2026-08"
 
@@ -31,7 +31,7 @@ def certified() -> float:
 @pytest.fixture(scope="module")
 def marts():
     def one(sql: str) -> float:
-        with duckdb.connect(str(DUCKDB_FILE)) as con:
+        with duckdb.connect(str(DUCKDB_FILE), config=READ_ONLY) as con:
             return float(con.execute(sql, {"s": date(2026, 8, 1), "e": date(2026, 8, 31)}).fetchone()[0])
     return one
 

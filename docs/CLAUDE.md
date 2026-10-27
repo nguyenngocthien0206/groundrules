@@ -15,7 +15,7 @@ Core idea: agents remove the arrangement (an analyst in the loop) that made it s
 - Pin exact versions in `pyproject.toml`. Record the versions you verified in `PROGRESS.md`. The dbt line is dbt-core 1.12 with dbt-duckdb 1.11 (decided in step 2, see `PROGRESS.md`); the project also parses with `dbt parse --use-v2-parser`.
 - The warehouse is swappable: the same project must run on Snowflake, BigQuery, Databricks or Postgres by changing `profiles.yml`, the source definitions and the few staging models that depend on how data lands (listed in `adoption/warehouses.md`). Marts and the semantic layer never change for a warehouse.
 - Optional dashboard: Power BI Desktop (Windows only, opened by hand) reading Parquet exports of saved queries; `pyarrow` (dev dependency) writes the Parquet.
-- Optional extras (phase 2 and later, never required for the core demo): MCP access built on `dbt-mcp`, and an agent eval harness.
+- v0.2: MCP servers on the official `mcp` Python SDK (`mcp_server/`; `dbt-mcp` needs the dbt platform for semantic layer tools), and an agent eval harness.
 - Ask before adding any dependency not listed here.
 - `make` needs WSL or Git Bash on Windows.
 
@@ -32,6 +32,7 @@ Core idea: agents remove the arrangement (an analyst in the loop) that made it s
 - `make registry`: regenerate `governance/registry.md` (the lint fails when it is stale)
 - `make affected BASE=origin/main`: metrics and exposures a branch touches, for the PR template
 - `make check-v2`: parse with dbt's v2 parser into its own `target_v2/` (it would overwrite `target/`)
+- `make mcp-server`: the governed MCP server for agents over stdio (`make mcp-server-raw`: the raw SQL control arm)
 - `make dashboard-data`: run saved queries through MetricFlow and write Parquet to `dashboards/exports/` for the Power BI report (optional; open `dashboards/groundrules.pbip`, set `ExportFolder`, refresh)
 - `make demo-drift`: change a rule silently, show golden questions failing, restore
 - `make demo-conflict`: show three legacy definitions of net revenue disagreeing, then the certified one
