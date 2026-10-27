@@ -82,6 +82,37 @@ With only the tables, an agent has to rediscover every rule on its own:
 Each one it misses is a confident wrong answer. The column descriptions
 help, but a description is not a decision, and nothing checks it.
 
+## Measure it
+`agent_eval/` asks an agent the 30 golden questions through one server or
+the other and grades every answer with the golden runner's own check: the
+right number, the right caveats, and refusing a deprecated metric.
+
+```bash
+make agent-eval-probe                                 # is the agent's context clean?
+make agent-eval ARM=semantic RUN=pilot REPS=1 CASES=GQ-SELL-01
+make agent-eval ARM=raw_sql  RUN=pilot REPS=1 CASES=GQ-SELL-01
+make agent-eval-summary RUN=pilot
+```
+
+Two providers run the agent:
+
+- **`claude-code`** (default) runs Claude Code headless on a Claude
+  subscription, so it uses the plan's usage limits instead of a bill. It
+  needs Claude Code 2.1.221 or later, which waits for MCP servers before the
+  first turn. Each question runs from an empty folder with CLAUDE.md files,
+  auto memory and bundled skills switched off, only the arm's server, and
+  no built-in file, shell or web tools. The probe checks this before any
+  scored run.
+- **`anthropic-api`** calls the Claude API with `ANTHROPIC_API_KEY`, billed
+  per token, after `uv sync --group eval-api`. It has not been run in this
+  repo yet.
+
+One development run shows why the eval matters. Asked NW014's August
+sell-through, the agent with the semantic layer answered 1.117 in five tool
+calls. The agent with raw SQL wrote: "The warehouse has no sell-through
+definition, so I used units sold / (opening stock + units received)", left
+out transfers, and answered 0.556. Both sounded equally sure.
+
 ## What to adapt in your company
 - **Point the server at your semantic layer.** It reuses
   `golden/semantic_client.py`, so it works wherever the golden runner works.

@@ -105,6 +105,16 @@ def test_raw_sql_runs_one_select_and_nothing_else():
     assert len(big["rows"]) == raw_sql.MAX_ROWS and big["truncated"]
 
 
+@pytest.mark.parametrize("query", [
+    "select content from read_text('pyproject.toml')",
+    "select * from read_csv('example/data/erp/stores.csv')",
+    "select count(*) from glob('*')",
+])
+def test_raw_sql_cannot_read_files_on_the_machine(query):
+    # A SELECT can call DuckDB's file functions; read-only alone does not stop them.
+    assert "Permission Error" in raw_sql.run_sql(query)["error"]
+
+
 # Over stdio, the way an agent connects
 
 

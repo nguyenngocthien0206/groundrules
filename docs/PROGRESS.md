@@ -4,8 +4,8 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: v0.2, step 13 (agent eval harness). v0.3 stays locked until the owner says go
-- State: step 12 (MCP server) built on `step-12-mcp-server`
+- Current step: v0.2, step 14 (real run, results, release 0.2.0). v0.3 stays locked until the owner says go
+- State: step 13 (agent eval harness) built on `step-13-agent-eval`
 - Last verified green: 2026-10-26 on GitHub Actions, run 40357875267 on main (`make build`: 97 dbt nodes, 1 expected warning; lint 0 errors 0 warnings as of 2026-10-26; golden 30/30; 185 pytest; both demos; v2 parser)
 
 ## Build checklist (v0.1)
@@ -40,7 +40,7 @@ Copied from SPEC section 20. Tick when verified on a fresh clone.
 ## Later phases (locked until the owner says go)
 - [ ] v0.2 Agent-ready: MCP server + agent eval harness
   - [x] 12. MCP server (`mcp_server/semantic.py`, raw SQL control arm)
-  - [ ] 13. Agent eval harness (`agent_eval/`, providers `claude-code` and `anthropic-api`)
+  - [x] 13. Agent eval harness (`agent_eval/`, providers `claude-code` and `anthropic-api`)
   - [ ] 14. Real run (Sonnet, 30 questions x 3 reps x 2 arms), results, release 0.2.0
 - [ ] v0.3 Actions: action contract, shadow table, approval, write-back, audit log
 
@@ -49,6 +49,10 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-27 | The raw SQL server sets `enable_external_access = false`; the claude-code provider strips `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` from the agent's environment | Found in a security check before merge: DuckDB's `read_text`, `read_csv` and `glob` let a read-only SELECT read any file on the machine (credentials could have reached committed traces), and an API key in the environment could turn subscription runs into per-token billing. Both are tested. |
+| 2026-10-27 | The agent eval grades with `run_golden.check()`; scores are pass, value and caveats; failures (timeout, harness error, MCP not connected, no answer, refusal, wrong model) go to `errors.jsonl`, never into the score | One definition of correct for agents and the semantic layer; a broken run must not read as a wrong answer. |
+| 2026-10-27 | Claude Code runs from an empty temp folder with `CLAUDE_CODE_DISABLE_CLAUDE_MDS`, `CLAUDE_CODE_DISABLE_AUTO_MEMORY`, `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS`, `--setting-sources project`, `--tools ""`, `--strict-mcp-config`; requires Claude Code 2.1.221+; the probe checks the agent's tools from the init event | `--bare` only accepts an API key. Before 2.1.221 `-p` does not wait for MCP servers, so the agent ran with no tools (found by the probe on 2.1.156; the owner updated to 2.1.311). Claude Code still injects its own current date, so every question carries "as of 2026-09-15". |
+| 2026-10-27 | On Windows the harness calls the native `claude.exe` behind npm's `claude.cmd` | A batch shim cuts arguments at newlines and mangles quotes; the first probe ran with none of its flags. |
 | 2026-10-27 | v0.2 builds its own thin MCP server on the official `mcp` SDK (2.3.0) instead of `dbt-mcp` | `dbt-mcp`'s semantic layer tools need the dbt platform (`DBT_HOST`, `DBT_TOKEN`, `DBT_PROD_ENV_ID`; "works without dbt platform: no") and it needs Python 3.12+; locally it only offers dbt CLI tools, which would let an agent compute metrics in SQL. |
 | 2026-10-27 | `mcp_server/`, not SPEC's `mcp/` | A top-level `mcp` folder can shadow the `mcp` SDK package on `sys.path`. |
 | 2026-10-27 | MetricFlow readers open DuckDB with `access_mode: READ_ONLY` (profile `config_options` from `GROUNDRULES_DUCKDB_ACCESS`, set by `SemanticLayer`); direct connections pass the same config | DuckDB allows one read-write process, so several MCP servers (one per agent session) and the tests' stdio servers could not share the file. In one process every connection must carry the same config. `dbt build` keeps the default and writes. |
@@ -149,6 +153,13 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-27 (step 13)
+- Done: `agent_eval/` (cases from the golden questions, one prompt and answer schema for both arms, grading through `run_golden.check()`, Claude Code and Claude API providers, resumable runner with traces and failure classes, probe, summary with bootstrap intervals), optional `eval-api` dependency group, `make agent-eval`, `agent-eval-probe`, `agent-eval-summary`, 13 tests with a recorded Claude Code stream
+- Verified: oracle 100%, null and constant 0%, timeouts go to errors and are retried on resume; probe passes on Claude Code 2.1.311 (only the four MCP tools, no CLAUDE.md, memory or skills); one real semantic run of GQ-SELL-01 passed (1.117, five tool calls, 35 s); one real raw SQL run failed (0.556: the agent invented "units sold / (opening stock + units received)" and left out transfers); the API provider imports without `anthropic` and refuses to run without its group
+- Security check before merge: no secrets in the tree or the history; the raw SQL server could read local files and the provider passed API credentials through, both fixed and tested.
+- Next: step 14: pilot for the owner's review, then the full run (30 questions x 3 reps x 2 arms on Sonnet)
+- Notes: five headless calls were used, two more than planned: the first ran through npm's `claude.cmd` and lost every flag, the second showed Claude Code 2.1.156 does not wait for MCP servers. The anthropic-api provider is untested by the owner's decision. Claude Code also uses a small model for background work; the served-model check reads the main model from the init event.
 
 ### 2026-10-27 (step 12)
 - Done: `mcp_server/semantic.py` (list, describe, find values, query; refusals; caveats; null stays null), `mcp_server/raw_sql.py` (read-only, one SELECT, 200-row cap), read-only warehouse access for MetricFlow readers, `make mcp-server` and `make mcp-server-raw`, `adoption/agents.md`, 17 tests including a stdio round trip per server

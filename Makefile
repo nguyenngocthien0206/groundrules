@@ -1,4 +1,4 @@
-.PHONY: setup data data-manifest build metrics export-osi golden golden-freeze lint registry affected dashboard-data mcp-server mcp-server-raw demo-conflict demo-drift check-v2 test
+.PHONY: setup data data-manifest build metrics export-osi golden golden-freeze lint registry affected dashboard-data mcp-server mcp-server-raw agent-eval agent-eval-probe agent-eval-summary demo-conflict demo-drift check-v2 test
 
 DATA_DIR := example/data
 export DBT_SEND_ANONYMOUS_USAGE_STATS := false
@@ -72,6 +72,25 @@ mcp-server:
 
 mcp-server-raw:
 	uv run python mcp_server/raw_sql.py
+
+# Agent eval: the golden questions through an agent connected to one arm
+# (semantic or raw_sql). The claude-code provider runs on your Claude
+# subscription and uses its usage limits; run the probe first.
+#   make agent-eval ARM=raw_sql RUN=pilot CASES=GQ-SELL-01,GQ-REV-01 REPS=1
+PROVIDER ?= claude-code
+ARM ?= semantic
+MODEL ?= sonnet
+REPS ?= 3
+CASES ?=
+RUN ?= $(shell date +%Y%m%d)
+agent-eval:
+	uv run python agent_eval/run.py --provider $(PROVIDER) --arm $(ARM) --model $(MODEL) --reps $(REPS) --run-id $(RUN) $(if $(CASES),--cases $(CASES))
+
+agent-eval-probe:
+	uv run python agent_eval/run.py --provider $(PROVIDER) --model $(MODEL) --probe
+
+agent-eval-summary:
+	uv run python agent_eval/summary.py $(RUN)
 
 # Demo 1: three legacy dashboards, three revenue numbers, one certified answer.
 MONTH ?= 2026-08
