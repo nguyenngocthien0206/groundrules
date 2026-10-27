@@ -33,6 +33,7 @@ Core idea: agents remove the arrangement (an analyst in the loop) that made it s
 - `make affected BASE=origin/main`: metrics and exposures a branch touches, for the PR template
 - `make check-v2`: parse with dbt's v2 parser into its own `target_v2/` (it would overwrite `target/`)
 - `make mcp-server`: the governed MCP server for agents over stdio (`make mcp-server-raw`: the raw SQL control arm)
+- `make agent-eval ARM=semantic|raw_sql RUN=<id> [REPS=3] [CASES=...]`: the golden questions through an agent (Claude Code headless by default, uses the subscription); `make agent-eval-probe` first, `make agent-eval-summary RUN=<id>` after
 - `make dashboard-data`: run saved queries through MetricFlow and write Parquet to `dashboards/exports/` for the Power BI report (optional; open `dashboards/groundrules.pbip`, set `ExportFolder`, refresh)
 - `make demo-drift`: change a rule silently, show golden questions failing, restore
 - `make demo-conflict`: show three legacy definitions of net revenue disagreeing, then the certified one

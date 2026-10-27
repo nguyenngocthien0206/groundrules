@@ -69,6 +69,10 @@ before this date are the owners' history and are not recorded here.
   certified metrics, resolve names to codes, refuse deprecated metrics with
   their replacement, and carry the same caveats as the golden questions.
   A raw SQL server is the control arm for the agent eval.
+- Agent eval (`agent_eval/`): the golden questions through an agent on
+  either server, graded with the golden runner's own check, with resume,
+  traces, failure classes and bootstrap intervals. Runs on Claude Code
+  headless; a Claude API provider is included.
 
 #### Changed
 - MetricFlow readers open the DuckDB warehouse read-only, so several
