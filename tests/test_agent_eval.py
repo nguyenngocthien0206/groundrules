@@ -13,7 +13,7 @@ import run as runner
 import summary
 from cases import load_cases
 from grading import grade
-from providers import STRUCTURED_TOOL, RunResult, parse_stream, served_model_matches
+from providers import STRUCTURED_TOOL, RunResult, claude_code_env, parse_stream, served_model_matches
 
 FIXTURE = Path(__file__).parent / "fixtures" / "claude_code_stream.jsonl"
 CASES = {c["id"]: c for c in load_cases()}
@@ -134,6 +134,15 @@ def test_a_wrong_served_model_is_an_error_not_a_grade():
     assert not served_model_matches("sonnet", "claude-haiku-5-5")
     assert served_model_matches("claude-sonnet-5-5", "claude-sonnet-5-5")
     assert not served_model_matches("claude-sonnet-5-5", "claude-sonnet-5")
+
+
+def test_subscription_runs_never_see_api_credentials(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-not-a-real-key")
+    monkeypatch.setenv("ANTHROPIC_AUTH_TOKEN", "not-a-real-token")
+    env = claude_code_env()
+    assert "ANTHROPIC_API_KEY" not in env and "ANTHROPIC_AUTH_TOKEN" not in env
+    assert env["CLAUDE_CODE_DISABLE_CLAUDE_MDS"] == "1" and env["CLAUDE_CODE_DISABLE_AUTO_MEMORY"] == "1"
+    assert "PATH" in env  # everything else still passes through
 
 
 # Summary

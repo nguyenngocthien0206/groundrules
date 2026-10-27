@@ -7,6 +7,8 @@ trace. They never grade; grading.py does.
 - ClaudeCodeProvider runs `claude -p` on the user's Claude subscription. It
   starts from an empty folder with CLAUDE.md files, auto memory and bundled
   skills switched off, only the arm's MCP server, and no built-in tools.
+  API credentials are removed from its environment, so a key set for the
+  other provider can never turn subscription runs into per-token billing.
 - AnthropicApiProvider calls the Claude API with ANTHROPIC_API_KEY (billed
   per token, separately from a subscription). It is written to the SDK's
   documented interface and has not been run in this repo yet.
@@ -89,6 +91,21 @@ def claude_code_version(binary: str) -> tuple[int, ...]:
     if not match:
         raise EvalError(f"could not read the Claude Code version from {out!r}")
     return tuple(int(x) for x in match.groups())
+
+
+# Credentials that would make Claude Code bill the Claude API per token
+# instead of using the subscription the claude-code provider is meant for.
+API_CREDENTIALS = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
+
+
+def claude_code_env() -> dict[str, str]:
+    """The environment for one `claude -p`: the user's, without API credentials,
+    with CLAUDE.md files, auto memory and bundled skills switched off."""
+    env = {k: v for k, v in os.environ.items() if k not in API_CREDENTIALS}
+    env.update(CLAUDE_CODE_DISABLE_CLAUDE_MDS="1",
+               CLAUDE_CODE_DISABLE_AUTO_MEMORY="1",
+               CLAUDE_CODE_DISABLE_BUNDLED_SKILLS="1")
+    return env
 
 
 def parse_stream(lines: list[str], server: str) -> RunResult:
@@ -186,14 +203,11 @@ class ClaudeCodeProvider:
             config = Path(work) / "mcp.json"
             config.write_text(json.dumps({"mcpServers": {server: {
                 "command": sys.executable, "args": [str(ARMS[arm]["script"])]}}}), encoding="utf-8")
-            env = dict(os.environ,
-                       CLAUDE_CODE_DISABLE_CLAUDE_MDS="1",
-                       CLAUDE_CODE_DISABLE_AUTO_MEMORY="1",
-                       CLAUDE_CODE_DISABLE_BUNDLED_SKILLS="1")
             prompt = question if raw else user_message(question)
             started = time.perf_counter()
             try:
-                proc = subprocess.run(self.command(prompt, schema or ANSWER_SCHEMA, arm, config), cwd=work, env=env,
+                proc = subprocess.run(self.command(prompt, schema or ANSWER_SCHEMA, arm, config), cwd=work,
+                                      env=claude_code_env(),
                                       capture_output=True, text=True, encoding="utf-8", timeout=timeout_s)
             except subprocess.TimeoutExpired:
                 return RunResult(error="timeout", detail=f"no answer within {timeout_s:.0f}s",
