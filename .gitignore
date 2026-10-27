@@ -10,6 +10,9 @@ example/data/
 # Golden question runner report (CI uploads it)
 golden/report/
 
+# Agent eval runs (results worth keeping are copied out deliberately)
+agent_eval/runs/
+
 # Dashboard exports (rebuild with `make dashboard-data`) and Power BI's local files
 dashboards/exports/
 dashboards/**/.pbi/localSettings.json
