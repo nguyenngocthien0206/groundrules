@@ -1,0 +1,56 @@
+[
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__list_tables",
+    "content": "{}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"tables\": [\n    {\n      \"table\": \"marts.dim_sku\",\n      \"description\": \"One row per SKU with its units and VAT rate.\"\n    },\n    {\n      \"table\": \"marts.dim_store\",\n      \"description\": \"One row per store, with its POS sync state at the snapshot.\"\n    },\n    {\n      \"table\": \"marts.fct_goods_received\",\n      \"description\": \"Stock received by each store, one row per batch, from suppliers or from other stores. Includes the opening stock received before the sales window.\"\n    },\n    {\n      \"table\": \"marts.fct_inventory_batch\",\n      \"description\": \"Stock at the snapshot, one row per batch, in base units. On-hand still includes stock reserved for transfers in transit and expired stock that waits for the monthly write-off.\"\n    },\n    {\n      \"table\": \"marts.fct_returns\",\n      \"description\": \"One row per returned item, with the return date and the original sale date when known.\"\n    },\n    {\n      \"table\": \"marts.fct_sales\",\n      \"description\": \"One row per sales line from both POS vendors, retries removed, base units, with and without VAT.\"\n    },\n    {\n      \"table\": \"marts.fct_transfers\",\n      \"description\": \"Store to store transfers in base units.\"\n    },\n    {\n      \"table\": \"marts.metricflow_time_spine\",\n      \"description\": \"One row per day for MetricFlow's cumulative windows and time offsets.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__describe_table",
+    "content": "{\n  \"table\": \"marts.fct_sales\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"table\": \"marts.fct_sales\",\n  \"columns\": [\n    {\n      \"name\": \"sales_line_id\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Vendor, receipt and line number joined.\"\n    },\n    {\n      \"name\": \"pos_vendor\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"POS vendor, A or B.\"\n    },\n    {\n      \"name\": \"receipt_no\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Receipt number. Not unique per SKU, a receipt can hold the same SKU twice.\"\n    },\n    {\n      \"name\": \"line_no\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Line number within the receipt.\"\n    },\n    {\n      \"name\": \"store_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Store code.\"\n    },\n    {\n      \"name\": \"sku_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"ERP item number.\"\n    },\n    {\n      \"name\": \"business_date\",\n      \"type\": \"DATE\",\n      \"description\": \"Local date of the sale.\"\n    },\n    {\n      \"name\": \"sold_at\",\n      \"type\": \"TIMESTAMP\",\n      \"description\": \"Local time of the sale.\"\n    },\n    {\n      \"name\": \"uom_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Unit sold.\"\n    },\n    {\n      \"name\": \"qty\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Quantity in uom_code.\"\n    },\n    {\n      \"name\": \"qty_base\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Quantity in base units.\"\n    },\n    {\n      \"name\": \"vat_rate\",\n      \"type\": \"DECIMAL(5,4)\",\n      \"description\": \"VAT rate as a fraction.\"\n    },\n    {\n      \"name\": \"unit_price_incl_vat\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Shelf price of one uom_code, VAT included.\"\n    },\n    {\n      \"name\": \"gross_incl_vat\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Before discount, VAT included.\"\n    },\n    {\n      \"name\": \"discount_incl_vat\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Discount, VAT included.\"\n    },\n    {\n      \"name\": \"amount_incl_vat\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Paid, VAT included.\"\n    },\n    {\n      \"name\": \"gross_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Before discount, VAT excluded.\"\n    },\n    {\n      \"name\": \"discount_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Discount, VAT excluded.\"\n    },\n    {\n      \"name\": \"amount_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Paid, VAT excluded.\"\n    },\n    {\n      \"name\": \"unit_cost_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Weighted average cost of one base unit of the SKU at this store (DR-008).\"\n    },\n    {\n      \"name\": \"cogs_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Cost of goods sold for the line, qty_base times unit_cost_excl_vat.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__describe_table",
+    "content": "{\n  \"table\": \"marts.dim_store\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"table\": \"marts.dim_store\",\n  \"columns\": [\n    {\n      \"name\": \"store_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Store code, for example NW001.\"\n    },\n    {\n      \"name\": \"store_name\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Store name.\"\n    },\n    {\n      \"name\": \"district_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"District the store belongs to.\"\n    },\n    {\n      \"name\": \"district_name\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"District name.\"\n    },\n    {\n      \"name\": \"opened_on\",\n      \"type\": \"DATE\",\n      \"description\": \"Date the store opened. Sell-through answers use it to flag new stores (DR-011).\"\n    },\n    {\n      \"name\": \"days_open\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Days between opening and the snapshot date.\"\n    },\n    {\n      \"name\": \"is_newly_opened\",\n      \"type\": \"BOOLEAN\",\n      \"description\": \"Opened in the 31 days before the snapshot.\"\n    },\n    {\n      \"name\": \"is_open_24h\",\n      \"type\": \"BOOLEAN\",\n      \"description\": \"Open around the clock.\"\n    },\n    {\n      \"name\": \"pos_vendor\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"POS vendor, A or B.\"\n    },\n    {\n      \"name\": \"last_synced_at\",\n      \"type\": \"TIMESTAMP\",\n      \"description\": \"Last successful POS sync, local time.\"\n    },\n    {\n      \"name\": \"last_sync_attempt_at\",\n      \"type\": \"TIMESTAMP\",\n      \"description\": \"Last sync attempt, local time.\"\n    },\n    {\n      \"name\": \"last_sync_error\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Error of the last attempt, null when it worked.\"\n    },\n    {\n      \"name\": \"pos_data_through\",\n      \"type\": \"DATE\",\n      \"description\": \"Last business day whose sales have reached the warehouse. Answers use it to name lagging stores (DR-004).\"\n    },\n    {\n      \"name\": \"pos_lag_days\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Business days of sales still missing at the snapshot. 0 for a store synced through the day before.\"\n    },\n    {\n      \"name\": \"is_pos_sync_lagging\",\n      \"type\": \"BOOLEAN\",\n      \"description\": \"True when any day of sales is missing. Answers that include such a store must say so (DR-004).\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__run_sql",
+    "content": "{\n  \"query\": \"select (select sum(amount_incl_vat) from marts.fct_sales where business_date='2026-09-14') incl, (select sum(amount_excl_vat) from marts.fct_sales where business_date='2026-09-14') excl, (select count(distinct store_code) from marts.fct_sales where business_date='2026-09-14') stores\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"columns\": [\n    \"incl\",\n    \"excl\",\n    \"stores\"\n  ],\n  \"rows\": [\n    [\n      241529500,\n      226830640.6929,\n      28\n    ]\n  ],\n  \"truncated\": false\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__run_sql",
+    "content": "{\n  \"query\": \"select store_code, pos_data_through, pos_lag_days, last_sync_error from marts.dim_store where is_pos_sync_lagging\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"columns\": [\n    \"store_code\",\n    \"pos_data_through\",\n    \"pos_lag_days\",\n    \"last_sync_error\"\n  ],\n  \"rows\": [\n    [\n      \"NW029\",\n      \"2026-09-11\",\n      3,\n      \"connection timeout\"\n    ],\n    [\n      \"NW030\",\n      \"2026-09-11\",\n      3,\n      \"connection timeout\"\n    ]\n  ],\n  \"truncated\": false\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "StructuredOutput",
+    "content": "{\n  \"value\": 241529500,\n  \"replacement_metric\": null,\n  \"caveats\": [\n    \"Stores NW029 and NW030 are lagging on POS sync (data only through 2026-09-11, 3 days missing, last sync error: connection timeout), so yesterday's sales for them are not included.\",\n    \"Only 28 of 30 stores have sales for 2026-09-14.\"\n  ],\n  \"explanation\": \"I summed amount_incl_vat (amount paid, VAT included) in marts.fct_sales for business_date 2026-09-14. That comes to 241,529,500 VND, or 226,830,640.69 VND excluding VAT. I checked dim_store for stores whose POS sync is behind.\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "Structured output provided successfully"
+  }
+]

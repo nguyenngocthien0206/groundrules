@@ -1,0 +1,56 @@
+[
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__list_tables",
+    "content": "{}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"tables\": [\n    {\n      \"table\": \"marts.dim_sku\",\n      \"description\": \"One row per SKU with its units and VAT rate.\"\n    },\n    {\n      \"table\": \"marts.dim_store\",\n      \"description\": \"One row per store, with its POS sync state at the snapshot.\"\n    },\n    {\n      \"table\": \"marts.fct_goods_received\",\n      \"description\": \"Stock received by each store, one row per batch, from suppliers or from other stores. Includes the opening stock received before the sales window.\"\n    },\n    {\n      \"table\": \"marts.fct_inventory_batch\",\n      \"description\": \"Stock at the snapshot, one row per batch, in base units. On-hand still includes stock reserved for transfers in transit and expired stock that waits for the monthly write-off.\"\n    },\n    {\n      \"table\": \"marts.fct_returns\",\n      \"description\": \"One row per returned item, with the return date and the original sale date when known.\"\n    },\n    {\n      \"table\": \"marts.fct_sales\",\n      \"description\": \"One row per sales line from both POS vendors, retries removed, base units, with and without VAT.\"\n    },\n    {\n      \"table\": \"marts.fct_transfers\",\n      \"description\": \"Store to store transfers in base units.\"\n    },\n    {\n      \"table\": \"marts.metricflow_time_spine\",\n      \"description\": \"One row per day for MetricFlow's cumulative windows and time offsets.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__describe_table",
+    "content": "{\n  \"table\": \"marts.fct_sales\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"table\": \"marts.fct_sales\",\n  \"columns\": [\n    {\n      \"name\": \"sales_line_id\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Vendor, receipt and line number joined.\"\n    },\n    {\n      \"name\": \"pos_vendor\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"POS vendor, A or B.\"\n    },\n    {\n      \"name\": \"receipt_no\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Receipt number. Not unique per SKU, a receipt can hold the same SKU twice.\"\n    },\n    {\n      \"name\": \"line_no\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Line number within the receipt.\"\n    },\n    {\n      \"name\": \"store_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Store code.\"\n    },\n    {\n      \"name\": \"sku_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"ERP item number.\"\n    },\n    {\n      \"name\": \"business_date\",\n      \"type\": \"DATE\",\n      \"description\": \"Local date of the sale.\"\n    },\n    {\n      \"name\": \"sold_at\",\n      \"type\": \"TIMESTAMP\",\n      \"description\": \"Local time of the sale.\"\n    },\n    {\n      \"name\": \"uom_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Unit sold.\"\n    },\n    {\n      \"name\": \"qty\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Quantity in uom_code.\"\n    },\n    {\n      \"name\": \"qty_base\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Quantity in base units.\"\n    },\n    {\n      \"name\": \"vat_rate\",\n      \"type\": \"DECIMAL(5,4)\",\n      \"description\": \"VAT rate as a fraction.\"\n    },\n    {\n      \"name\": \"unit_price_incl_vat\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Shelf price of one uom_code, VAT included.\"\n    },\n    {\n      \"name\": \"gross_incl_vat\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Before discount, VAT included.\"\n    },\n    {\n      \"name\": \"discount_incl_vat\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Discount, VAT included.\"\n    },\n    {\n      \"name\": \"amount_incl_vat\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Paid, VAT included.\"\n    },\n    {\n      \"name\": \"gross_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Before discount, VAT excluded.\"\n    },\n    {\n      \"name\": \"discount_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Discount, VAT excluded.\"\n    },\n    {\n      \"name\": \"amount_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Paid, VAT excluded.\"\n    },\n    {\n      \"name\": \"unit_cost_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Weighted average cost of one base unit of the SKU at this store (DR-008).\"\n    },\n    {\n      \"name\": \"cogs_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Cost of goods sold for the line, qty_base times unit_cost_excl_vat.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__describe_table",
+    "content": "{\n  \"table\": \"marts.fct_returns\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"table\": \"marts.fct_returns\",\n  \"columns\": [\n    {\n      \"name\": \"return_line_id\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Return id and line number joined.\"\n    },\n    {\n      \"name\": \"return_id\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Returns system id.\"\n    },\n    {\n      \"name\": \"line_no\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Position within the return.\"\n    },\n    {\n      \"name\": \"store_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Store where the item came back.\"\n    },\n    {\n      \"name\": \"sku_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"ERP item number.\"\n    },\n    {\n      \"name\": \"return_date\",\n      \"type\": \"DATE\",\n      \"description\": \"Local date of the return.\"\n    },\n    {\n      \"name\": \"returned_at\",\n      \"type\": \"TIMESTAMP\",\n      \"description\": \"Local time of the return.\"\n    },\n    {\n      \"name\": \"original_receipt_no\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Receipt of the original sale, null when the customer had none.\"\n    },\n    {\n      \"name\": \"sale_business_date\",\n      \"type\": \"DATE\",\n      \"description\": \"Business date of the original sale, null when it is not in the extract.\"\n    },\n    {\n      \"name\": \"has_matching_sale\",\n      \"type\": \"BOOLEAN\",\n      \"description\": \"True when the original sale was found.\"\n    },\n    {\n      \"name\": \"uom_code\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Unit returned.\"\n    },\n    {\n      \"name\": \"qty\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Quantity in uom_code.\"\n    },\n    {\n      \"name\": \"qty_base\",\n      \"type\": \"INTEGER\",\n      \"description\": \"Quantity in base units.\"\n    },\n    {\n      \"name\": \"vat_rate\",\n      \"type\": \"DECIMAL(5,4)\",\n      \"description\": \"VAT rate as a fraction.\"\n    },\n    {\n      \"name\": \"refund_incl_vat\",\n      \"type\": \"BIGINT\",\n      \"description\": \"Refunded, VAT included.\"\n    },\n    {\n      \"name\": \"refund_excl_vat\",\n      \"type\": \"DECIMAL(18,4)\",\n      \"description\": \"Refunded, VAT excluded.\"\n    },\n    {\n      \"name\": \"return_reason\",\n      \"type\": \"VARCHAR\",\n      \"description\": \"Reason code.\"\n    }\n  ]\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__run_sql",
+    "content": "{\n  \"query\": \"select sum(amount_excl_vat) net_excl, sum(amount_incl_vat) incl, count(*) n from marts.fct_sales where business_date>=DATE '2026-04-01' and business_date<DATE '2026-05-01'\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"columns\": [\n    \"net_excl\",\n    \"incl\",\n    \"n\"\n  ],\n  \"rows\": [\n    [\n      7116723705.6291,\n      7589272600,\n      76683\n    ]\n  ],\n  \"truncated\": false\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "mcp__warehouse__run_sql",
+    "content": "{\n  \"query\": \"select sum(refund_excl_vat) from marts.fct_returns where return_date>=DATE '2026-04-01' and return_date<DATE '2026-05-01'\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"columns\": [\n    \"sum(refund_excl_vat)\"\n  ],\n  \"rows\": [\n    [\n      60139656.1907\n    ]\n  ],\n  \"truncated\": false\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "StructuredOutput",
+    "content": "{\n  \"value\": 7116723705.6291,\n  \"replacement_metric\": null,\n  \"caveats\": [],\n  \"explanation\": \"I summed amount_excl_vat (paid, after discount, VAT excluded) in marts.fct_sales for business dates 2026-04-01 to 2026-04-30. Returns are not subtracted. April refunds excluding VAT were about 60.1M VND. The VAT-included total is 7,589,272,600 VND.\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "Structured output provided successfully"
+  }
+]

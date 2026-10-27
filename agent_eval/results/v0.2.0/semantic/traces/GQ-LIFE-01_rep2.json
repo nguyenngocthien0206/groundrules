@@ -1,0 +1,20 @@
+[
+  {
+    "role": "tool_call",
+    "name": "mcp__groundrules__query_metric",
+    "content": "{\n  \"metric\": \"revenue_v1\",\n  \"month\": \"2026-08\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"metric\": \"revenue_v1\",\n  \"refused\": true,\n  \"reason\": \"revenue_v1 is deprecated; use net_revenue\",\n  \"use_instead\": \"net_revenue\"\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "StructuredOutput",
+    "content": "{\n  \"value\": null,\n  \"replacement_metric\": \"net_revenue\",\n  \"caveats\": [],\n  \"explanation\": \"Querying revenue_v1 for 2026-08 was refused because the metric is deprecated. The tool says to use net_revenue instead.\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "Structured output provided successfully"
+  }
+]
