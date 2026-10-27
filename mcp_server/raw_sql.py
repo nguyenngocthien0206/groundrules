@@ -8,7 +8,9 @@ decision records, no caveats. The agent eval runs the same questions through
 this server and through mcp_server/semantic.py to measure the difference.
 Do not hand this to an agent in production; see adoption/agents.md.
 
-The connection is read-only and only one SELECT runs per call.
+The connection is read-only, cannot reach files or the network (DuckDB's
+read_text, read_csv and glob would otherwise read anything on the machine),
+and only one SELECT runs per call.
 """
 
 import json
@@ -39,7 +41,11 @@ server = MCPServer("warehouse", instructions=INSTRUCTIONS)
 
 @cache
 def _con() -> duckdb.DuckDBPyConnection:
-    return duckdb.connect(str(DUCKDB_FILE), config=READ_ONLY)
+    con = duckdb.connect(str(DUCKDB_FILE), config=READ_ONLY)
+    # Read-only stops writes to the warehouse, not reads of other files. Once
+    # off, external access cannot be switched back on from this connection.
+    con.execute("SET enable_external_access = false")
+    return con
 
 
 @cache
