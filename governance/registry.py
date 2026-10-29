@@ -1,4 +1,4 @@
-"""Generate governance/registry.md: every metric, its owner and its status.
+"""Generate governance/registry.md: every metric and action, its owner and its status.
 
 Usage: python governance/registry.py   (or `make registry`)
 
@@ -62,6 +62,27 @@ def render(repo: Repo) -> str:
     lines += [
         "\n",
         f"{hidden} building-block metrics are hidden: they feed the metrics above and are not answered with directly.\n",
+        "\n",
+        "## Actions\n",
+        "\n",
+        "What an agent may propose. A person in the approver group signs off each\n",
+        "proposal before anything is written.\n",
+        "\n",
+        "| Action | Label | Owner | Approver | Version | Status | Decision | Reads |\n",
+        "| --- | --- | --- | --- | --- | --- | --- | --- |\n",
+    ]
+    for name, action in sorted(repo.actions.items()):
+        spec = action["spec"] or {}
+        decision = spec.get("decision") or ""
+        decision_link = f"[{Path(decision).stem}](../{decision})" if decision else "-"
+        reads = ", ".join(f"`{m}` v{v}" for m, v in sorted(((spec.get("reads") or {}).get("metrics") or {}).items()))
+        owner, approver = spec.get("owner"), spec.get("approver")
+        lines.append(
+            f"| `{name}` | {spec.get('label', '?')} | {owner} ({repo.group_teams.get(owner or '') or ''}) "
+            f"| {approver} ({repo.group_teams.get(approver or '') or ''}) | {spec.get('version', '?')} "
+            f"| {spec.get('status', '?')} | {decision_link} | {reads or '-'} |\n"
+        )
+    lines += [
         "\n",
         "## What reads the data\n",
         "\n",

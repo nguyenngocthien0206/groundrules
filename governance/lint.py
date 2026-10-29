@@ -1,4 +1,4 @@
-"""Governance lint: ownership, decisions, proof and hygiene, enforced in CI.
+"""Governance lint: ownership, decisions, proof, actions and hygiene, enforced in CI.
 
 Usage: python governance/lint.py [--today YYYY-MM-DD] [--fail-on-stale]
        (`make lint` runs `dbt parse` first)
@@ -29,6 +29,16 @@ DECISION_KEYS = {
 DECISION_STATUSES = {"proposed", "accepted", "superseded"}
 DECISION_SECTIONS = ["Context", "Decision", "Options considered", "Consequences", "Worked example"]
 EM_DASH = chr(0x2014)  # written as a code point so this file passes its own check
+ACTION_KEYS = (
+    "action", "label", "version", "status", "owner", "approver", "decision",
+    "reads", "rules", "proposal", "writes", "agent_notes",
+)
+# Rules that must stay in order when an action has them: (lower, higher, strict, why).
+ACTION_RULE_ORDER = (
+    ("target_max_cover_days", "target_fill_days", True, "a target must be filled above the cover that made it a target"),
+    ("donor_keep_days", "donor_min_cover_days", True, "a donor must keep less cover than it needs to be a donor"),
+    ("target_max_after_days", "donor_min_cover_days", False, "a target must never end with enough cover to be a donor, or stock goes back and forth"),
+)
 
 
 @dataclass(frozen=True)
@@ -167,6 +177,11 @@ def required_rule_owners(repo: Repo) -> dict[str, set[str]]:
             team = repo.group_teams.get(metric.group or "") if metric else None
             if team:
                 required.setdefault(sq["file"], set()).add(team)
+    # An action contract holds its owner's rules for what an agent may propose.
+    for action in repo.actions.values():
+        team = repo.group_teams.get((action["spec"] or {}).get("owner") or "")
+        if team:
+            required.setdefault(action["path"], set()).add(team)
     return required
 
 
@@ -185,9 +200,14 @@ def check_codeowners(repo: Repo) -> list[Issue]:
         found = repo.metrics.get(metric)
         return repo.group_teams.get(found.group) if found and found.group else None
 
+    def action_team(action: str) -> str | None:
+        spec = (repo.actions.get(action) or {}).get("spec") or {}
+        return repo.group_teams.get(spec.get("owner") or "")
+
     # Decision records and golden files must at least reach every owner they cover.
     for dr in repo.decisions.values():
         needed = {team(n) for n in (dr.front or {}).get("linked_metrics") or []} - {None}
+        needed |= {action_team(a) for a in (dr.front or {}).get("linked_actions") or []} - {None}
         missing = needed - set(repo.teams_for(dr.path))
         if missing:
             issues.append(_error("codeowners", f"{dr.path} must be owned by {', '.join(sorted(missing))} too"))
@@ -197,6 +217,64 @@ def check_codeowners(repo: Repo) -> list[Issue]:
             missing = needed - set(repo.teams_for(path))
             if missing:
                 issues.append(_error("codeowners", f"{path} must be owned by {', '.join(sorted(missing))} too"))
+    return issues
+
+
+def check_actions(repo: Repo) -> list[Issue]:
+    """Each action contract has owners, an accepted reason, and reads only certified definitions at their current version."""
+    issues = []
+    for name, action in sorted(repo.actions.items()):
+        path, spec = action["path"], action["spec"]
+        if spec is None:
+            issues.append(_error("actions", f"{path} is not a readable YAML mapping"))
+            continue
+        missing = [k for k in ACTION_KEYS if k not in spec]
+        if missing:
+            issues.append(_error("actions", f"{path} is missing: {', '.join(missing)}"))
+        if spec.get("action") != name:
+            issues.append(_error("actions", f"{path}: action must be {name}, the file name"))
+        if spec.get("status") not in STATUSES:
+            issues.append(_error("actions", f"{path}: status must be one of {', '.join(STATUSES)}"))
+        for role in ("owner", "approver"):
+            group = spec.get(role)
+            if not repo.group_teams.get(group):
+                issues.append(_error("actions", f"{path}: {role} {group} is not a group with a github_team in dbt/models/groups.yml"))
+        link = spec.get("decision")
+        dr = repo.decisions.get(Path(str(link)).stem) if link else None
+        if dr is None or link != dr.path:
+            issues.append(_error("actions", f"{path}: decision {link} does not exist"))
+        elif name not in (dr.front or {}).get("linked_actions", []):
+            issues.append(_error("actions", f"{path}: {link} does not list it under linked_actions"))
+        elif (dr.front or {}).get("status") != "accepted":
+            issues.append(_error("actions", f"{path}: {link} is {dr.front.get('status')}, not accepted"))
+        reads = spec.get("reads") or {}
+        pinned = reads.get("metrics") or {}
+        for metric, version in sorted(pinned.items()):
+            found = repo.metrics.get(metric)
+            if found is None or found.hidden or found.meta.get("status") != "certified":
+                issues.append(_error("actions", f"{path} reads {metric}, which is not a certified metric"))
+            elif str(found.meta.get("version")) != str(version):
+                now = found.meta.get("version")
+                issues.append(_error("actions", f"{path} pins {metric} v{version}, but it is now v{now}: "
+                                                f"re-check {link} against v{now} and bump the pin"))
+        for block in reads.get("building_blocks") or []:
+            found = repo.metrics.get(block)
+            if found is None or not found.hidden:
+                issues.append(_error("actions", f"{path}: building block {block} is not a hidden metric"))
+            elif not consumers(repo, block) & set(pinned):
+                issues.append(_error("actions", f"{path}: building block {block} is not inside any metric it pins"))
+        for model in reads.get("models") or []:
+            if not repo.models.get(model, {}).get("contract_enforced"):
+                issues.append(_error("actions", f"{path} reads model {model}, which does not exist or has no enforced contract"))
+        rules = spec.get("rules") or {}
+        for low, high, strict, why in ACTION_RULE_ORDER:
+            if low in rules and high in rules and not (rules[low] < rules[high] if strict else rules[low] <= rules[high]):
+                bound = "below" if strict else "at most"
+                issues.append(_error("actions", f"{path}: {low} ({rules[low]}) must be {bound} {high} ({rules[high]}): {why}"))
+    for dr in repo.decisions.values():
+        for name in (dr.front or {}).get("linked_actions") or []:
+            if name not in repo.actions:
+                issues.append(_error("actions", f"{dr.path} links action {name}, which is not in actions/"))
     return issues
 
 
@@ -219,7 +297,7 @@ def check_registry(repo: Repo) -> list[Issue]:
 
 
 def check_changelog(repo: Repo) -> list[Issue]:
-    """Every governed metric's current version has a Definitions entry in CHANGELOG.md."""
+    """Every governed metric's and action's current version has a Definitions entry in CHANGELOG.md."""
     if not repo.text_files:
         return []  # loaded without text files
     text = repo.text_files.get("CHANGELOG.md")
@@ -231,6 +309,10 @@ def check_changelog(repo: Repo) -> list[Issue]:
         # `name` v2 in prose, or `name` | v2 in a table.
         if not re.search(rf"`{re.escape(m.name)}`[\s|]*v{version}\b", text):
             issues.append(_error("changelog", f"CHANGELOG.md has no entry for {m.name} v{version}; add one under Definitions"))
+    for name, action in sorted(repo.actions.items()):
+        version = (action["spec"] or {}).get("version")
+        if not re.search(rf"`{re.escape(name)}`[\s|]*v{version}\b", text):
+            issues.append(_error("changelog", f"CHANGELOG.md has no entry for action {name} v{version}; add one under Definitions"))
     return issues
 
 
@@ -311,7 +393,7 @@ def check_staleness(repo: Repo, today: date, fail_on_stale: bool = False) -> lis
 
 CHECKS = (
     check_ownership, check_decisions, check_golden_questions, check_lifecycle,
-    check_contracts, check_codeowners, check_em_dash, check_registry, check_changelog, check_powerbi,
+    check_contracts, check_actions, check_codeowners, check_em_dash, check_registry, check_changelog, check_powerbi,
 )
 
 
@@ -332,7 +414,7 @@ def main(argv: list[str] | None = None) -> int:
     errors = [i for i in issues if i.level == "error"]
     for issue in sorted(issues, key=lambda i: (i.level != "error", i.check, i.message)):
         print(f"{issue.level.upper():<8}{issue.check:<12}{issue.message}")
-    print(f"\n{len(governed(repo))} governed metrics, {len(repo.decisions)} decision records, "
+    print(f"\n{len(governed(repo))} governed metrics, {len(repo.actions)} actions, {len(repo.decisions)} decision records, "
           f"{len(repo.questions)} golden questions checked as of {args.today}: "
           f"{len(errors)} errors, {len(issues) - len(errors)} warnings.")
     return 1 if errors else 0

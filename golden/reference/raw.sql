@@ -21,7 +21,8 @@ create or replace table raw_skus as
 select
     "ITEM_NO" as sku,
     "CATEGORY_CD" as category,
-    "VAT_RATE"::integer as vat_pct
+    "VAT_RATE"::integer as vat_pct,
+    "PURCH_UOM" as purchase_unit  -- the unit stock is bought and moved in
 from read_csv('{data_dir}/erp/skus.csv', all_varchar = true);
 
 -- Size of every unit in base units (DR-007).
@@ -132,6 +133,16 @@ select
     store_code as store,
     (strptime(last_success_at, '%Y-%m-%d %H:%M:%S') - interval 1 day)::date as data_through
 from read_csv('{data_dir}/pos_sync_log.csv', all_varchar = true);
+
+-- The logistics provider's drive times between stores. A pair it re-sent
+-- appears twice; the latest computed_at wins.
+create or replace table raw_routes as
+select
+    origin_code as origin,
+    destination_code as destination,
+    duration_s::integer as drive_seconds
+from read_csv('{data_dir}/logistics/store_routes.csv', all_varchar = true)
+qualify row_number() over (partition by origin_code, destination_code order by computed_at desc) = 1;
 
 -- Which stores and SKUs a question covers. Null means "all".
 create or replace macro in_scope_store(p_store, p_district) as table

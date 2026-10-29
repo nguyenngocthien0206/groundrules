@@ -27,6 +27,8 @@
 # Saved queries decide which slice of a metric a dashboard shows.
 /dbt/models/semantic/saved_queries_finance.yml     @your-org/finance
 /dbt/models/semantic/saved_queries_supply_chain.yml @your-org/supply-chain-ops
+# What an agent may propose, and the rules it proposes by.
+/actions/propose_transfer.yml                      @your-org/supply-chain-ops
 
 # The data under the rules: the data platform builds it, the teams that rely
 # on it can approve too.
@@ -56,6 +58,7 @@
 /decisions/DR-009.md                               @your-org/supply-chain-ops
 /decisions/DR-010.md                               @your-org/supply-chain-ops
 /decisions/DR-011.md                               @your-org/supply-chain-ops
+/decisions/DR-012.md                               @your-org/supply-chain-ops
 
 # Proof: the questions, the numbers they expect, and the reference that
 # computes those numbers. A moved expected value needs its owner's sign-off.
@@ -77,5 +80,6 @@
 /golden/reference/near_expiry_value.sql            @your-org/supply-chain-ops
 /golden/reference/sell_through_rate.sql            @your-org/supply-chain-ops
 /golden/reference/days_of_cover.sql                @your-org/supply-chain-ops
+/golden/reference/transfer_candidates.sql          @your-org/supply-chain-ops
 /golden/reference/net_revenue.sql                  @your-org/finance
 /golden/reference/gross_margin.sql                 @your-org/finance

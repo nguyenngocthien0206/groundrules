@@ -11,13 +11,29 @@ written down. A code change that moves no number does not belong here.
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) style.
 
 Both are kept by hand. The governance lint checks that every governed
-metric's current version has an entry under Definitions, so a version bump
-without a note here fails CI.
+metric's and every action's current version has an entry under
+Definitions, so a version bump without a note here fails CI.
 
 ## Definitions
 
 Newest first. Each entry: what changed, what moves for readers, the decision
 record, the golden questions that pin it, and the pull request.
+
+### 2026-10-29: action `propose_transfer` v1
+
+- **What changed:** the first action an agent may take. It proposes a stock
+  transfer to a store with under 7 days of cover, from the nearest store
+  within 30 minutes' drive that has over 60 days and can spare whole boxes
+  while keeping 30. It rounds up to bring the target to 14 days, never
+  past 60, and a person in supply chain approves each proposal.
+- **What moves:** no number changes. At the 2026-09-15 snapshot the rule
+  gives 108 proposals, 28 of them partial; the reference that computes them
+  is `golden/reference/transfer_candidates.sql`.
+- **Decision:** [DR-012](decisions/DR-012.md). Decided by the Head of
+  Supply Chain.
+- **Reads:** `available_stock` v3 and `days_of_cover` v1. When either moves
+  to a new version, the lint fails until supply chain re-checks the rule.
+- **Pull request:** #20.
 
 ### 2026-10-26: `sell_through_rate` v2
 
@@ -69,6 +85,13 @@ before this date are the owners' history and are not recorded here.
   distance and drive time between stores over an invented city with a
   river, staged and modelled as `fct_store_routes`. Existing extracts and
   every golden value are unchanged.
+- Action contracts (`actions/`): `propose_transfer` v1 with its rules,
+  owner, approver and the metric versions it reads, and DR-012 explaining
+  them. The governance lint checks each contract (owner and approver
+  groups, an accepted decision, certified metrics at their current
+  version, consistent rules, CODEOWNERS, a changelog entry) and the
+  registry lists it. An independent reference computes the expected
+  proposals from the raw extracts.
 
 #### Changed
 - `gross_margin`'s agent note now makes the VND amount the default and a

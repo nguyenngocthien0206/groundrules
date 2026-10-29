@@ -1,6 +1,7 @@
 """Run the reference SQL: the independent answer to each golden question.
 
 Usage: python golden/reference/reference.py net_revenue month=2026-08 store=NW001
+       python golden/reference/reference.py transfer_candidates [as_of=2026-09-15]
 
 Reads only the raw extracts (see raw.sql), never the dbt marts or the
 semantic layer, so its numbers can check them.
@@ -11,6 +12,7 @@ import os
 import re
 import sys
 from datetime import date, timedelta
+from fractions import Fraction
 from pathlib import Path
 
 import duckdb
@@ -87,15 +89,71 @@ class Reference:
             caveats += [f"{CAVEAT_NEW_STORE}:{store}" for store, _ in self._run("new_stores", params)]
         return sorted(caveats)
 
+    def transfer_candidates(self, as_of: date) -> list[dict]:
+        """The transfers DR-012 proposes at `as_of`, most urgent target first.
+
+        transfer_candidates.sql pairs each target with its donors within 30
+        minutes. Here each target takes the nearest donor that still has a
+        unit to spare, so a donor never promises the same box twice: the
+        target with the lowest cover goes first, then by store code.
+        """
+        rows = self._run("transfer_candidates", {"as_of": as_of})
+        columns = [d[0] for d in self.con.description]
+        pairs: dict[tuple[str, str], list[dict]] = {}
+        for row in rows:
+            pair = dict(zip(columns, row))
+            pairs.setdefault((pair["target"], pair["sku"]), []).append(pair)  # nearest first
+        spare = {(p["donor"], p["sku"]): int(p["spare_units"]) for ps in pairs.values() for p in ps}
+
+        def cover(available: int, sold_28d: int) -> Fraction:
+            return Fraction(28 * int(available), int(sold_28d))
+
+        proposals = []
+        for (target, sku), options in sorted(
+            pairs.items(), key=lambda kv: (cover(kv[1][0]["target_available"], kv[1][0]["target_sold_28d"]), kv[0])
+        ):
+            first = options[0]
+            if first["cap_units"] < 1:
+                continue  # one unit would take the target above 60 days
+            chosen = next((p for p in options if spare[(p["donor"], sku)] >= 1), None)
+            if chosen is None:
+                continue
+            quantity = min(int(first["need_units"]), int(first["cap_units"]), spare[(chosen["donor"], sku)])
+            spare[(chosen["donor"], sku)] -= quantity
+            moved = quantity * int(first["factor"])
+            proposals.append({
+                "target": target,
+                "donor": chosen["donor"],
+                "sku": sku,
+                "quantity": quantity,
+                "unit": first["purchase_unit"],
+                "base_units": moved,
+                "drive_minutes": chosen["drive_seconds"] / 60,
+                "partial": quantity < first["need_units"],
+                "target_cover_before": float(cover(first["target_available"], first["target_sold_28d"])),
+                "target_cover_after": float(cover(first["target_available"] + moved, first["target_sold_28d"])),
+                "donor_cover_before": float(cover(chosen["donor_available"], chosen["donor_sold_28d"])),
+                "donor_cover_after": float(cover(chosen["donor_available"] - moved, chosen["donor_sold_28d"])),
+            })
+        return proposals
+
 
 def main(argv: list[str]) -> int:
-    if not argv or argv[0] not in METRICS:
+    if not argv or argv[0] not in (*METRICS, "transfer_candidates"):
         print(__doc__)
         print("Metrics:", ", ".join(METRICS))
         return 2
     filters = dict(arg.split("=", 1) for arg in argv[1:])
     as_of = date.fromisoformat(filters.pop("as_of", "2026-09-15"))
     ref = Reference()
+    if argv[0] == "transfer_candidates":
+        proposals = ref.transfer_candidates(as_of)
+        for p in proposals:
+            print(f"{p['target']} {p['sku']}: {p['quantity']} {p['unit']} from {p['donor']} ({p['drive_minutes']:.1f} min), "
+                  f"cover {p['target_cover_before']:.1f} -> {p['target_cover_after']:.1f} days"
+                  f"{' (partial)' if p['partial'] else ''}")
+        print(f"{len(proposals)} proposals, {sum(p['partial'] for p in proposals)} partial")
+        return 0
     print(argv[0], filters, "=", ref.value(argv[0], filters, as_of))
     print("caveats:", ref.caveats(argv[0], filters, as_of) or "none")
     return 0

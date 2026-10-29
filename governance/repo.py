@@ -1,7 +1,8 @@
 """Load what the governance tools read, once, into plain Python data.
 
 Sources: dbt's `target/manifest.json` (after `dbt parse`), the decision
-records, the golden questions, `.github/CODEOWNERS` and the files Git sees.
+records, the action contracts, the golden questions, `.github/CODEOWNERS`
+and the files Git sees.
 The checks in lint.py take this data, not files, so tests can hand them a
 broken copy without running dbt.
 """
@@ -62,6 +63,7 @@ class Repo:
     model_children: dict[str, list[str]] = field(default_factory=dict)  # model -> models built on it
     saved_queries: dict[str, dict] = field(default_factory=dict)  # name -> {file, metrics}
     powerbi: dict = field(default_factory=dict)  # {"model": text, "tables": [parsed TMDL tables]}
+    actions: dict[str, dict] = field(default_factory=dict)  # action file stem -> {"path": ..., "spec": parsed YAML or None}
 
     def teams_for(self, path: str) -> list[str]:
         return owners_of(self.codeowners, path)
@@ -154,6 +156,17 @@ def parse_tmdl_table(path: Path) -> dict:
             if key in ("summarizeBy", "sourceColumn"):
                 current[key] = value.strip()
     return table
+
+
+def load_actions() -> dict[str, dict]:
+    actions = {}
+    for path in sorted((ROOT / "actions").glob("*.yml")):
+        try:
+            spec = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except yaml.YAMLError:
+            spec = None
+        actions[path.stem] = {"path": path.relative_to(ROOT).as_posix(), "spec": spec if isinstance(spec, dict) else None}
+    return actions
 
 
 def load_powerbi() -> dict:
@@ -252,6 +265,7 @@ def load(with_text_files: bool = True) -> Repo:
             for sq in manifest.get("saved_queries", {}).values()
         },
         powerbi=load_powerbi(),
+        actions=load_actions(),
     )
 
 

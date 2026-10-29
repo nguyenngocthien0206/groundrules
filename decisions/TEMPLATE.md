@@ -10,6 +10,7 @@ linked_metrics:
   - metric_name             # every metric whose definition this record explains
 linked_golden_questions:
   - GQ-DOMAIN-01            # questions that fail if someone changes the rule silently
+linked_actions: []          # optional: actions (actions/*.yml) whose rules this record sets
 supersedes: null            # DR-xxx this one replaces, if any
 superseded_by: null         # filled in when a later record replaces this one
 ---

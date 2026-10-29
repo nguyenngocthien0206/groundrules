@@ -214,6 +214,83 @@ def test_a_saved_query_file_is_owned_by_its_metrics_owners(broken):
     assert any("saved_queries_finance.yml must be owned by @your-org/finance" in m for m in errors(lint.check_codeowners(broken)))
 
 
+# Actions
+
+
+def transfer(repo) -> dict:
+    return repo.actions["propose_transfer"]["spec"]
+
+
+def test_an_action_pinned_to_an_old_metric_version_fails(broken):
+    # The rules were checked against days_of_cover v1; v2 needs the owner to look again.
+    broken.metrics["days_of_cover"].meta["version"] = 2
+    assert errors(lint.check_actions(broken)) == [
+        "actions/propose_transfer.yml pins days_of_cover v1, but it is now v2: "
+        "re-check decisions/DR-012.md against v2 and bump the pin"
+    ]
+
+
+def test_an_action_reading_a_deprecated_metric_fails(broken):
+    transfer(broken)["reads"]["metrics"]["revenue_v1"] = 1
+    assert errors(lint.check_actions(broken)) == ["actions/propose_transfer.yml reads revenue_v1, which is not a certified metric"]
+
+
+def test_a_building_block_outside_the_pinned_metrics_fails(broken):
+    transfer(broken)["reads"]["building_blocks"].append("cogs")
+    assert any("building block cogs is not inside any metric it pins" in m for m in errors(lint.check_actions(broken)))
+
+
+def test_an_action_needs_an_accepted_decision_that_lists_it(broken):
+    broken.decisions["DR-012"].front["status"] = "proposed"
+    assert errors(lint.check_actions(broken)) == [
+        "actions/propose_transfer.yml: decisions/DR-012.md is proposed, not accepted"
+    ]
+    broken.decisions["DR-012"].front["linked_actions"] = []
+    assert errors(lint.check_actions(broken)) == [
+        "actions/propose_transfer.yml: decisions/DR-012.md does not list it under linked_actions"
+    ]
+
+
+def test_a_decision_linking_a_missing_action_fails(broken):
+    broken.decisions["DR-010"].front["linked_actions"] = ["auto_reorder"]
+    assert errors(lint.check_actions(broken)) == ["decisions/DR-010.md links action auto_reorder, which is not in actions/"]
+
+
+def test_an_action_owner_must_be_a_group_with_a_team(broken):
+    transfer(broken)["approver"] = "store_managers"
+    assert errors(lint.check_actions(broken)) == [
+        "actions/propose_transfer.yml: approver store_managers is not a group with a github_team in dbt/models/groups.yml"
+    ]
+
+
+def test_rules_that_would_send_stock_back_and_forth_fail(broken):
+    transfer(broken)["rules"]["target_max_after_days"] = 90
+    assert errors(lint.check_actions(broken)) == [
+        "actions/propose_transfer.yml: target_max_after_days (90) must be at most donor_min_cover_days (60): "
+        "a target must never end with enough cover to be a donor, or stock goes back and forth"
+    ]
+
+
+def test_an_action_reading_a_model_without_a_contract_fails(broken):
+    transfer(broken)["reads"]["models"].append("stg_logistics__store_routes")
+    assert errors(lint.check_actions(broken)) == [
+        "actions/propose_transfer.yml reads model stg_logistics__store_routes, which does not exist or has no enforced contract"
+    ]
+
+
+def test_an_action_file_is_owned_by_exactly_its_owner(broken):
+    broken.codeowners.append(("/actions/", ["@your-org/data-platform"]))
+    assert any("actions/propose_transfer.yml must be owned by @your-org/supply-chain-ops" in m
+               for m in errors(lint.check_codeowners(broken)))
+
+
+def test_an_action_version_bump_without_a_changelog_entry_fails(broken):
+    transfer(broken)["version"] = 2
+    assert errors(lint.check_changelog(broken)) == [
+        "CHANGELOG.md has no entry for action propose_transfer v2; add one under Definitions"
+    ]
+
+
 # Changelog
 
 
@@ -227,7 +304,7 @@ def test_a_version_bump_without_a_changelog_entry_fails(broken):
 def test_the_changelog_reads_versions_in_prose_and_in_tables(broken):
     broken.text_files["CHANGELOG.md"] = "\n".join(
         [f"### `{name}` v{m.meta['version']}" for name, m in lint.governed(broken).items() if name != "net_revenue"]
-        + ["| `net_revenue` | v2 | finance |"]
+        + ["| `net_revenue` | v2 | finance |", "### action `propose_transfer` v1"]
     )
     assert lint.check_changelog(broken) == []
 

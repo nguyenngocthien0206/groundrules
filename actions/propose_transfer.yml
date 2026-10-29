@@ -1,0 +1,79 @@
+# The contract for one action an agent may take: propose a stock transfer
+# between two stores. A proposal is only a proposal. It waits in a shadow
+# table until a person in supply chain approves it, and only then becomes a
+# transfer request in the ERP.
+#
+# Why each rule exists: decisions/DR-012.md. The governance lint checks this
+# file against the dbt manifest, the decision record and CODEOWNERS (see
+# actions/README.md).
+action: propose_transfer
+label: Propose a stock transfer between stores
+version: 1
+status: certified
+owner: supply_chain_ops       # dbt group whose team must review every change here
+approver: supply_chain_ops    # dbt group whose people approve each proposal
+decision: decisions/DR-012.md
+
+# What the rules are computed from. A metric is pinned at the version the
+# rules were checked against; when it moves, the lint fails until the owner
+# re-checks DR-012 and bumps the pin.
+reads:
+  metrics:
+    available_stock: 3
+    days_of_cover: 1
+  # The pace inside days_of_cover. A store that has run out has no cover to
+  # work the pace back from: days_of_cover v1 returns no value there, where
+  # DR-010 gives 0 days. Such a store is a target, not a store without sales.
+  building_blocks:
+    - units_sold_28d
+  models:
+    - fct_store_routes        # drive time, donor to target
+    - dim_store               # opening date
+    - dim_sku                 # purchase unit and its size in base units
+
+# DR-012, as numbers. Days are days of cover at the pace above.
+rules:
+  pace_days: 28
+  target_max_cover_days: 7    # a target has less than this
+  target_fill_days: 14        # bring the target up to this, rounded up to whole units
+  target_max_after_days: 60   # never leave the target above this
+  donor_min_cover_days: 60    # a donor has more than this
+  donor_keep_days: 30         # and keeps at least this after giving
+  max_drive_minutes: 30
+  quantity_unit: purchase     # whole boxes or cartons (the SKU's purchase unit)
+  exclude:
+    - pos_sync_lag            # DR-004: ERP stock has not seen all sales
+    - new_store               # opened on or after the first day of the pace window
+    - no_route                # the logistics provider has no route yet
+  shared_donor_order:         # who goes first when targets share a donor
+    - target_cover
+    - target_store
+
+# What one proposal carries.
+proposal:
+  as_of: date
+  target_store: store code
+  donor_store: store code
+  sku: sku code
+  quantity: integer, in purchase units
+  unit: purchase unit code
+  base_units: integer
+  drive_minutes: decimal
+  partial: boolean, true when the target ends below target_fill_days
+  target_cover_before: decimal, days
+  target_cover_after: decimal, days
+  donor_cover_before: decimal, days
+  donor_cover_after: decimal, days
+  metric_versions: the pinned versions it was computed with
+
+# What happens after approval, and only then.
+writes:
+  table: erp_transfer_requests
+  min_days_to_expiry: 90      # the warehouse picks lots first to expire among these
+
+agent_notes: >
+  Propose, never promise: a proposal moves nothing until supply chain
+  approves it. Say when a proposal is partial and how many days it gets the
+  target to. When a store gets no proposal, say why: no store within 30
+  minutes can spare a whole unit, one unit would leave it above 60 days, or
+  the store is excluded (its POS data lags, or it opened too recently).
