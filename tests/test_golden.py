@@ -13,7 +13,11 @@ import pytest
 import yaml
 
 import freeze
-from catalog import EXPECTED_DIR, KINDS, QUESTION_FIELDS, ROOT, data_fingerprint, load_expected, load_questions
+import run_actions
+from catalog import (
+    ACTION_EXPECTED_DIR, ACTION_KINDS, ACTION_REASONS, EXPECTED_DIR, KINDS, QUESTION_FIELDS, ROOT, data_fingerprint,
+    load_action_expected, load_action_questions, load_expected, load_questions,
+)
 from reference import DEFAULT_DATA_DIR, Reference
 from run_golden import Answer, build_query, caveats, check, lag_caveats, new_store_caveats
 
@@ -216,3 +220,35 @@ def test_expected_files_are_plain_yaml_written_by_freeze(fresh):
         rendered = freeze.render(frozen)
         assert yaml.safe_load(rendered)["answers"] == frozen["answers"]
         assert (EXPECTED_DIR / name).read_text(encoding="utf-8") == rendered
+
+
+# Action questions (v0.3)
+
+
+ACTION_QUESTIONS = load_action_questions()
+
+
+def test_action_expected_values_equal_a_fresh_reference_run():
+    """golden/actions/expected/ is exactly what the reference proposes, frozen from the current data."""
+    frozen = load_action_expected()
+    assert frozen["data_fingerprint"] == data_fingerprint(DEFAULT_DATA_DIR)
+    fresh = {qid: {"expected": a} for f in freeze.compute_actions().values() for qid, a in f["answers"].items()}
+    assert fresh == frozen["answers"] and set(fresh) == {q["id"] for q in ACTION_QUESTIONS}
+    assert (ACTION_EXPECTED_DIR / "transfers.yml").read_text(encoding="utf-8") == freeze.render_actions(
+        next(iter(freeze.compute_actions().values())))
+
+
+def test_action_questions_cover_both_kinds_and_every_no_proposal_reason():
+    assert {q["kind"] for q in ACTION_QUESTIONS} == set(ACTION_KINDS)
+    assert {q["expected_reason"] for q in ACTION_QUESTIONS if q["kind"] == "no_proposal"} == set(ACTION_REASONS) - {"donors_already_promised"}
+
+
+def test_the_action_runner_fails_on_a_wrong_proposal_or_reason():
+    q = next(q for q in ACTION_QUESTIONS if q["id"] == "AQ-TRANSFER-01")
+    made = {"proposal": {"donor_store": "NW009", "quantity": 6, "unit": "BOX"}}
+    assert run_actions.check(q, {"donor_store": "NW009", "quantity": 6, "unit": "BOX"}, made) is None
+    assert "expected" in run_actions.check(q, {"donor_store": "NW009", "quantity": 5, "unit": "BOX"}, made)
+    none = next(q for q in ACTION_QUESTIONS if q["id"] == "AQ-TRANSFER-06")
+    assert run_actions.check(none, None, {"reason": "excluded:pos_sync_lag"}) is None
+    assert "expected reason excluded_store" in run_actions.check(none, None, {"reason": "not_a_target"})
+    assert "expected no proposal" in run_actions.check(none, None, made)
