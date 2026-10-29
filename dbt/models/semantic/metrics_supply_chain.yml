@@ -80,9 +80,12 @@ metrics:
     description: >
       How many days available stock lasts at the recent pace: available stock
       at the snapshot divided by average daily base units sold over the 28
-      full days before it.
+      full days before it. A store that has run out has 0 days; one that sold
+      nothing in the 28 days has no value.
     type: derived
-    expr: available_stock / nullif(units_sold_prior_28d / 28.0, 0)
+    # A store that has run out has no stock row, so available_stock arrives
+    # here empty, not 0. Without the coalesce, v1 gave no value instead of 0.
+    expr: coalesce(available_stock, 0) / nullif(units_sold_prior_28d / 28.0, 0)
     input_metrics:
       - name: available_stock
       - name: units_sold_28d
@@ -91,12 +94,14 @@ metrics:
     config:
       group: supply_chain_ops
       meta:
-        version: 1
+        version: 2
         status: certified
-        certified_on: 2026-09-10
+        certified_on: 2026-10-29
         recertify_every_days: 180
         decision: decisions/DR-010.md
         replaced_by: null
         agent_notes: >
           Ask it at the snapshot date. Stores whose POS sync lags show too
           few recent sales, so their cover looks longer than it is (DR-004).
+          0 means the store has run out while it still sells; no value means
+          it sold nothing in the 28 days.
