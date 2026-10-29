@@ -83,7 +83,7 @@ Each one it misses is a confident wrong answer. The column descriptions
 help, but a description is not a decision, and nothing checks it.
 
 ## Measure it
-`agent_eval/` asks an agent the 30 golden questions through one server or
+`agent_eval/` asks an agent the golden questions through one server or
 the other and grades every answer with the golden runner's own check: the
 right number, the right caveats, and refusing a deprecated metric.
 

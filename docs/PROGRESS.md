@@ -5,7 +5,7 @@ Living status of the build. Claude reads this at the start of every session and 
 ## Current status
 - Phase: v0.1 Core
 - Current step: v0.3, step 17 (proposals: MCP tool, simulation, shadow table)
-- State: v0.2.0 released; step 15 merged (#19); step 16 (action contract and DR-012) built on `step-16-action-contract`
+- State: v0.2.0 released; steps 15 and 16 merged (#19, #20); `days_of_cover` v2 built on `fix-days-of-cover-run-out`, before step 17
 - Last verified green: 2026-10-26 on GitHub Actions, run 40357875267 on main (`make build`: 97 dbt nodes, 1 expected warning; lint 0 errors 0 warnings as of 2026-10-26; golden 30/30; 185 pytest; both demos; v2 parser)
 
 ## Build checklist (v0.1)
@@ -55,6 +55,7 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-29 | `days_of_cover` v2 coalesces an empty available stock to 0; no new decision record | A store-SKU that has run out has no stock row, so v1 divided an empty stock and gave no value where DR-010 gives 0. The rule did not change, only the code now follows it. Owner chose to fix it in its own PR before step 17. |
 | 2026-10-29 | Transfers move whole purchase units (box or carton): round up to 14 days, never more than the donor can spare | Owner's choice: the ERP and the warehouse move boxes; nobody opens a box to send part of it. Recorded in DR-012. |
 | 2026-10-29 | A partial proposal comes from the nearest donor; one donor per proposal | Owner's choice: one van, one stop. Another donor could cover the whole need in only 7 of the 28 partial cases. |
 | 2026-10-29 | No proposal leaves the target above 60 days of cover | Owner's choice after the data showed 35 proposals (all stores that had run out, mostly slow sellers getting a full carton) that would have made the target a donor at once. |
@@ -174,6 +175,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-29 (fix: `days_of_cover` v2)
+- Done: `coalesce(available_stock, 0)` in `days_of_cover`, version 2, GQ-COVER-04 (NW001, SKU 100125: 0 days) linked from DR-010, the transfer action pinned to v2, the Power BI tag, CHANGELOG, registry, a semantic server test
+- Verified: before the pin was bumped the lint failed on exactly four things (the action's pin, the changelog, the Power BI tag, the registry); after, 0 errors 0 warnings with 31 golden questions; golden 31/31 with no other expected value changed; no 0 or empty cover at chain, store, district, category or store-category level, so only store-SKU answers move
+- Next: step 17 on a fresh branch once this is merged
+- Notes: the golden runner had hidden the same gap for `available_stock` alone (it falls back to 0 when no row comes back), so only the derived metric showed it.
 
 ### 2026-10-29 (step 16)
 - Done: DR-012 with worked examples from real rows, `actions/propose_transfer.yml` and `actions/README.md`, `linked_actions` in the DR template, action contracts loaded by `governance/repo.py`, `check_actions` in the lint (owner and approver groups, accepted decision listing the action, certified metrics at their pinned version, building blocks inside a pinned metric, models with enforced contracts, consistent rules), action files in the CODEOWNERS and changelog checks, an Actions table in the registry, `raw_routes` and the purchase unit in the reference views, `transfer_candidates.sql` and `Reference.transfer_candidates()`, 10 lint tests and 9 reference tests
