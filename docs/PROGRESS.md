@@ -4,8 +4,8 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: v0.3, step 16 (action contract and DR-012)
-- State: v0.2.0 released; step 15 (logistics routes) built on `step-15-logistics-routes`
+- Current step: v0.3, step 17 (proposals: MCP tool, simulation, shadow table)
+- State: v0.2.0 released; step 15 merged (#19); step 16 (action contract and DR-012) built on `step-16-action-contract`
 - Last verified green: 2026-10-26 on GitHub Actions, run 40357875267 on main (`make build`: 97 dbt nodes, 1 expected warning; lint 0 errors 0 warnings as of 2026-10-26; golden 30/30; 185 pytest; both demos; v2 parser)
 
 ## Build checklist (v0.1)
@@ -44,7 +44,7 @@ Copied from SPEC section 20. Tick when verified on a fresh clone.
   - [x] 14. Real run (Sonnet, 30 questions x 3 reps x 2 arms), results, release 0.2.0
 - [ ] v0.3 Actions: action contract, shadow table, approval, write-back, audit log
   - [x] 15. Logistics routes (invented city, `fct_store_routes`)
-  - [ ] 16. Action contract `propose_transfer` and DR-012
+  - [x] 16. Action contract `propose_transfer` and DR-012
   - [ ] 17. Proposals: MCP tool, simulation, shadow table
   - [ ] 18. Approval, idempotent write-back, audit log
   - [ ] 19. Action golden questions and agent eval
@@ -55,6 +55,13 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-29 | Transfers move whole purchase units (box or carton): round up to 14 days, never more than the donor can spare | Owner's choice: the ERP and the warehouse move boxes; nobody opens a box to send part of it. Recorded in DR-012. |
+| 2026-10-29 | A partial proposal comes from the nearest donor; one donor per proposal | Owner's choice: one van, one stop. Another donor could cover the whole need in only 7 of the 28 partial cases. |
+| 2026-10-29 | No proposal leaves the target above 60 days of cover | Owner's choice after the data showed 35 proposals (all stores that had run out, mostly slow sellers getting a full carton) that would have made the target a donor at once. |
+| 2026-10-29 | When targets share a donor, the lowest cover goes first, then store code; a later target takes its next nearest donor | Without an order a donor could promise the same box twice (NW011, SKU 100146, to NW025 and NW022). Proposed in the step 16 plan and approved by the owner. |
+| 2026-10-29 | "Newly opened" for transfers means opened on or after the first day of the 28-day pace window | The pace of a store that opened inside the window is not settled. Today it catches the same two stores as the lag rule and the missing routes. |
+| 2026-10-29 | The action contract pins certified metric versions and may read a hidden metric only when it sits inside a pinned one | A version bump forces the owner to re-check the rule; `units_sold_28d` is needed because a store that has run out has no cover to work the pace back from. |
+| 2026-10-29 | The transfer reference shares out donor stock in a short Python loop after the SQL | Sequential allocation is awkward in SQL; the SQL still holds every threshold, written from DR-012's text. |
 | 2026-10-29 | v0.3 transfer rules decided by the owner: target cover under 7 days, donor over 60; bring the target to 14 days, donor keeps at least 30; only `available_stock` moves; donor within 30 minutes' drive by the route table (not by district), nearest first; no lagging or newly opened store; supply chain approves each proposal | These become DR-012 in step 16. The distance rule came from the owner: a store on a district's edge can be nearer the next district than its own. |
 | 2026-10-29 | Store routes come from a new logistics extract over an invented city (river, two bridges), generated from two new random streams | Existing extracts stay byte-identical, so no golden value moves (only the data fingerprint lines). No real place names or coordinates. |
 | 2026-10-29 | Route staging deduplicates with `row_number()` in a subquery, not `qualify` | Keeps the new model portable to Postgres; `qualify` is already listed as a portability cost in the warehouses guide. |
@@ -167,6 +174,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-29 (step 16)
+- Done: DR-012 with worked examples from real rows, `actions/propose_transfer.yml` and `actions/README.md`, `linked_actions` in the DR template, action contracts loaded by `governance/repo.py`, `check_actions` in the lint (owner and approver groups, accepted decision listing the action, certified metrics at their pinned version, building blocks inside a pinned metric, models with enforced contracts, consistent rules), action files in the CODEOWNERS and changelog checks, an Actions table in the registry, `raw_routes` and the purchase unit in the reference views, `transfer_candidates.sql` and `Reference.transfer_candidates()`, 10 lint tests and 9 reference tests
+- Verified: lint 0 errors 0 warnings (7 metrics, 1 action, 12 records); golden 30/30, expected files untouched; `make test` 250 passed; 108 proposals at 2026-09-15, 28 partial, 94 in boxes and 14 in cartons; every number in DR-012's examples matches the semantic layer (`available_stock`, `days_of_cover`) and `fct_store_routes`
+- Next: step 17, proposals through an MCP tool, the simulation and the shadow table, starting in plan mode
+- Notes: `days_of_cover` v1 returns no value for a store-SKU that has run out and still sells (NW001 SKU 100125, NW004 SKU 100051), where DR-010 gives 0 days. Step 16 does not change the metric; step 17 must not read "no value" as "no sales", and the owner should decide whether to fix the metric (a version bump) first.
 
 ### 2026-10-29 (step 15)
 - Done: invented city geography and `logistics/store_routes.csv` in the generator, logistics source with freshness, `stg_logistics__store_routes` with a unit test, `fct_store_routes` with an enforced contract, data tests and a plausibility test, CODEOWNERS entry, 7 tests
