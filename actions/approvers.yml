@@ -1,0 +1,14 @@
+# Who may approve each action's proposals. A proposal moves nothing until one
+# of these people approves it (`make approve`), and they cannot approve what
+# they filed themselves.
+#
+# The list is the control, so changing it is the owning team's decision:
+# CODEOWNERS gives this file to the approver groups' teams, and the
+# governance lint checks it against each action contract. Addresses are
+# placeholders; use your company's.
+propose_transfer:
+  group: supply_chain_ops        # must equal the contract's approver
+  people:
+    - planner.riverside@example.com
+    - planner.newtown@example.com
+    - head.supply@example.com
