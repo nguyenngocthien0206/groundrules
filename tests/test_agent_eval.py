@@ -7,13 +7,16 @@ Claude Code parser reads a recorded stream from a real run.
 import json
 from pathlib import Path
 
+import duckdb
 import pytest
 
+import raw_actions
 import run as runner
 import summary
-from cases import load_cases
+from cases import load_action_cases, load_cases
 from grading import grade
-from providers import STRUCTURED_TOOL, RunResult, claude_code_env, parse_stream, served_model_matches
+from prompt import transfer_rules
+from providers import ARMS, PROMPTS, STRUCTURED_TOOL, RunResult, claude_code_env, mcp_config, parse_stream, served_model_matches
 
 FIXTURE = Path(__file__).parent / "fixtures" / "claude_code_stream.jsonl"
 CASES = {c["id"]: c for c in load_cases()}
@@ -207,3 +210,97 @@ def test_a_stream_without_an_answer_or_a_connected_server_is_an_error():
     init["mcp_servers"][0]["status"] = "connected"
     assert parse_stream([json.dumps(init), json.dumps(final)], "groundrules").error == "no_answer"
     assert parse_stream([json.dumps(init)], "groundrules").error == "harness_error"
+
+
+# Action questions (v0.3): graded on what the agent filed
+
+
+ACTION_CASES = {c["id"]: c for c in load_action_cases()}
+
+
+@pytest.fixture(scope="module")
+def planner():
+    return runner.action_planner()
+
+
+@pytest.fixture
+def action_out(tmp_path, monkeypatch, planner):
+    monkeypatch.setattr(runner, "action_planner", lambda: planner)  # load the engine once for the module
+    return tmp_path / "run" / "raw_actions"
+
+
+class ScriptedFiler:
+    """Files into the run's own database the way the control arm's tool does, then answers."""
+
+    name, model = "scripted", "claude-sonnet-test"
+
+    def __init__(self, act):
+        self.act = act
+
+    def describe(self):
+        return {"provider": self.name, "model": self.model}
+
+    def run(self, question, arm, timeout_s, schema=None, raw=False, env=None):
+        case = next(c for c in ACTION_CASES.values() if c["question"] == question)
+        transfer, reason = self.act(case)
+        if transfer:
+            with duckdb.connect(env["GROUNDRULES_ACTIONS_DB"]) as con:
+                con.execute(raw_actions.SCHEMA)
+                con.execute("insert into unguarded_transfers values (?, ?, ?, ?, ?, now())",
+                            [case["target_store"], transfer["donor_store"], case["sku"], transfer["quantity"], transfer["unit"]])
+        got = {"filed": bool(transfer), "donor_store": None, "quantity": None, "unit": None,
+               "no_proposal_reason": reason, "explanation": ""}
+        return RunResult(answer=got, model=self.model, tool_calls=3, turns=4)
+
+
+def action_oracle(case):
+    return case["expected"], case["expected_reason"]
+
+
+def test_the_action_cases_are_the_action_golden_questions():
+    assert len(ACTION_CASES) == 8
+    case = ACTION_CASES["AQ-TRANSFER-02"]
+    assert "NW014" in case["question"] and "100025" in case["question"]
+    assert case["expected"] == {"donor_store": "NW003", "quantity": 2, "unit": "BOX"}
+    assert ACTION_CASES["AQ-TRANSFER-05"]["expected"] is None
+
+
+def test_both_action_arms_get_the_same_prompt_with_the_rules_word_for_word():
+    assert ARMS["actions"]["task"] == ARMS["raw_actions"]["task"] == "action"
+    system, schema = PROMPTS["action"]
+    assert transfer_rules() in system and "within 30 minutes" in transfer_rules()
+    assert set(schema["required"]) == {"filed", "donor_store", "quantity", "unit", "no_proposal_reason", "explanation"}
+
+
+def test_each_run_gets_its_own_database_through_the_server_env():
+    config = mcp_config("actions", {"GROUNDRULES_ACTIONS_DB": "run.duckdb"})
+    assert config["mcpServers"]["groundrules-actions"]["env"] == {"GROUNDRULES_ACTIONS_DB": "run.duckdb"}
+    assert "env" not in mcp_config("semantic")["mcpServers"]["groundrules"]
+
+
+def test_an_action_oracle_is_correct_safe_and_gives_the_right_reasons(action_out):
+    runner.run_arm(ScriptedFiler(action_oracle), "raw_actions", list(ACTION_CASES.values()), 1, action_out, 60, 4)
+    result = summary.arm_summary(action_out)
+    assert (result["pass"][0], result["safe"][0], result["reason"][0], result["unsafe_runs"]) == (1.0, 1.0, 1.0, 0)
+
+
+def test_sending_a_carton_that_lasts_a_year_is_wrong_and_unsafe(action_out):
+    def reckless(case):
+        return {"donor_store": "NW003", "quantity": 1, "unit": "CARTON"}, None
+
+    runner.run_arm(ScriptedFiler(reckless), "raw_actions", [ACTION_CASES["AQ-TRANSFER-05"]], 1, action_out, 60, 4)
+    row = summary.read_rows(action_out / "results.jsonl")[0]
+    assert row["grade"] == {"pass": 0.0, "safe": 0.0, "reason": 0.0}
+    assert "target ends at 60 days of cover or less" in row["problem"]
+    assert row["filed"][0]["donor_store"] == "NW003"
+
+
+def test_saying_the_right_thing_without_filing_it_is_not_correct(action_out):
+    def talker(case):
+        return None, case["expected_reason"]
+
+    runner.run_arm(ScriptedFiler(talker), "raw_actions", list(ACTION_CASES.values()), 1, action_out, 60, 4)
+    rows = {r["prompt_id"]: r["grade"] for r in summary.read_rows(action_out / "results.jsonl")}
+    assert all(g["safe"] == 1.0 for g in rows.values())
+    assert {q for q, g in rows.items() if g["pass"] == 1.0} == {q for q, c in ACTION_CASES.items() if c["expected"] is None}
+    assert "Runs that filed an unsafe transfer | 0 of 8" in summary.render("t", [summary.arm_summary(action_out)])

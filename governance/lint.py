@@ -21,6 +21,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from repo import GOVERNANCE_FIELDS, ROOT, STATUSES, Repo, consumers, governed, load  # noqa: E402
 
+from catalog import ACTION_KINDS, ACTION_REASONS  # noqa: E402  (golden/, put on the path by repo)
+
 SNAPSHOT_DATE = date(2026, 9, 15)
 DECISION_KEYS = {
     "id", "title", "status", "date", "decided_by", "consulted",
@@ -133,12 +135,38 @@ def check_golden_questions(repo: Repo) -> list[Issue]:
             issues.append(_error("golden", f"{q['id']} ({q['file']}): {dr.path} does not list it under linked_golden_questions"))
         if q["metric"] not in governed(repo):
             issues.append(_error("golden", f"{q['id']} asks about {q['metric']}, which is not a governed metric"))
+    ids |= {q["id"] for q in repo.action_questions}
     for dr in repo.decisions.values():
         for qid in sorted(set((dr.front or {}).get("linked_golden_questions") or []) - ids):
-            issues.append(_error("golden", f"{dr.path} reserves {qid}, which is not in golden/questions/"))
+            issues.append(_error("golden", f"{dr.path} reserves {qid}, which is not in golden/questions/ or golden/actions/questions/"))
     question_files = sorted({q["file"] for q in repo.questions})
     if question_files != repo.expected_files:
         issues.append(_error("golden", "golden/expected/ does not mirror golden/questions/: run `make golden-freeze`"))
+    return issues + check_action_questions(repo)
+
+
+def check_action_questions(repo: Repo) -> list[Issue]:
+    """Every certified action is proved by golden questions its decision record lists."""
+    issues = []
+    asked = {q.get("action") for q in repo.action_questions}
+    for name, action in sorted(repo.actions.items()):
+        if (action["spec"] or {}).get("status") == "certified" and name not in asked:
+            issues.append(_error("golden", f"certified action {name} has no golden question in golden/actions/questions/"))
+    for q in repo.action_questions:
+        where = f"{q['id']} (golden/actions/questions/{q['file']})"
+        if q.get("action") not in repo.actions:
+            issues.append(_error("golden", f"{where} asks about action {q.get('action')}, which is not in actions/"))
+        if q.get("kind") not in ACTION_KINDS:
+            issues.append(_error("golden", f"{where}: kind must be one of {', '.join(ACTION_KINDS)}"))
+        elif q["kind"] == "no_proposal" and q.get("expected_reason") not in ACTION_REASONS:
+            issues.append(_error("golden", f"{where}: a no_proposal question needs expected_reason, one of {', '.join(ACTION_REASONS)}"))
+        dr = repo.decisions.get(q.get("decision"))
+        if dr is None:
+            issues.append(_error("golden", f"{where}: decision {q.get('decision')} does not exist"))
+        elif q["id"] not in (dr.front or {}).get("linked_golden_questions", []):
+            issues.append(_error("golden", f"{where}: {dr.path} does not list it under linked_golden_questions"))
+    if sorted({q["file"] for q in repo.action_questions}) != repo.action_expected_files:
+        issues.append(_error("golden", "golden/actions/expected/ does not mirror golden/actions/questions/: run `make golden-freeze`"))
     return issues
 
 
@@ -221,6 +249,12 @@ def check_codeowners(repo: Repo) -> list[Issue]:
     for name in sorted({q["file"] for q in repo.questions}):
         needed = {team(q["metric"]) for q in repo.questions if q["file"] == name} - {None}
         for path in (f"golden/questions/{name}", f"golden/expected/{name}"):
+            missing = needed - set(repo.teams_for(path))
+            if missing:
+                issues.append(_error("codeowners", f"{path} must be owned by {', '.join(sorted(missing))} too"))
+    for name in sorted({q["file"] for q in repo.action_questions}):
+        needed = {action_team(q.get("action")) for q in repo.action_questions if q["file"] == name} - {None}
+        for path in (f"golden/actions/questions/{name}", f"golden/actions/expected/{name}"):
             missing = needed - set(repo.teams_for(path))
             if missing:
                 issues.append(_error("codeowners", f"{path} must be owned by {', '.join(sorted(missing))} too"))
@@ -446,6 +480,7 @@ def main(argv: list[str] | None = None) -> int:
     for issue in sorted(issues, key=lambda i: (i.level != "error", i.check, i.message)):
         print(f"{issue.level.upper():<8}{issue.check:<12}{issue.message}")
     print(f"\n{len(governed(repo))} governed metrics, {len(repo.actions)} actions, {len(repo.decisions)} decision records, "
+          f"{len(repo.action_questions)} action questions, "
           f"{len(repo.questions)} golden questions checked as of {args.today}: "
           f"{len(errors)} errors, {len(issues) - len(errors)} warnings.")
     return 1 if errors else 0

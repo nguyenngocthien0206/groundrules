@@ -1,0 +1,143 @@
+# Golden questions about the propose_transfer action (DR-012). Expected
+# proposals: golden/actions/expected/transfers.yml, frozen from the
+# independent reference. The reason a question gets no proposal is the
+# owner's call, written here and checked against the engine.
+#
+# Reasons: no_donor_in_reach, one_unit_exceeds_60_days,
+# donors_already_promised, excluded_store, not_a_target.
+questions:
+  - id: AQ-TRANSFER-01
+    action: propose_transfer
+    question: NW013 is running low on Cetirizine 10mg (Box 10x10), SKU 100056. Arrange a transfer.
+    kind: proposal
+    target_store: NW013
+    sku: "100056"
+    as_of: 2026-09-15
+    tests: a full proposal from the nearest donor
+    why: >
+      NW013 has 103 tablets and sold 1,229 in 28 days: 2.35 days of cover.
+      It needs 6 boxes to reach 14 days. NW009, 13.9 minutes away, has 140.3
+      days and can spare 8 boxes. 6 boxes from NW009: NW013 goes to 16.0
+      days, NW009 to 61.4.
+    decision: DR-012
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-10-29
+
+  - id: AQ-TRANSFER-02
+    action: propose_transfer
+    question: NW014 is almost out of Celecoxib 200mg (Box 10x10), SKU 100025. Arrange a transfer.
+    kind: proposal
+    target_store: NW014
+    sku: "100025"
+    as_of: 2026-09-15
+    tests: a partial proposal when the only donor in reach cannot cover the need
+    why: >
+      NW014 has 0.90 days of cover and needs 6 boxes. The only store within
+      30 minutes that can spare any is NW003 (6.3 minutes), and it can spare
+      2 boxes while keeping 30 days. 2 boxes, partial: NW014 reaches 5.67
+      days. Sending more would take NW003 below 30 days.
+    decision: DR-012
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-10-29
+
+  - id: AQ-TRANSFER-03
+    action: propose_transfer
+    question: NW025 is running low on Sensitive toothpaste 100g, SKU 100146. Arrange a transfer.
+    kind: proposal
+    target_store: NW025
+    sku: "100146"
+    as_of: 2026-09-15
+    tests: the nearest donor by drive time, in another district
+    why: >
+      NW025 (Riverside) has 2.78 days and needs 3 boxes of 24. NW011 in New
+      Town is 6.9 minutes away and can spare 3; NW023 in Riverside is 21.0
+      minutes away and can spare 1. Distance is drive time, not district: 3
+      boxes from NW011, NW025 reaches 18.2 days.
+    decision: DR-012
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-10-29
+
+  - id: AQ-TRANSFER-04
+    action: propose_transfer
+    question: NW022 is running low on Sensitive toothpaste 100g, SKU 100146. Arrange a transfer.
+    kind: proposal
+    target_store: NW022
+    sku: "100146"
+    as_of: 2026-09-15
+    tests: a shared donor serves the more urgent target first
+    why: >
+      NW022 has 6.22 days and needs 1 box. Its nearest donor, NW011 (19.5
+      minutes), has 3 boxes to spare, but NW025 has lower cover (2.78 days)
+      and takes all 3. The next nearest, NW023 (26.7 minutes), can spare 1:
+      1 box from NW023, NW022 reaches 14.5 days.
+    decision: DR-012
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-10-29
+
+  - id: AQ-TRANSFER-05
+    action: propose_transfer
+    question: NW001 has run out of Kids multivitamin syrup 100ml, SKU 100125. Arrange a transfer.
+    kind: no_proposal
+    target_store: NW001
+    sku: "100125"
+    as_of: 2026-09-15
+    expected_reason: one_unit_exceeds_60_days
+    tests: never leave the target above 60 days
+    why: >
+      NW001 has none and sold 2 bottles in 28 days. It moves in cartons of
+      24, and one carton would last 336 days; 60 days is 4.3 bottles. Six
+      stores within 30 minutes could spare a carton, but there is no
+      proposal: a supplier reorder fits better.
+    decision: DR-012
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-10-29
+
+  - id: AQ-TRANSFER-06
+    action: propose_transfer
+    question: NW029 shows no stock of Paracetamol 650mg (Box 10x10), SKU 100005. Arrange a transfer.
+    kind: no_proposal
+    target_store: NW029
+    sku: "100005"
+    as_of: 2026-09-15
+    expected_reason: excluded_store
+    tests: no proposal for a store whose POS data lags
+    why: >
+      NW029's POS data stops at 2026-09-11, so its stock and its pace miss
+      the last days of sales (DR-004). It opened on 2026-08-18, inside the
+      28-day pace window, too. DR-012 leaves such a store out on both sides.
+    decision: DR-012
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-10-29
+
+  - id: AQ-TRANSFER-07
+    action: propose_transfer
+    question: Should NW009 get more Cetirizine 10mg (Box 10x10), SKU 100056, from another store? Arrange a transfer if so.
+    kind: no_proposal
+    target_store: NW009
+    sku: "100056"
+    as_of: 2026-09-15
+    expected_reason: not_a_target
+    tests: no proposal for a store with enough cover
+    why: >
+      NW009 has 1,067 tablets and sold 213 in 28 days: 140.3 days of cover,
+      far above the 7-day line. It is a donor, not a target.
+    decision: DR-012
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-10-29
+
+  - id: AQ-TRANSFER-08
+    action: propose_transfer
+    question: NW015 is running low on Meloxicam 7.5mg (Box 10x10), SKU 100017. Arrange a transfer.
+    kind: no_proposal
+    target_store: NW015
+    sku: "100017"
+    as_of: 2026-09-15
+    expected_reason: no_donor_in_reach
+    tests: no proposal when no donor is within 30 minutes
+    why: >
+      NW015 has 701 tablets and sold 2,852 in 28 days: 6.88 days of cover,
+      a target. No store within 30 minutes has over 60 days and a whole box
+      to spare, so there is no proposal; it goes to a supplier order.
+    decision: DR-012
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-10-29

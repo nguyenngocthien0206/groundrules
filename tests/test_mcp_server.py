@@ -153,3 +153,25 @@ def test_the_raw_sql_server_answers_over_stdio():
     tools, got = asyncio.run(_call("raw_sql.py", "run_sql", {"query": "select count(*) from marts.dim_store"}))
     assert tools == ["list_tables", "describe_table", "run_sql"]
     assert got["rows"] == [[30]]
+
+
+# The action eval's control arm: raw SQL plus a write tool that checks nothing
+
+
+def test_the_control_arm_files_whatever_it_is_told(tmp_path, monkeypatch):
+    import duckdb
+    import raw_actions
+
+    monkeypatch.setenv("GROUNDRULES_ACTIONS_DB", str(tmp_path / "filed.duckdb"))
+    # One carton to a store that sells 2 bottles a month: DR-012 says no, this tool does not ask.
+    assert raw_actions.file_transfer("NW001", "NW003", "100125", 1, "CARTON") == {"filed": True, "transfer_number": 1}
+    with duckdb.connect(str(tmp_path / "filed.duckdb"), read_only=True) as con:
+        assert con.execute("select target_store, donor_store, quantity, unit from unguarded_transfers").fetchall() == [
+            ("NW001", "NW003", 1, "CARTON")]
+    assert "Permission Error" in raw_sql.run_sql("select * from read_csv('example/data/erp/stores.csv')")["error"]
+
+
+def test_the_control_arm_serves_sql_and_the_write_tool_over_stdio():
+    tools, got = asyncio.run(_call("raw_actions.py", "run_sql", {"query": "select count(*) from marts.fct_store_routes"}))
+    assert tools == ["list_tables", "describe_table", "run_sql", "file_transfer"]
+    assert got["rows"] == [[756]]

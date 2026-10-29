@@ -3,7 +3,8 @@
 Usage: python golden/reference/freeze.py   (or `make golden-freeze`)
 
 Writes one file per question file (golden/expected/stock.yml for
-golden/questions/stock.yml, and so on). Run it when a golden question is
+golden/questions/stock.yml, and so on), and the same for the action
+questions in golden/actions/: the proposal the reference makes, or none. Run it when a golden question is
 added or the synthetic data changes on purpose, then review the diff like
 any other definition change: a moved number needs the domain owner to sign
 it off again.
@@ -17,7 +18,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 
-from catalog import EXPECTED_DIR, data_fingerprint, load_questions  # noqa: E402
+from catalog import ACTION_EXPECTED_DIR, EXPECTED_DIR, data_fingerprint, load_action_questions, load_questions  # noqa: E402
 from reference import DEFAULT_DATA_DIR, Reference  # noqa: E402
 
 HEADER = (
@@ -47,6 +48,44 @@ def compute() -> dict[str, dict]:
     return dict(sorted(by_file.items()))
 
 
+def compute_actions() -> dict[str, dict]:
+    """Frozen proposals per action question file: donor, quantity and unit, or null for none."""
+    data_dir = Path(os.environ.get("GROUNDRULES_DATA_DIR", DEFAULT_DATA_DIR)).resolve()
+    fingerprint = data_fingerprint(data_dir)
+    ref = Reference(data_dir)
+    proposals: dict = {}
+    by_file: dict[str, dict] = {}
+    for q in load_action_questions():
+        if q["as_of"] not in proposals:
+            proposals[q["as_of"]] = {(p["target"], p["sku"]): p for p in ref.transfer_candidates(q["as_of"])}
+        found = proposals[q["as_of"]].get((q["target_store"], str(q["sku"])))
+        answer = None if found is None else {"donor_store": found["donor"], "quantity": found["quantity"], "unit": found["unit"]}
+        by_file.setdefault(q["file"], {"data_fingerprint": fingerprint, "answers": {}})["answers"][q["id"]] = answer
+    for frozen in by_file.values():
+        frozen["answers"] = dict(sorted(frozen["answers"].items()))
+    return dict(sorted(by_file.items()))
+
+
+def render_actions(frozen: dict) -> str:
+    lines = [HEADER, f"data_fingerprint: {frozen['data_fingerprint']}\n", "answers:\n"]
+    for qid, answer in frozen["answers"].items():
+        lines.append(f"  {qid}:\n")
+        if answer is None:
+            lines.append("    expected: null\n")  # no proposal
+        else:
+            lines.append(f"    expected: {{donor_store: {answer['donor_store']}, quantity: {answer['quantity']}, unit: {answer['unit']}}}\n")
+    return "".join(lines)
+
+
+def write(directory: Path, by_file: dict, render_one) -> int:
+    directory.mkdir(parents=True, exist_ok=True)
+    for stale in set(p.name for p in directory.glob("*.yml")) - set(by_file):
+        (directory / stale).unlink()  # a question file was removed
+    for name, frozen in by_file.items():
+        (directory / name).write_text(render_one(frozen), encoding="utf-8", newline="\n")
+    return sum(len(f["answers"]) for f in by_file.values())
+
+
 def render(frozen: dict) -> str:
     lines = [HEADER, f"data_fingerprint: {frozen['data_fingerprint']}\n", "answers:\n"]
     for qid, answer in frozen["answers"].items():
@@ -59,12 +98,9 @@ def render(frozen: dict) -> str:
 
 def main() -> int:
     by_file = compute()
-    EXPECTED_DIR.mkdir(exist_ok=True)
-    for stale in set(p.name for p in EXPECTED_DIR.glob("*.yml")) - set(by_file):
-        (EXPECTED_DIR / stale).unlink()  # a question file was removed
-    for name, frozen in by_file.items():
-        (EXPECTED_DIR / name).write_text(render(frozen), encoding="utf-8", newline="\n")
-    print(f"Froze {sum(len(f['answers']) for f in by_file.values())} answers into {len(by_file)} files in {EXPECTED_DIR}")
+    print(f"Froze {write(EXPECTED_DIR, by_file, render)} answers into {len(by_file)} files in {EXPECTED_DIR}")
+    actions = compute_actions()
+    print(f"Froze {write(ACTION_EXPECTED_DIR, actions, render_actions)} action answers into {len(actions)} files in {ACTION_EXPECTED_DIR}")
     return 0
 
 

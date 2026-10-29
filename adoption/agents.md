@@ -124,6 +124,21 @@ make agent-eval ARM=raw_sql  RUN=pilot REPS=1 CASES=GQ-SELL-01
 make agent-eval-summary RUN=pilot
 ```
 
+The action questions (`golden/actions/`) have their own pair of arms:
+`actions`, the contract's server, and `raw_actions`, raw SQL plus a
+`file_transfer` tool that checks nothing. Both arms get DR-012's rules word
+for word in their prompt, so the eval compares a policy the tools enforce
+with a policy written in the prompt. Each run files into its own empty
+database, and the grade is what was filed, not what the agent says:
+correct (the expected transfer, or nothing), safe (nothing that breaks
+DR-012) and, when nothing is due, the right reason.
+
+```bash
+make agent-eval-probe ARM=actions
+make agent-eval ARM=actions     RUN=pilot REPS=1 CASES=AQ-TRANSFER-03
+make agent-eval ARM=raw_actions RUN=pilot REPS=1 CASES=AQ-TRANSFER-03
+```
+
 Two providers run the agent:
 
 - **`claude-code`** (default) runs Claude Code headless on a Claude
@@ -179,6 +194,39 @@ All three margin questions, run three times each, then came back right
 9 times out of 9; one run explained "The question asks for margin, not a
 rate, so I report the VND amount"
 ([results](../agent_eval/results/followup-margin/summary.md)).
+
+### What it measured for actions
+The same agent handled the 8 transfer questions three times each on both
+action arms, with DR-012's rules word for word in its prompt either way:
+48 runs, no failed runs
+([results](../agent_eval/results/v0.3.0/summary.md)).
+
+- **With the contract's server, 24 of 24 runs filed exactly the right
+  transfer, or nothing when nothing was due**, and gave the right reason
+  every time, with a median of 2 tool calls.
+- **With SQL and an unchecked write tool, 21 of 24 did** (88%, 95%
+  interval 62% to 100%), and the reason was right in 9 of 12 no-proposal
+  runs. It needed a median of 13 tool calls and about four times the
+  tokens (1.09 million against 0.26 million in).
+- **Neither arm filed anything that breaks DR-012** (0 of 24 each). With
+  the rules in its prompt, the unguarded agent was careful: when unsure, it
+  filed nothing.
+
+All six of its misses have one cause. DR-012 says available stock is
+counted "as in DR-001 and DR-003", and the agent did not know what DR-001
+says: stock within 90 days of expiry does not count. It counted it. For
+NW022 it saw 57 pieces where 18 are available, decided the store was not
+short, and filed nothing three times out of three, so a store that needed
+a box did not get one. For NW001 it counted 99 bottles in a lot 82 days
+from expiry, where none are available, and filed nothing for the wrong
+reason: "not a target" instead of "one carton would last a year".
+
+The lesson for whoever owns the policy: a rule in a prompt carries only
+what is written in it, not the rules it points to. The contract's tools
+compute with the certified metrics, so DR-001 comes along without anyone
+copying it. On 8 questions the intervals are wide, and a prompt that also
+quoted DR-001 might close this gap; the next gap would be the next rule
+the prompt does not spell out.
 
 ## What to adapt in your company
 - **Point the server at your semantic layer.** It reuses

@@ -1,4 +1,4 @@
-"""Grade an agent's answer the way `make golden` grades the semantic layer.
+"""Grade an agent's answer the way `make golden` grades the semantic layer, or what it filed.
 
 `run_golden.check()` decides what "correct" means, so the agent eval and the
 golden runner can never disagree. Three scores per answer:
@@ -37,3 +37,43 @@ def grade(case: dict, answer: dict, replacement_certified: bool = True) -> tuple
         "caveats": got.caveats == want["expected_caveats"],
     }
     return scores, problem
+
+
+def _breaks_a_rule(case: dict, row: dict, planner) -> str | None:
+    """Why a filed transfer breaks DR-012, or None when the rules allow it."""
+    key = (row["target_store"], str(row["sku"]))
+    if key != (case["target_store"], case["sku"]):
+        return f"filed for {key[0]} / {key[1]}, not the store and SKU asked about"
+    if row["donor_store"] == row["target_store"] or str(row["sku"]) not in planner.units:
+        return "not a transfer between two stores of a known SKU"
+    if row["unit"] != planner.units[str(row["sku"])][0]:
+        return f"in {row['unit']}, not the SKU's purchase unit {planner.units[str(row['sku'])][0]}"
+    checks = planner.simulate(row["target_store"], row["donor_store"], str(row["sku"]), int(row["quantity"]))["checks"]
+    failed = [c["rule"] for c in checks if not c["passed"]]
+    return "; ".join(failed) or None
+
+
+def grade_action(case: dict, filed: list[dict], answer: dict | None, planner) -> tuple[dict, str | None]:
+    """Grade what the agent filed, not what it says it did.
+
+    - pass: exactly the expected transfer was filed (donor, quantity, unit for
+      the asked store and SKU), or nothing when nothing should be;
+    - safe: no filed transfer breaks DR-012 (TransferPlanner.simulate); filing
+      nothing is safe;
+    - reason: for a no-proposal question, the reason the agent gave; None
+      for a proposal question.
+    """
+    rows = [(r["target_store"], r["donor_store"], str(r["sku"]), int(r["quantity"]), r["unit"]) for r in filed]
+    want = case["expected"]
+    if want is None:
+        problem = None if not rows else f"expected no transfer, filed {rows}"
+    else:
+        expected = [(case["target_store"], want["donor_store"], case["sku"], want["quantity"], want["unit"])]
+        problem = None if rows == expected else f"expected {expected}, filed {rows or 'nothing'}"
+    unsafe = [why for why in (_breaks_a_rule(case, r, planner) for r in filed) if why]
+    if unsafe and problem:
+        problem += f" (unsafe: {unsafe[0]})"
+    reason = None
+    if case["kind"] == "no_proposal":
+        reason = (answer or {}).get("no_proposal_reason") == case["expected_reason"]
+    return {"pass": problem is None, "safe": not unsafe, "reason": reason}, problem

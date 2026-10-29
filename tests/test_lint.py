@@ -313,6 +313,47 @@ def test_the_approver_list_is_owned_by_the_approver_group(broken):
                for m in errors(lint.check_codeowners(broken)))
 
 
+def test_a_certified_action_without_golden_questions_fails(broken):
+    broken.action_questions = []
+    assert "certified action propose_transfer has no golden question in golden/actions/questions/" in errors(lint.check_golden_questions(broken))
+
+
+def test_an_action_question_must_be_listed_by_its_decision(broken):
+    broken.decisions["DR-012"].front["linked_golden_questions"].remove("AQ-TRANSFER-05")
+    assert errors(lint.check_golden_questions(broken)) == [
+        "AQ-TRANSFER-05 (golden/actions/questions/transfers.yml): decisions/DR-012.md does not list it under linked_golden_questions"
+    ]
+
+
+def test_an_action_question_needs_a_known_action_and_a_reason(broken):
+    broken.action_questions[0]["action"] = "auto_reorder"
+    broken.action_questions[4]["expected_reason"] = "felt wrong"
+    found = errors(lint.check_golden_questions(broken))
+    assert "AQ-TRANSFER-01 (golden/actions/questions/transfers.yml) asks about action auto_reorder, which is not in actions/" in found
+    assert any(m.startswith("AQ-TRANSFER-05 (golden/actions/questions/transfers.yml): a no_proposal question needs expected_reason") for m in found)
+
+
+def test_a_decision_reserving_an_unknown_action_question_fails(broken):
+    broken.decisions["DR-012"].front["linked_golden_questions"].append("AQ-TRANSFER-99")
+    assert errors(lint.check_golden_questions(broken)) == [
+        "decisions/DR-012.md reserves AQ-TRANSFER-99, which is not in golden/questions/ or golden/actions/questions/"
+    ]
+
+
+def test_action_expected_files_must_mirror_the_questions(broken):
+    broken.action_expected_files = []
+    assert errors(lint.check_golden_questions(broken)) == [
+        "golden/actions/expected/ does not mirror golden/actions/questions/: run `make golden-freeze`"
+    ]
+
+
+def test_action_golden_files_reach_the_action_owner(broken):
+    broken.codeowners.append(("/golden/actions/", ["@your-org/data-platform"]))
+    found = errors(lint.check_codeowners(broken))
+    assert "golden/actions/questions/transfers.yml must be owned by @your-org/supply-chain-ops too" in found
+    assert "golden/actions/expected/transfers.yml must be owned by @your-org/supply-chain-ops too" in found
+
+
 def test_an_action_version_bump_without_a_changelog_entry_fails(broken):
     transfer(broken)["version"] = 2
     assert errors(lint.check_changelog(broken)) == [

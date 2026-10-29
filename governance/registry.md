@@ -25,9 +25,9 @@ deprecated one points to its replacement.
 What an agent may propose. A person in the approver group signs off each
 proposal before anything is written.
 
-| Action | Label | Owner | Approver | Version | Status | Decision | Reads |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `propose_transfer` | Propose a stock transfer between stores | supply_chain_ops (@your-org/supply-chain-ops) | supply_chain_ops (@your-org/supply-chain-ops) | 1 | certified | [DR-012](../decisions/DR-012.md) | `available_stock` v3, `days_of_cover` v2 |
+| Action | Label | Owner | Approver | Version | Status | Decision | Reads | Golden questions |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `propose_transfer` | Propose a stock transfer between stores | supply_chain_ops (@your-org/supply-chain-ops) | supply_chain_ops (@your-org/supply-chain-ops) | 1 | certified | [DR-012](../decisions/DR-012.md) | `available_stock` v3, `days_of_cover` v2 | 8 |
 
 ## What reads the data
 

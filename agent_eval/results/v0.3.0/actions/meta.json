@@ -1,0 +1,20 @@
+{
+  "provider": "claude-code",
+  "model": "sonnet",
+  "claude_code": "2.1.311",
+  "arm": "actions",
+  "reps": 3,
+  "cases": [
+    "AQ-TRANSFER-01",
+    "AQ-TRANSFER-02",
+    "AQ-TRANSFER-03",
+    "AQ-TRANSFER-04",
+    "AQ-TRANSFER-05",
+    "AQ-TRANSFER-06",
+    "AQ-TRANSFER-07",
+    "AQ-TRANSFER-08"
+  ],
+  "git": "2293901",
+  "started": "2026-10-29T07:03:46+00:00",
+  "note": "Started as a pilot on 2026-10-29 (AQ-TRANSFER-03 and AQ-TRANSFER-05, rep 0, which is what `started`, `reps` and `cases` first recorded), then resumed to 8 questions x 3 reps the same day with the same code and model; the runner skipped the pilot's pairs. The step 19 code was not yet committed: `git` is the base commit, and the code is the step-19-action-eval branch. Every (question, rep) has one graded row; no errors."
+}

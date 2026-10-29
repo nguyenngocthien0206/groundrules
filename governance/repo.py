@@ -22,7 +22,7 @@ DBT_DIR = ROOT / "dbt"
 MANIFEST = DBT_DIR / "target" / "manifest.json"
 sys.path.insert(0, str(ROOT / "golden"))
 
-from catalog import EXPECTED_DIR, load_questions  # noqa: E402
+from catalog import ACTION_EXPECTED_DIR, EXPECTED_DIR, load_action_questions, load_questions  # noqa: E402
 
 GOVERNANCE_FIELDS = ("version", "status", "certified_on", "recertify_every_days", "decision", "replaced_by", "agent_notes")
 STATUSES = ("draft", "certified", "deprecated")
@@ -65,6 +65,8 @@ class Repo:
     powerbi: dict = field(default_factory=dict)  # {"model": text, "tables": [parsed TMDL tables]}
     actions: dict[str, dict] = field(default_factory=dict)  # action file stem -> {"path": ..., "spec": parsed YAML or None}
     approvers: dict = field(default_factory=dict)  # actions/approvers.yml: action -> {"group", "people"}
+    action_questions: list[dict] = field(default_factory=list)  # golden/actions/questions/
+    action_expected_files: list[str] = field(default_factory=list)
 
     def teams_for(self, path: str) -> list[str]:
         return owners_of(self.codeowners, path)
@@ -283,6 +285,8 @@ def load(with_text_files: bool = True) -> Repo:
         powerbi=load_powerbi(),
         actions=load_actions(),
         approvers=load_approvers(),
+        action_questions=load_action_questions(),
+        action_expected_files=sorted(p.name for p in ACTION_EXPECTED_DIR.glob("*.yml")),
     )
 
 

@@ -36,6 +36,7 @@ export-osi:
 # Ask the semantic layer every golden question; fails on a wrong value or caveat.
 golden:
 	uv run python golden/run_golden.py
+	uv run python golden/run_actions.py
 
 # Recompute expected answers from the reference SQL over the raw extracts.
 # Review the diff of golden/expected/ before committing it.
@@ -91,10 +92,12 @@ approve:
 reject:
 	uv run python mcp_server/approvals.py reject $(ID) --as $(AS) --reason "$(REASON)"
 
-# Agent eval: the golden questions through an agent connected to one arm
-# (semantic or raw_sql). The claude-code provider runs on your Claude
+# Agent eval: the golden questions through an agent connected to one arm:
+# semantic or raw_sql for the metric questions, actions or raw_actions for
+# the action questions. The claude-code provider runs on your Claude
 # subscription and uses its usage limits; run the probe first.
 #   make agent-eval ARM=raw_sql RUN=pilot CASES=GQ-SELL-01,GQ-REV-01 REPS=1
+#   make agent-eval-probe ARM=actions
 PROVIDER ?= claude-code
 ARM ?= semantic
 MODEL ?= sonnet
@@ -105,7 +108,7 @@ agent-eval:
 	uv run python agent_eval/run.py --provider $(PROVIDER) --arm $(ARM) --model $(MODEL) --reps $(REPS) --run-id $(RUN) $(if $(CASES),--cases $(CASES))
 
 agent-eval-probe:
-	uv run python agent_eval/run.py --provider $(PROVIDER) --model $(MODEL) --probe
+	uv run python agent_eval/run.py --provider $(PROVIDER) --model $(MODEL) --probe --arm $(ARM)
 
 agent-eval-summary:
 	uv run python agent_eval/summary.py $(RUN)

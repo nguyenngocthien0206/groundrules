@@ -3,7 +3,13 @@
 Usage:
   python agent_eval/run.py --arm semantic [--provider claude-code] [--model sonnet] [--reps 3]
                            [--cases GQ-SELL-01,GQ-REV-01] [--run-id NAME] [--concurrency 2]
-  python agent_eval/run.py --probe     # check the agent's context is clean before a scored run
+  python agent_eval/run.py --arm actions        # the action questions (or --arm raw_actions)
+  python agent_eval/run.py --probe [--arm ARM]  # check the agent's context is clean before a scored run
+
+Metric arms (semantic, raw_sql) answer the metric golden questions and are
+graded on the answer. Action arms (actions, raw_actions) get the action
+golden questions; each run files into its own database, and what it filed
+is graded, not what it says.
 
 Each (question, rep) lands in agent_eval/runs/<run-id>/<arm>/: one graded
 row in results.jsonl, its transcript in traces/, or a failure in errors.jsonl
@@ -22,10 +28,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path[:0] = [str(HERE), str(HERE.parent / "governance")]
+sys.path[:0] = [str(HERE), str(HERE.parent / "governance"), str(HERE.parent / "mcp_server")]
 
-from cases import load_cases  # noqa: E402
-from grading import grade  # noqa: E402
+import duckdb  # noqa: E402
+
+from cases import load_action_cases, load_cases  # noqa: E402
+from grading import grade, grade_action  # noqa: E402
 from prompt import PROBE_PROMPT, PROBE_SCHEMA  # noqa: E402
 from providers import ARMS, PROVIDERS, STRUCTURED_TOOL, EvalError, RunResult  # noqa: E402
 
@@ -49,13 +57,22 @@ def run_arm(provider, arm: str, cases: list[dict], reps: int, out: Path, timeout
     (out / "traces").mkdir(parents=True, exist_ok=True)
     results, errors = out / "results.jsonl", out / "errors.jsonl"
     finished = done_keys(results)
-    certified = certified_metrics()
+    action = ARMS[arm]["task"] == "action"
+    certified = set() if action else certified_metrics()
+    planner = action_planner() if action else None
     todo = [(c, rep) for c in cases for rep in range(reps) if (c["id"], rep) not in finished]
     lock = threading.Lock()
     counts = {"skipped": len(cases) * reps - len(todo), "graded": 0, "errors": 0}
 
     def one(case: dict, rep: int) -> None:
-        got: RunResult = provider.run(case["question"], arm, timeout_s)
+        if action:
+            # Each run files into its own empty database, so what it filed can be read back and graded.
+            filed_db = out / "filed" / f"{case['id']}_rep{rep}.duckdb"
+            filed_db.parent.mkdir(exist_ok=True)
+            filed_db.unlink(missing_ok=True)  # left by an attempt that ended in an error
+            got: RunResult = provider.run(case["question"], arm, timeout_s, env={"GROUNDRULES_ACTIONS_DB": str(filed_db)})
+        else:
+            got = provider.run(case["question"], arm, timeout_s)
         trace_file = out / "traces" / f"{case['id']}_rep{rep}.json"
         # Agent text is recorded verbatim; non-ASCII stays as JSON escapes (same content once parsed).
         trace_file.write_text(json.dumps(got.trace, indent=2), encoding="utf-8")
@@ -69,12 +86,22 @@ def run_arm(provider, arm: str, cases: list[dict], reps: int, out: Path, timeout
                 counts["errors"] += 1
                 print(f"  {case['id']} rep{rep}: {got.error} {got.detail[:120]}", flush=True)
                 return
-            replacement = got.answer.get("replacement_metric") in certified
-            scores, problem = grade(case, got.answer, replacement_certified=replacement)
+            if action:
+                filed = read_filed(filed_db)
+                scores, problem = grade_action(case, filed, got.answer, planner)
+                expected = {"transfer": case["expected"], "reason": case["expected_reason"]}
+                meta = {"decision": case["decision"], "action": case["action"]}
+            else:
+                filed = None
+                replacement = got.answer.get("replacement_metric") in certified
+                scores, problem = grade(case, got.answer, replacement_certified=replacement)
+                expected = {"value": case["expected"], "caveats": case["expected_caveats"]}
+                meta = {"decision": case["decision"], "metric": case["metric"]}
             row = {**base, "prompt": case["question"], "tags": [case["kind"], arm], "status": "ok",
-                   "grade": {k: float(v) for k, v in scores.items()}, "answer": got.answer,
-                   "expected": {"value": case["expected"], "caveats": case["expected_caveats"]},
-                   "problem": problem, "meta": {"decision": case["decision"], "metric": case["metric"]}}
+                   "grade": {k: None if v is None else float(v) for k, v in scores.items()}, "answer": got.answer,
+                   "expected": expected, "problem": problem, "meta": meta}
+            if action:
+                row["filed"] = filed
             append(results, row)
             counts["graded"] += 1
             mark = "pass" if scores["pass"] else f"FAIL ({problem})"
@@ -84,6 +111,28 @@ def run_arm(provider, arm: str, cases: list[dict], reps: int, out: Path, timeout
         for future in [pool.submit(one, c, rep) for c, rep in todo]:
             future.result()
     return counts
+
+
+def action_planner():
+    """The transfer engine, to check every filed transfer against DR-012."""
+    from semantic_client import SemanticLayer
+    from transfers import TransferPlanner
+
+    return TransferPlanner(SemanticLayer())
+
+
+def read_filed(path: Path) -> list[dict]:
+    """The transfers one run filed: proposals on the actions server, rows on the control arm."""
+    if not path.exists():
+        return []
+    columns = "target_store, donor_store, sku, quantity, unit"
+    with duckdb.connect(str(path), read_only=True) as con:
+        tables = {t for (t,) in con.execute("select table_name from information_schema.tables").fetchall()}
+        rows = []
+        for table in ("transfer_proposals", "unguarded_transfers"):
+            if table in tables:
+                rows += con.execute(f"select {columns} from {table}").fetchall()
+    return [dict(zip(("target_store", "donor_store", "sku", "quantity", "unit"), r)) for r in rows]
 
 
 def append(path: Path, row: dict) -> None:
@@ -100,15 +149,15 @@ def git_commit() -> str:
                           capture_output=True, text=True).stdout.strip()
 
 
-def probe(provider, timeout_s: float) -> int:
+def probe(provider, timeout_s: float, arm: str = "semantic") -> int:
     """Ask the agent what it can see. Pass only if its tools are exactly the arm's tools."""
-    got = provider.run(PROBE_PROMPT, "semantic", timeout_s, schema=PROBE_SCHEMA, raw=True)
+    got = provider.run(PROBE_PROMPT, arm, timeout_s, schema=PROBE_SCHEMA, raw=True)
     if got.error and got.error != "no_answer":
         print(f"Probe failed: {got.error} {got.detail}")
         return 1
     answer = got.answer or {}
     tools = sorted(set(got.tools) - {STRUCTURED_TOOL, "submit_answer"})
-    expected = sorted(f"mcp__groundrules__{t}" for t in ("list_metrics", "describe_metric", "find_values", "query_metric"))
+    expected = sorted(f"mcp__{ARMS[arm]['server']}__{t}" for t in ARMS[arm]["tools"])
     print(f"Model: {got.model}")
     print(f"Tools available to the agent: {tools}")
     print(f"Tools the agent says it has: {answer.get('tools')}")
@@ -139,9 +188,10 @@ def main(argv: list[str] | None = None) -> int:
         print(e)
         return 1
     if args.probe:
-        return probe(provider, args.timeout_s)
+        return probe(provider, args.timeout_s, args.arm)
 
-    cases = load_cases([c for c in args.cases.split(",") if c] or None)
+    ids = [c for c in args.cases.split(",") if c] or None
+    cases = load_action_cases(ids) if ARMS[args.arm]["task"] == "action" else load_cases(ids)
     out = RUNS / args.run_id / args.arm
     out.mkdir(parents=True, exist_ok=True)
     meta = out / "meta.json"

@@ -78,6 +78,8 @@
 /golden/expected/margin.yml                        @your-org/finance
 /golden/expected/lifecycle.yml                     @your-org/finance
 /golden/expected/pos.yml                           @your-org/retail-operations @your-org/finance
+/golden/actions/questions/transfers.yml            @your-org/supply-chain-ops
+/golden/actions/expected/transfers.yml             @your-org/supply-chain-ops
 /golden/reference/available_stock.sql              @your-org/supply-chain-ops
 /golden/reference/near_expiry_value.sql            @your-org/supply-chain-ops
 /golden/reference/sell_through_rate.sql            @your-org/supply-chain-ops
