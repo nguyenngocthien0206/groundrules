@@ -25,13 +25,30 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from prompt import ANSWER_SCHEMA, SYSTEM_PROMPT, user_message
+from prompt import ACTION_ANSWER_SCHEMA, ACTION_SYSTEM_PROMPT, ANSWER_SCHEMA, SYSTEM_PROMPT, user_message
 
 ROOT = Path(__file__).resolve().parent.parent
+RAW_SQL_TOOLS = ("list_tables", "describe_table", "run_sql")
 ARMS = {
-    "semantic": {"server": "groundrules", "script": ROOT / "mcp_server" / "semantic.py"},
-    "raw_sql": {"server": "warehouse", "script": ROOT / "mcp_server" / "raw_sql.py"},
+    "semantic": {"server": "groundrules", "script": ROOT / "mcp_server" / "semantic.py", "task": "metric",
+                 "tools": ("list_metrics", "describe_metric", "find_values", "query_metric")},
+    "raw_sql": {"server": "warehouse", "script": ROOT / "mcp_server" / "raw_sql.py", "task": "metric",
+                "tools": RAW_SQL_TOOLS},
+    # Action questions (v0.3): the contract's tools, or raw SQL plus a write tool that checks nothing.
+    "actions": {"server": "groundrules-actions", "script": ROOT / "mcp_server" / "actions.py", "task": "action",
+                "tools": ("describe_action", "find_transfer_candidates", "simulate_transfer", "propose_transfer", "list_proposals")},
+    "raw_actions": {"server": "warehouse-actions", "script": ROOT / "mcp_server" / "raw_actions.py", "task": "action",
+                    "tools": (*RAW_SQL_TOOLS, "file_transfer")},
 }
+PROMPTS = {"metric": (SYSTEM_PROMPT, ANSWER_SCHEMA), "action": (ACTION_SYSTEM_PROMPT, ACTION_ANSWER_SCHEMA)}
+
+
+def mcp_config(arm: str, env: dict[str, str] | None = None) -> dict:
+    """The MCP configuration for one arm: its server only, with any env it needs (the run's own files)."""
+    server = {"command": sys.executable, "args": [str(ARMS[arm]["script"])]}
+    if env:
+        server["env"] = dict(env)
+    return {"mcpServers": {ARMS[arm]["server"]: server}}
 STRUCTURED_TOOL = "StructuredOutput"  # Claude Code's tool for --json-schema answers
 MIN_CLAUDE_CODE = (2, 1, 221)  # first version that waits for MCP servers before the first turn in -p mode
 
@@ -182,13 +199,13 @@ class ClaudeCodeProvider:
     def describe(self) -> dict:
         return {"provider": self.name, "model": self.model, "claude_code": ".".join(map(str, self.version))}
 
-    def command(self, prompt: str, schema: dict, arm: str, config: Path) -> list[str]:
+    def command(self, prompt: str, schema: dict, arm: str, config: Path, system_prompt: str = SYSTEM_PROMPT) -> list[str]:
         return [
             self.binary, "-p", prompt,
             "--output-format", "stream-json", "--verbose",
             "--json-schema", json.dumps(schema),
             "--model", self.model,
-            "--system-prompt", SYSTEM_PROMPT,
+            "--system-prompt", system_prompt,
             "--tools", "",
             "--strict-mcp-config", "--mcp-config", str(config),
             "--allowedTools", f"mcp__{ARMS[arm]['server']}",
@@ -197,16 +214,17 @@ class ClaudeCodeProvider:
             "--setting-sources", "project",
         ]
 
-    def run(self, question: str, arm: str, timeout_s: float, schema: dict | None = None, raw: bool = False) -> RunResult:
+    def run(self, question: str, arm: str, timeout_s: float, schema: dict | None = None, raw: bool = False,
+            env: dict[str, str] | None = None) -> RunResult:
         server = ARMS[arm]["server"]
+        system_prompt, default_schema = PROMPTS[ARMS[arm]["task"]]
         with tempfile.TemporaryDirectory(prefix="agent-eval-") as work:
             config = Path(work) / "mcp.json"
-            config.write_text(json.dumps({"mcpServers": {server: {
-                "command": sys.executable, "args": [str(ARMS[arm]["script"])]}}}), encoding="utf-8")
+            config.write_text(json.dumps(mcp_config(arm, env)), encoding="utf-8")
             prompt = question if raw else user_message(question)
             started = time.perf_counter()
             try:
-                proc = subprocess.run(self.command(prompt, schema or ANSWER_SCHEMA, arm, config), cwd=work,
+                proc = subprocess.run(self.command(prompt, schema or default_schema, arm, config, system_prompt), cwd=work,
                                       env=claude_code_env(),
                                       capture_output=True, text=True, encoding="utf-8", timeout=timeout_s)
             except subprocess.TimeoutExpired:
@@ -249,18 +267,22 @@ class AnthropicApiProvider:
 
         return {"provider": self.name, "model": self.model, "anthropic_sdk": anthropic.__version__, "effort": self.effort}
 
-    def run(self, question: str, arm: str, timeout_s: float, schema: dict | None = None, raw: bool = False) -> RunResult:
+    def run(self, question: str, arm: str, timeout_s: float, schema: dict | None = None, raw: bool = False,
+            env: dict[str, str] | None = None) -> RunResult:
         import asyncio
 
+        system_prompt, default_schema = PROMPTS[ARMS[arm]["task"]]
         started = time.perf_counter()
         try:
-            result = asyncio.run(asyncio.wait_for(self._run(question, arm, schema or ANSWER_SCHEMA, raw), timeout_s))
+            result = asyncio.run(asyncio.wait_for(
+                self._run(question, arm, schema or default_schema, raw, system_prompt, env), timeout_s))
         except TimeoutError:
             result = RunResult(error="timeout", detail=f"no answer within {timeout_s:.0f}s")
         result.latency_s = round(time.perf_counter() - started, 1)
         return result
 
-    async def _run(self, question: str, arm: str, schema: dict, raw: bool) -> RunResult:
+    async def _run(self, question: str, arm: str, schema: dict, raw: bool, system_prompt: str,
+                   env: dict[str, str] | None) -> RunResult:
         import anthropic
         from mcp import ClientSession
         from mcp.client.stdio import StdioServerParameters, stdio_client
@@ -268,7 +290,8 @@ class AnthropicApiProvider:
         client = anthropic.AsyncAnthropic()
         result = RunResult(model=self.model)
         totals: dict[str, int] = {}
-        params = StdioServerParameters(command=sys.executable, args=[str(ARMS[arm]["script"])])
+        params = StdioServerParameters(command=sys.executable, args=[str(ARMS[arm]["script"])],
+                                       env={**os.environ, **env} if env else None)
         async with stdio_client(params) as (read, write), ClientSession(read, write) as session:
             await session.initialize()
             listed = (await session.list_tools()).tools
@@ -277,13 +300,13 @@ class AnthropicApiProvider:
                           "input_schema": schema, "strict": True})
             result.tools = [t["name"] for t in tools]
             messages = [{"role": "user", "content": question if raw else user_message(question)}]
-            result.trace.append({"role": "system", "content": SYSTEM_PROMPT})
+            result.trace.append({"role": "system", "content": system_prompt})
             result.trace.append({"role": "user", "content": messages[0]["content"]})
             for _ in range(self.max_turns):
                 response = await client.beta.messages.create(
                     model=self.model,
                     max_tokens=16000,
-                    system=[{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
+                    system=[{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}],
                     tools=tools,
                     tool_choice={"type": "auto"},
                     messages=messages,

@@ -20,6 +20,14 @@ HERE = Path(__file__).resolve().parent
 RUNS = HERE / "runs"
 METRICS = (("pass", "Correct"), ("value", "Right number"), ("caveats", "Right caveats"))
 KINDS = ("tacit_rule", "conflict", "caveat_required", "deprecated")
+# Action arms are graded on what they filed (agent_eval/grading.py, grade_action).
+ACTION_METRICS = (("pass", "Correct (the right transfer, or none)"), ("safe", "Safe (nothing filed that breaks DR-012)"),
+                  ("reason", "Right reason, when none is due"))
+ACTION_KINDS = ("proposal", "no_proposal")
+
+
+def is_action(rows: list[dict]) -> bool:
+    return bool(rows) and "safe" in rows[0]["grade"]
 
 
 def read_rows(path: Path) -> list[dict]:
@@ -31,7 +39,8 @@ def read_rows(path: Path) -> list[dict]:
 def per_question(rows: list[dict], metric: str) -> dict[str, float]:
     scores: dict[str, list[float]] = defaultdict(list)
     for r in rows:
-        scores[r["prompt_id"]].append(r["grade"][metric])
+        if r["grade"].get(metric) is not None:  # a reason is graded on no-proposal questions only
+            scores[r["prompt_id"]].append(r["grade"][metric])
     return {q: sum(v) / len(v) for q, v in scores.items()}
 
 
@@ -51,12 +60,16 @@ def arm_summary(arm_dir: Path) -> dict:
     open_errors = [e for e in errors if (e["prompt_id"], e["rep"]) not in finished]
     out = {"arm": arm_dir.name, "rows": len(rows), "questions": len({r["prompt_id"] for r in rows}),
            "errors": len(open_errors), "error_classes": sorted({e["error"] for e in open_errors})}
-    for metric, _ in METRICS:
+    out["action"] = is_action(rows)
+    metrics, kind_names = (ACTION_METRICS, ACTION_KINDS) if out["action"] else (METRICS, KINDS)
+    for metric, _ in metrics:
         values = [v for _, v in sorted(per_question(rows, metric).items())]  # order-free, so intervals reproduce
         out[metric] = (statistics.fmean(values) if values else 0.0, *bootstrap(values))
+    if out["action"]:
+        out["unsafe_runs"] = sum(1 for r in rows if r["grade"]["safe"] == 0)
     kinds = {r["prompt_id"]: r["tags"][0] for r in rows}
     out["by_kind"] = {}
-    for kind in KINDS:
+    for kind in kind_names:
         values = [v for q, v in per_question(rows, "pass").items() if kinds[q] == kind]
         if values:
             out["by_kind"][kind] = (statistics.fmean(values), len(values))
@@ -80,10 +93,14 @@ def render(run_id: str, arms: list[dict]) -> str:
     lines = [f"# Agent eval: {run_id}", ""]
     header = "| | " + " | ".join(a["arm"] for a in arms) + " |"
     lines += [header, "|" + " --- |" * (len(arms) + 1)]
-    for metric, label in METRICS:
+    action = arms[0]["action"]
+    metrics, kind_names = (ACTION_METRICS, ACTION_KINDS) if action else (METRICS, KINDS)
+    for metric, label in metrics:
         cells = [f"{pct(a[metric][0])} ({pct(a[metric][1])} to {pct(a[metric][2])})" for a in arms]
         lines.append(f"| {label} | " + " | ".join(cells) + " |")
-    for kind in KINDS:
+    if action:
+        lines.append("| Runs that filed an unsafe transfer | " + " | ".join(f"{a['unsafe_runs']} of {a['rows']}" for a in arms) + " |")
+    for kind in kind_names:
         cells = [f"{pct(a['by_kind'][kind][0])} of {a['by_kind'][kind][1]}" if kind in a["by_kind"] else "-" for a in arms]
         lines.append(f"| Correct, {kind} | " + " | ".join(cells) + " |")
     lines.append("| Graded answers | " + " | ".join(f"{a['rows']} on {a['questions']} questions" for a in arms) + " |")

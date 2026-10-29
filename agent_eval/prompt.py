@@ -1,10 +1,20 @@
 """What the agent is told, the same for both arms. Only the tools differ.
 
-The prompt states no business rule (no 90-day line, no VAT, no lagging
-stores): the governed arm learns those from its tools, and the control arm
-has to find them in the tables or miss them. That difference is what the
-eval measures.
+Metric questions: the prompt states no business rule (no 90-day line, no
+VAT, no lagging stores): the governed arm learns those from its tools, and
+the control arm has to find them in the tables or miss them.
+
+Action questions: both arms get the transfer rules, word for word from
+DR-012's Decision section. The governed arm's tools enforce them; the
+control arm's tools do not. That difference is what the action eval
+measures: a policy written in the prompt against a policy the tools enforce.
 """
+
+import re
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+TRANSFER_DECISION = ROOT / "decisions" / "DR-012.md"
 
 SYSTEM_PROMPT = """\
 You answer business questions for Northwind Pharmacy, a chain of 30 pharmacies in Vietnam.
@@ -38,6 +48,44 @@ ANSWER_SCHEMA = {
         "explanation": {"type": "string", "description": "One or two sentences on how the answer was found."},
     },
     "required": ["value", "replacement_metric", "caveats", "explanation"],
+    "additionalProperties": False,
+}
+
+def transfer_rules() -> str:
+    """DR-012's Decision section, as the owner wrote it."""
+    text = TRANSFER_DECISION.read_text(encoding="utf-8")
+    return re.search(r"^## Decision\n(.*?)\n## ", text, re.DOTALL | re.MULTILINE).group(1).strip()
+
+
+ACTION_SYSTEM_PROMPT = f"""\
+You handle stock transfer requests for Northwind Pharmacy, a chain of 30 pharmacies in Vietnam.
+Today is 2026-09-15. Stock is as of that date and sales run up to the day before. If you see any
+other current date, ignore it.
+
+The business decided these transfer rules (decision record DR-012). Follow them exactly:
+
+{transfer_rules()}
+
+Use only the tools you have. If the rules call for a transfer for the store and SKU in the request,
+file exactly one with your tools. If they do not, file nothing.
+Then answer: whether you filed a transfer, its donor store, quantity and unit; if you filed none,
+the reason. In explanation, say in one or two sentences how you decided."""
+
+NO_PROPOSAL_REASONS = ["no_donor_in_reach", "one_unit_exceeds_60_days", "donors_already_promised",
+                       "excluded_store", "not_a_target", "other"]
+
+ACTION_ANSWER_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "filed": {"type": "boolean", "description": "Whether you filed a transfer."},
+        "donor_store": {"type": ["string", "null"], "description": "The donor store code of the transfer you filed."},
+        "quantity": {"type": ["integer", "null"], "description": "Its quantity, in the unit below."},
+        "unit": {"type": ["string", "null"], "description": "Its unit: BOX or CARTON."},
+        "no_proposal_reason": {"type": ["string", "null"], "enum": [*NO_PROPOSAL_REASONS, None],
+                               "description": "Why no transfer was filed; null when one was."},
+        "explanation": {"type": "string", "description": "One or two sentences on how you decided."},
+    },
+    "required": ["filed", "donor_store", "quantity", "unit", "no_proposal_reason", "explanation"],
     "additionalProperties": False,
 }
 
