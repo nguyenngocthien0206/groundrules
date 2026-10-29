@@ -44,6 +44,14 @@ def test_a_metric_is_described_with_its_owner_decision_and_caveats():
     assert "error" in semantic.describe_metric("units_sold")
 
 
+def test_the_margin_note_makes_the_amount_the_default():
+    # v0.2.0 eval: the old note ("For a margin rate, divide by net_revenue")
+    # led one run of GQ-MARGIN-03 to answer a rate the question never asked for.
+    note = semantic.describe_metric("gross_margin")["agent_notes"]
+    assert "means this amount" in note
+    assert "only when the question asks for a rate or a percentage" in note
+
+
 def test_names_resolve_to_codes():
     assert semantic.find_values("district", "old quarter")["matches"] == [{"district_code": "D02", "district_name": "Old Quarter"}]
     assert semantic.find_values("category", "Vitamins")["matches"][0]["category_code"] == "VITA"

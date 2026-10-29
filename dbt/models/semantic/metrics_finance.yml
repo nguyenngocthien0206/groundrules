@@ -56,5 +56,7 @@ metrics:
         decision: decisions/DR-008.md
         replaced_by: null
         agent_notes: >
-          An amount in VND, not a percentage. For a margin rate, divide by
-          net_revenue for the same scope and say so.
+          An amount in VND. A question about margin, gross margin or gross
+          profit means this amount, even when it does not say so. Give a
+          margin rate (divide by net_revenue for the same scope) only when the
+          question asks for a rate or a percentage, and say you computed it.
