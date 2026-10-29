@@ -1,0 +1,20 @@
+# SQL fixtures: the source is a file read through external_location.
+unit_tests:
+  - name: logistics_latest_resent_route_wins_and_units_convert
+    description: >
+      The provider re-sent NW001 to NW002 with a new drive time; only the
+      later computation survives. Metres become km and seconds become minutes.
+    model: stg_logistics__store_routes
+    given:
+      - input: source('logistics', 'store_routes')
+        format: sql
+        rows: |
+          select 'NW001' as origin_code, 'NW002' as destination_code, '8348' as distance_m, '2331' as duration_s, '2026-09-13T21:38:00Z' as computed_at
+          union all
+          select 'NW001', 'NW002', '8348', '2460', '2026-09-14T09:10:00Z'
+          union all
+          select 'NW002', 'NW001', '8102', '2280', '2026-09-13T22:05:00Z'
+    expect:
+      rows:
+        - {origin_store_code: NW001, destination_store_code: NW002, distance_km: 8.348, drive_minutes: 41.00}
+        - {origin_store_code: NW002, destination_store_code: NW001, distance_km: 8.102, drive_minutes: 38.00}

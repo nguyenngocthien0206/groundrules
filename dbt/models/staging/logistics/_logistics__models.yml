@@ -1,0 +1,22 @@
+models:
+  - name: stg_logistics__store_routes
+    description: Road distance and drive time between stores, one row per direction, latest computation only.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [origin_store_code, destination_store_code]
+    columns:
+      - name: origin_store_code
+        description: Store the trip starts from.
+        data_tests:
+          - not_null
+      - name: destination_store_code
+        description: Store the trip ends at.
+        data_tests:
+          - not_null
+      - name: distance_km
+        description: Road distance in km.
+      - name: drive_minutes
+        description: Drive time in minutes, loading included.
+      - name: computed_at_utc
+        description: When the provider computed this route, UTC.
