@@ -64,6 +64,12 @@ before this date are the owners' history and are not recorded here.
 
 ### [Unreleased]
 
+#### Added
+- A logistics provider's route table (`logistics/store_routes.csv`): road
+  distance and drive time between stores over an invented city with a
+  river, staged and modelled as `fct_store_routes`. Existing extracts and
+  every golden value are unchanged.
+
 #### Changed
 - `gross_margin`'s agent note now makes the VND amount the default and a
   margin rate the exception, after it caused the governed arm's one miss

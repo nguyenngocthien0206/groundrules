@@ -4,8 +4,8 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: v0.2 complete; release 0.2.0 (`release-0.2.0`). v0.3 stays locked until the owner says go
-- State: steps 12 to 14 merged (#14, #15, #16); release branch with CHANGELOG `[0.2.0]` and version 0.2.0
+- Current step: v0.3, step 16 (action contract and DR-012)
+- State: v0.2.0 released; step 15 (logistics routes) built on `step-15-logistics-routes`
 - Last verified green: 2026-10-26 on GitHub Actions, run 40357875267 on main (`make build`: 97 dbt nodes, 1 expected warning; lint 0 errors 0 warnings as of 2026-10-26; golden 30/30; 185 pytest; both demos; v2 parser)
 
 ## Build checklist (v0.1)
@@ -43,12 +43,21 @@ Copied from SPEC section 20. Tick when verified on a fresh clone.
   - [x] 13. Agent eval harness (`agent_eval/`, providers `claude-code` and `anthropic-api`)
   - [x] 14. Real run (Sonnet, 30 questions x 3 reps x 2 arms), results, release 0.2.0
 - [ ] v0.3 Actions: action contract, shadow table, approval, write-back, audit log
+  - [x] 15. Logistics routes (invented city, `fct_store_routes`)
+  - [ ] 16. Action contract `propose_transfer` and DR-012
+  - [ ] 17. Proposals: MCP tool, simulation, shadow table
+  - [ ] 18. Approval, idempotent write-back, audit log
+  - [ ] 19. Action golden questions and agent eval
+  - [ ] 20. Docs and release 0.3.0
 
 ## Implementation decisions
 Technical choices made during the build that are not already in SPEC.md. One line each: date, decision, why. If a decision changes the spec, say so and ask the owner first.
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-29 | v0.3 transfer rules decided by the owner: target cover under 7 days, donor over 60; bring the target to 14 days, donor keeps at least 30; only `available_stock` moves; donor within 30 minutes' drive by the route table (not by district), nearest first; no lagging or newly opened store; supply chain approves each proposal | These become DR-012 in step 16. The distance rule came from the owner: a store on a district's edge can be nearer the next district than its own. |
+| 2026-10-29 | Store routes come from a new logistics extract over an invented city (river, two bridges), generated from two new random streams | Existing extracts stay byte-identical, so no golden value moves (only the data fingerprint lines). No real place names or coordinates. |
+| 2026-10-29 | Route staging deduplicates with `row_number()` in a subquery, not `qualify` | Keeps the new model portable to Postgres; `qualify` is already listed as a portability cost in the warehouses guide. |
 | 2026-10-29 | `gross_margin`'s `agent_notes` now say a question about margin means the VND amount, and a rate only when asked; no version bump | The old note ("For a margin rate, divide by net_revenue") led one v0.2.0 run to answer a rate. The number is unchanged, so the version and the definitions changelog stay; finance still reviews it through CODEOWNERS. The other notes were reviewed and none invites a derived number. |
 | 2026-10-27 | Caveats are graded strictly against the caveat codes; the right number is scored separately | Owner's choice after the pilot: a program reading the answer needs `pos_sync_lag:NW029`, not a sentence; scoring the number on its own keeps the control arm from losing twice for one gap. |
 | 2026-10-27 | The full run was split into batches by measured usage (12-run probe batch, one rep for every question, then reps 2 and 3); the runner resumed each time | The owner's subscription was at 53% when the run started; a 12-run batch measured the cost per run before committing to the rest. |
@@ -158,6 +167,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-29 (step 15)
+- Done: invented city geography and `logistics/store_routes.csv` in the generator, logistics source with freshness, `stg_logistics__store_routes` with a unit test, `fct_store_routes` with an enforced contract, data tests and a plausibility test, CODEOWNERS entry, 7 tests
+- Verified: 376 existing extract files byte-identical, one file added (789 rows, 33 re-sent); golden expected files changed only their fingerprint line; `make build` 111 nodes, freshness pass; the mart has 756 routes (28 x 27), 246 under 30 minutes, none for NW029 or NW030; the longest same-district drive (33 min, Riverside across the river) is longer than the shortest cross-district one (5.6 min)
+- Next: step 16, the action contract and DR-012, starting in plan mode
+- Notes: the first version re-sent some routes after the extract time; the resend window now ends before 23:00 UTC on the extract night.
 
 ### 2026-10-29 (follow-up: gross margin agent note)
 - Done: rewrote `gross_margin`'s `agent_notes`, a test that the amount is the default, rerun of the three margin questions, evidence in `agent_eval/results/followup-margin/`
