@@ -4,8 +4,8 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: v0.3, step 20 (docs and release 0.3.0)
-- State: v0.2.0 released; steps 15 to 19 and `days_of_cover` v2 merged (#19 to #24); step 20 docs built on `step-20-docs`, release PR next
+- Current step: none; v0.3 is complete
+- State: v0.3.0 released on 2026-10-29 (#19 to #25, release PR `release-0.3.0`)
 - Last verified green: 2026-10-26 on GitHub Actions, run 40357875267 on main (`make build`: 97 dbt nodes, 1 expected warning; lint 0 errors 0 warnings as of 2026-10-26; golden 30/30; 185 pytest; both demos; v2 parser)
 
 ## Build checklist (v0.1)
@@ -42,13 +42,13 @@ Copied from SPEC section 20. Tick when verified on a fresh clone.
   - [x] 12. MCP server (`mcp_server/semantic.py`, raw SQL control arm)
   - [x] 13. Agent eval harness (`agent_eval/`, providers `claude-code` and `anthropic-api`)
   - [x] 14. Real run (Sonnet, 30 questions x 3 reps x 2 arms), results, release 0.2.0
-- [ ] v0.3 Actions: action contract, shadow table, approval, write-back, audit log
+- [x] v0.3 Actions: action contract, shadow table, approval, write-back, audit log
   - [x] 15. Logistics routes (invented city, `fct_store_routes`)
   - [x] 16. Action contract `propose_transfer` and DR-012
   - [x] 17. Proposals: MCP tool, simulation, shadow table
   - [x] 18. Approval, idempotent write-back, audit log
   - [x] 19. Action golden questions and agent eval
-  - [ ] 20. Docs and release 0.3.0
+  - [x] 20. Docs and release 0.3.0
 
 ## Implementation decisions
 Technical choices made during the build that are not already in SPEC.md. One line each: date, decision, why. If a decision changes the spec, say so and ask the owner first.
@@ -188,6 +188,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-29 (release 0.3.0)
+- Done: CHANGELOG `[0.3.0]` with the PR behind each entry, version 0.3.0 in `pyproject.toml` and `uv.lock`, v0.3 checked
+- Verified: lint 0/0, golden 31/31 and 8/8, `make test` on the release branch
+- Next: the owner tags v0.3.0 and publishes the GitHub release; nothing further is planned
+- Notes: the docs PR was #25.
 
 ### 2026-10-29 (step 20, docs)
 - Done: README section on actions with the v0.3.0 results, an Actions row in "What you get", the route table in the example company, repo map, "not an automation engine", roadmap; `adoption/actions.md` (when to start, picking the first action, the six pieces and who signs each, staged rollout, what to replace, prompt against contract, where the hours go); `playbook/approving-proposals.md` (daily decisions, stale proposals, the monthly look at rejections, refusals); index rows; SPEC status
