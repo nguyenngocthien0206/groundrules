@@ -17,6 +17,7 @@ there.
 | [Warehouses](warehouses.md) | exactly what changes when you leave DuckDB |
 | [BI tools](bi-tools.md) | how to keep your BI tool from becoming a second place where metrics are defined |
 | [Agents](agents.md) | how an AI agent asks the semantic layer over MCP instead of writing SQL |
+| [Actions](actions.md) | when and how to let an agent propose changes, who approves, and what a contract adds to a prompt |
 | [Cost and roles](cost-and-roles.md) | where the hours go and who to involve |
 
 ## If you only have one afternoon
