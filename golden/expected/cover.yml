@@ -11,3 +11,6 @@ answers:
   GQ-COVER-03:
     expected: 25.714914
     expected_caveats: [pos_sync_lag:NW029, pos_sync_lag:NW030]
+  GQ-COVER-04:
+    expected: 0.0
+    expected_caveats: []

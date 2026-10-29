@@ -13,7 +13,7 @@ table 'Stock by store'
 		formatString: #,##0
 		lineageTag: a390cac6-0c6c-4828-9d2f-66c7bfaa2f32
 
-	/// metric: days_of_cover v1 (owner: supply_chain_ops). Shows the exported certified value;
+	/// metric: days_of_cover v2 (owner: supply_chain_ops). Shows the exported certified value;
 	/// a total that was not exported stays blank on purpose.
 	measure 'Days of cover by store' = SELECTEDVALUE('Stock by store'[days_of_cover])
 		formatString: 0.0

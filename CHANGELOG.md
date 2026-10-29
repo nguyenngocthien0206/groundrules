@@ -19,6 +19,21 @@ Definitions, so a version bump without a note here fails CI.
 Newest first. Each entry: what changed, what moves for readers, the decision
 record, the golden questions that pin it, and the pull request.
 
+### 2026-10-29: `days_of_cover` v2
+
+- **What changed:** a store that has run out of a SKU it still sells now
+  has 0 days of cover. v1 gave no value there: with no stock row left, the
+  formula divided an empty stock by the pace. The rule in DR-010 did not
+  change; the definition now follows it, so there is no new decision record.
+- **What moves:** only store-SKU answers for stock that has run out, from no
+  value to 0 (for example NW001, SKU 100125). Store, district, category and
+  chain answers, and the dashboard, do not move. A store-SKU that sold
+  nothing in the 28 days still has no value.
+- **Decision:** [DR-010](decisions/DR-010.md).
+- **Golden questions:** GQ-COVER-04 added (NW001, SKU 100125: 0 days).
+- **Also:** the action `propose_transfer` now reads `days_of_cover` v2; the
+  lint stopped it until the pin was bumped. Its proposals do not change.
+
 ### 2026-10-29: action `propose_transfer` v1
 
 - **What changed:** the first action an agent may take. It proposes a stock
@@ -94,6 +109,8 @@ before this date are the owners' history and are not recorded here.
   proposals from the raw extracts.
 
 #### Changed
+- `days_of_cover` v2: a store that has run out has 0 days of cover instead
+  of no value. GQ-COVER-04 pins it; the transfer action reads v2.
 - `gross_margin`'s agent note now makes the VND amount the default and a
   margin rate the exception, after it caused the governed arm's one miss
   in the v0.2.0 eval. The number does not change, so the version stays.

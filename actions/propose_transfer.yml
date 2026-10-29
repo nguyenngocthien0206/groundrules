@@ -20,10 +20,9 @@ decision: decisions/DR-012.md
 reads:
   metrics:
     available_stock: 3
-    days_of_cover: 1
-  # The pace inside days_of_cover. A store that has run out has no cover to
-  # work the pace back from: days_of_cover v1 returns no value there, where
-  # DR-010 gives 0 days. Such a store is a target, not a store without sales.
+    days_of_cover: 2
+  # The pace inside days_of_cover. A store that has run out has 0 days of
+  # cover, so its pace cannot be worked back from cover.
   building_blocks:
     - units_sold_28d
   models:
