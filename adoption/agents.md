@@ -66,6 +66,29 @@ answers are fast.
 The server opens the warehouse read-only, so several agents can share it,
 and nothing an agent does can change the data.
 
+## Let it propose, not act
+`mcp_server/actions.py` is a second server, for the one thing an agent may
+do besides answer: propose a stock transfer between stores. Connect it next
+to the metrics server, the same way, with `mcp_server/actions.py` in place
+of `mcp_server/semantic.py` (`make mcp-server-actions` starts it by hand).
+
+| Tool | What it does |
+| --- | --- |
+| `describe_action` | the rules, who approves, the decision record (DR-012) and what to tell people |
+| `find_transfer_candidates` | what the rules would propose, filtered by store, district or SKU, and why other targets get nothing; saves nothing |
+| `simulate_transfer` | any what-if, checked against every rule; saves nothing |
+| `propose_transfer` | files the rules' proposal for one target store and SKU, to wait for approval |
+| `list_proposals` | what has been filed |
+
+The agent picks the target; the rules pick the donor and the quantity, from
+the certified metrics at the versions the contract pins
+(`actions/propose_transfer.yml`). If the semantic layer serves a different
+version, or `days_of_cover` stops agreeing with stock and pace, the server
+refuses to propose anything. Proposals go to a separate file,
+`var/actions.duckdb` (or `GROUNDRULES_ACTIONS_DB`), never the warehouse,
+and nothing reaches the ERP until a person in supply chain approves it.
+Filing the same proposal twice keeps one row.
+
 ## The control arm, and why not to ship it
 `mcp_server/raw_sql.py` gives an agent what it is commonly given today:
 the reporting tables, their column descriptions and a read-only SQL tool.

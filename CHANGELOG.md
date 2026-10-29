@@ -107,6 +107,14 @@ before this date are the owners' history and are not recorded here.
   version, consistent rules, CODEOWNERS, a changelog entry) and the
   registry lists it. An independent reference computes the expected
   proposals from the raw extracts.
+- Transfer proposals for agents (`mcp_server/actions.py`, `make
+  mcp-server-actions`): find what the rules propose, simulate any what-if,
+  and file the rules' proposal for a target store and SKU into a shadow
+  table in its own file (`var/actions.duckdb`). The engine
+  (`mcp_server/transfers.py`) reads the certified metrics at the versions
+  the contract pins, refuses when they differ, and proposes exactly what
+  the raw reference does (108 proposals at the snapshot). Nothing reaches
+  the ERP yet.
 
 #### Changed
 - `days_of_cover` v2: a store that has run out has 0 days of cover instead
