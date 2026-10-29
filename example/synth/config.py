@@ -30,6 +30,28 @@ DISTRICTS = (
     ("D05", "New Town"),
 )
 STORES_PER_DISTRICT = 6
+
+# An invented city on a local map in km (x west to east, y south to north),
+# for the logistics provider's routes. A river runs north to south; two
+# bridges cross it. District lines say little about travel time: Riverside
+# sits on both banks, and its stores on opposite banks are far apart by road.
+CITY_WIDTH_KM, CITY_HEIGHT_KM = 24.0, 18.0
+RIVER_X_KM = 12.0          # the river's mean x; it meanders by RIVER_MEANDER_KM
+RIVER_MEANDER_KM = 1.2
+BRIDGES_Y_KM = (5.0, 13.0)
+# District -> (center x, center y, spread km, bank). "both" = either bank.
+DISTRICT_LAYOUT = {
+    "D01": (12.0, 9.0, 3.0, "both"),   # Riverside, along the river between the bridges
+    "D02": (8.0, 9.5, 1.6, "west"),    # Old Quarter, slow narrow streets
+    "D03": (18.5, 14.5, 2.0, "east"),  # Airport
+    "D04": (5.0, 3.5, 2.0, "west"),    # Industrial Park
+    "D05": (17.0, 6.0, 2.0, "east"),   # New Town
+}
+ROAD_SPEED_KMH = 24.0
+OLD_QUARTER_SPEED_KMH = 14.0       # when either end is in the Old Quarter
+LOADING_MINUTES = 4.0
+ROUTES_COMPUTED_AT = datetime(2026, 9, 13, 21, 0)  # UTC; the provider's weekly recompute
+ROUTE_RESEND_SHARE = 0.04          # pairs the provider re-sent with an update
 STORES_24H = 3
 # Older stores run POS vendor A. The chain moved to vendor B for later
 # openings, so the newest stores (including the lagging ones) are on B.
