@@ -49,6 +49,7 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-29 | `gross_margin`'s `agent_notes` now say a question about margin means the VND amount, and a rate only when asked; no version bump | The old note ("For a margin rate, divide by net_revenue") led one v0.2.0 run to answer a rate. The number is unchanged, so the version and the definitions changelog stay; finance still reviews it through CODEOWNERS. The other notes were reviewed and none invites a derived number. |
 | 2026-10-27 | Caveats are graded strictly against the caveat codes; the right number is scored separately | Owner's choice after the pilot: a program reading the answer needs `pos_sync_lag:NW029`, not a sentence; scoring the number on its own keeps the control arm from losing twice for one gap. |
 | 2026-10-27 | The full run was split into batches by measured usage (12-run probe batch, one rep for every question, then reps 2 and 3); the runner resumed each time | The owner's subscription was at 53% when the run started; a 12-run batch measured the cost per run before committing to the rest. |
 | 2026-10-27 | Recorded agent output keeps non-ASCII characters as JSON escapes | One raw SQL trace contained an em dash in the agent's own words; escaping keeps the evidence verbatim when parsed and keeps the repo free of the character. |
@@ -157,6 +158,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-29 (follow-up: gross margin agent note)
+- Done: rewrote `gross_margin`'s `agent_notes`, a test that the amount is the default, rerun of the three margin questions, evidence in `agent_eval/results/followup-margin/`
+- Verified: 9 of 9 correct (GQ-MARGIN-03 was 2 of 3 in v0.2.0), 0 errors, 89 seconds; lint 0/0; registry unchanged
+- Next: v0.3, step 15 (logistics data), starting in plan mode
+- Notes: one rerun explained "The question asks for margin, not a rate, so I report the VND amount", the note doing its job.
 
 ### 2026-10-27 (step 14)
 - Done: probe, pilot (4 questions, one per kind, both arms) reviewed by the owner, full run of 30 questions x 3 reps x 2 arms on Sonnet 5.5 through Claude Code 2.1.311, results and traces in `agent_eval/results/v0.2.0/`, summary with token totals and API-equivalent cost and order-independent intervals, README and agents guide updated

@@ -1,0 +1,14 @@
+{
+  "provider": "claude-code",
+  "model": "sonnet",
+  "claude_code": "2.1.311",
+  "arm": "semantic",
+  "reps": 3,
+  "cases": [
+    "GQ-MARGIN-01",
+    "GQ-MARGIN-02",
+    "GQ-MARGIN-03"
+  ],
+  "git": "1020a95",
+  "started": "2026-10-29T02:09:33+00:00"
+}
