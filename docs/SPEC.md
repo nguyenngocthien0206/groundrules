@@ -28,7 +28,7 @@ Companion to the Substack article "When the One Asking for Data Is No Longer a P
 | v0.2 Agent-ready | MCP access to the semantic layer (built on `dbt-mcp` where possible), agent eval harness on golden questions | Shows how an agent should consume certified definitions and how to measure it. |
 | v0.3 Actions | One action contract, shadow table, simulation, approval, idempotent write-back, audit log | Shows the safe path from answers to actions. |
 
-Build v0.1 completely before starting v0.2. Ask me before starting v0.2 or v0.3.
+Build v0.1 completely before starting v0.2. Ask me before starting v0.2 or v0.3. Status: v0.1 and v0.2 are released; v0.3 is built and measured (steps 15 to 19), with its docs in step 20.
 
 ## 4. Repo structure (v0.1)
 ```
@@ -77,8 +77,8 @@ groundrules/
     exports/                 # generated Parquet, not committed
     groundrules.pbip         # Power BI project: groundrules.SemanticModel/ (TMDL) and
                              # groundrules.Report/ (PBIR), text files
-  playbook/
-  adoption/
+  playbook/                  # the routine around the machinery (v0.3: approving-proposals.md)
+  adoption/                  # bringing it into a company (v0.3: actions.md)
   tests/                     # pytest for runner, lint, generator checksum, exports
 ```
 
@@ -277,7 +277,7 @@ Limits, stated plainly in README: Power BI Desktop runs only on Windows, so CI r
 - MCP access: build on the official `dbt-mcp` server first, in line with "build on what companies already run". Verified in step 12: its semantic layer tools need the dbt platform (`DBT_HOST`, `DBT_TOKEN`, `DBT_PROD_ENV_ID`) and it needs Python 3.12 or later, so locally it would only give an agent dbt CLI tools. The repo therefore has a thin server, `mcp_server/semantic.py` (named so it cannot shadow the `mcp` SDK package): `list_metrics`, `describe_metric` (definition, owner, `agent_notes`, decision record, caveats), `find_values` (names to codes) and `query_metric`, which reuses the golden runner's code path. Deprecated and draft metrics are refused with a pointer to the certified one; no value stays null. `mcp_server/raw_sql.py` is the agent eval's control arm: read-only SQL over the marts. MetricFlow readers open the warehouse read-only so several servers can share it.
 - `agent_eval/`: runs the golden questions through an agent connected over MCP to one arm (`semantic` or `raw_sql`), and grades each answer with `run_golden.check()`: correct (number and caveats), right number, right caveats, per question kind. Results per (question, rep) in `agent_eval/runs/<run-id>/<arm>/` (results, traces, errors; resumable); `summary.py` reports means over questions with bootstrap intervals. Providers: `claude-code` (Claude Code 2.1.221+ headless on a subscription; clean context from an empty folder with CLAUDE.md, auto memory and bundled skills off, checked by a probe) and `anthropic-api` (the Claude API with a key; written, not yet run). Not in CI; its grading, runner and stream parser are tested in CI without a model. Measured in step 14 (Sonnet 5.5, Claude Code 2.1.311, 30 questions x 3 reps x 2 arms, 180 answers, no errors; evidence in `agent_eval/results/v0.2.0/`): governed 99% correct (97% to 100%), raw SQL 8% (0% to 18%), right number 99% versus 13%.
 
-## 18. v0.3 Actions (do not start without asking)
+## 18. v0.3 Actions (built)
 One action contract (`propose_transfer`) with preconditions using certified metrics, a shadow table for proposals, a simulation of impact, an approval step, idempotent write-back to a fake ERP table, and an audit log recording the metric versions used.
 
 - Built in step 16: `actions/propose_transfer.yml` holds the owner and approver (dbt groups), the decision (DR-012), what it reads (certified metrics pinned at a version, the hidden building block `units_sold_28d`, the marts `fct_store_routes`, `dim_store`, `dim_sku`), the rules as numbers, the fields of a proposal, and what is written after approval (`erp_transfer_requests`, lots with at least 90 days left). The governance lint checks each contract against the manifest, the decision record, CODEOWNERS and CHANGELOG, including that pinned versions are current and the rules cannot send stock back and forth; the registry lists it. `golden/reference/transfer_candidates.sql` with `Reference.transfer_candidates()` computes the expected proposals from the raw extracts (108 at the snapshot, 28 partial).

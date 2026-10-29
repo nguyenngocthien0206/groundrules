@@ -5,7 +5,7 @@ Living status of the build. Claude reads this at the start of every session and 
 ## Current status
 - Phase: v0.1 Core
 - Current step: v0.3, step 20 (docs and release 0.3.0)
-- State: v0.2.0 released; steps 15 to 18 and `days_of_cover` v2 merged (#19 to #23); step 19 built and measured on `step-19-action-eval`
+- State: v0.2.0 released; steps 15 to 19 and `days_of_cover` v2 merged (#19 to #24); step 20 docs built on `step-20-docs`, release PR next
 - Last verified green: 2026-10-26 on GitHub Actions, run 40357875267 on main (`make build`: 97 dbt nodes, 1 expected warning; lint 0 errors 0 warnings as of 2026-10-26; golden 30/30; 185 pytest; both demos; v2 parser)
 
 ## Build checklist (v0.1)
@@ -188,6 +188,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-29 (step 20, docs)
+- Done: README section on actions with the v0.3.0 results, an Actions row in "What you get", the route table in the example company, repo map, "not an automation engine", roadmap; `adoption/actions.md` (when to start, picking the first action, the six pieces and who signs each, staged rollout, what to replace, prompt against contract, where the hours go); `playbook/approving-proposals.md` (daily decisions, stale proposals, the monthly look at rejections, refusals); index rows; SPEC status
+- Verified: every number in the new pages read back from `agent_eval/results/v0.3.0/summary.md` and the step 16 to 19 records; docs tests (links, make targets, indexes), lint 0/0, `make test`
+- Next: the release PR (`release-0.3.0`): CHANGELOG `[0.3.0]`, version 0.3.0 in `pyproject.toml` and `uv.lock`, PROGRESS; then the tag and the release notes
+- Notes: no hour estimates were added for actions; the cost section names who spends the time, not how much, until a company measures its own.
 
 ### 2026-10-29 (step 19, run)
 - Done: probes of both action arms, a pilot (AQ-TRANSFER-03 and 05 x 1 rep x 2 arms) resumed to the full run (8 questions x 3 reps x 2 arms), evidence copied to `agent_eval/results/v0.3.0/` (results, traces, meta with a note on the pilot and the uncommitted code; the per-run DuckDB files stay in `runs/`), agents guide and SPEC with the numbers
