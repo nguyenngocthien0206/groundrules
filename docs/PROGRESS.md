@@ -4,8 +4,8 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: v0.3, step 17 (proposals: MCP tool, simulation, shadow table)
-- State: v0.2.0 released; steps 15 and 16 merged (#19, #20); `days_of_cover` v2 built on `fix-days-of-cover-run-out`, before step 17
+- Current step: v0.3, step 18 (approval, idempotent write-back, audit log)
+- State: v0.2.0 released; steps 15 and 16 and `days_of_cover` v2 merged (#19, #20, #21); step 17 (proposals) built on `step-17-proposals`
 - Last verified green: 2026-10-26 on GitHub Actions, run 40357875267 on main (`make build`: 97 dbt nodes, 1 expected warning; lint 0 errors 0 warnings as of 2026-10-26; golden 30/30; 185 pytest; both demos; v2 parser)
 
 ## Build checklist (v0.1)
@@ -45,7 +45,7 @@ Copied from SPEC section 20. Tick when verified on a fresh clone.
 - [ ] v0.3 Actions: action contract, shadow table, approval, write-back, audit log
   - [x] 15. Logistics routes (invented city, `fct_store_routes`)
   - [x] 16. Action contract `propose_transfer` and DR-012
-  - [ ] 17. Proposals: MCP tool, simulation, shadow table
+  - [x] 17. Proposals: MCP tool, simulation, shadow table
   - [ ] 18. Approval, idempotent write-back, audit log
   - [ ] 19. Action golden questions and agent eval
   - [ ] 20. Docs and release 0.3.0
@@ -55,6 +55,10 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-29 | The agent names a target store and SKU; the rules choose donor and quantity. `simulate_transfer` answers any what-if and writes nothing | Owner's choice: an agent cannot pick a farther donor or a bigger quantity than DR-012 allows, but can still explore alternatives. |
+| 2026-10-29 | Actions get their own MCP server (`mcp_server/actions.py`) and their own DuckDB file (`var/actions.duckdb`) | Owner's choice: the v0.2 semantic server and its measured eval stay as they were, and the warehouse stays read-only for every reader. |
+| 2026-10-29 | The engine compares thresholds on whole numbers (available x 28 against sold x days) and refuses if `days_of_cover` disagrees | Keeps 7.0 and 60.0 exact like the reference, and turns a silent change in what cover means into a refusal. |
+| 2026-10-29 | A proposal's id is a hash of action, contract version, data date, target and SKU; the shadow file is opened per call | Filing the same proposal twice keeps one row; the approval tool in step 18 can open the file between an agent's calls. |
 | 2026-10-29 | `days_of_cover` v2 coalesces an empty available stock to 0; no new decision record | A store-SKU that has run out has no stock row, so v1 divided an empty stock and gave no value where DR-010 gives 0. The rule did not change, only the code now follows it. Owner chose to fix it in its own PR before step 17. |
 | 2026-10-29 | Transfers move whole purchase units (box or carton): round up to 14 days, never more than the donor can spare | Owner's choice: the ERP and the warehouse move boxes; nobody opens a box to send part of it. Recorded in DR-012. |
 | 2026-10-29 | A partial proposal comes from the nearest donor; one donor per proposal | Owner's choice: one van, one stop. Another donor could cover the whole need in only 7 of the 28 partial cases. |
@@ -175,6 +179,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-29 (step 17)
+- Done: `mcp_server/transfers.py` (engine under the contract, version and cover guards, reasons, simulation), `mcp_server/shadow.py` (shadow table, idempotent filing), `mcp_server/actions.py` (five tools), `make mcp-server-actions`, `var/` ignored, 15 tests, an agents guide section
+- Verified: the engine's 108 proposals equal the raw reference field by field; reasons 66 no donor in reach, 35 over the 60-day cap, 2 donors already promised; the what-ifs fail on exactly the expected rule; an agent session over stdio files NW014 / 100025 (2 boxes from NW003, partial) into a temp shadow file and nothing else; lint 0/0, golden 31/31
+- Next: step 18, approval, write-back to the fake ERP table and the audit log, starting in plan mode
+- Notes: the semantic layer and the reference agree on every store-SKU with sales (4,388) for stock, pace and cover, so the engine needs no correction for either side.
 
 ### 2026-10-29 (fix: `days_of_cover` v2)
 - Done: `coalesce(available_stock, 0)` in `days_of_cover`, version 2, GQ-COVER-04 (NW001, SKU 100125: 0 days) linked from DR-010, the transfer action pinned to v2, the Power BI tag, CHANGELOG, registry, a semantic server test

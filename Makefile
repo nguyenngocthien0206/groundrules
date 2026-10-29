@@ -1,4 +1,4 @@
-.PHONY: setup data data-manifest build metrics export-osi golden golden-freeze lint registry affected dashboard-data mcp-server mcp-server-raw agent-eval agent-eval-probe agent-eval-summary demo-conflict demo-drift check-v2 test
+.PHONY: setup data data-manifest build metrics export-osi golden golden-freeze lint registry affected dashboard-data mcp-server mcp-server-raw mcp-server-actions agent-eval agent-eval-probe agent-eval-summary demo-conflict demo-drift check-v2 test
 
 DATA_DIR := example/data
 export DBT_SEND_ANONYMOUS_USAGE_STATS := false
@@ -72,6 +72,10 @@ mcp-server:
 
 mcp-server-raw:
 	uv run python mcp_server/raw_sql.py
+
+# Transfer proposals (v0.3): writes proposals to var/actions.duckdb, never the warehouse.
+mcp-server-actions:
+	uv run python mcp_server/actions.py
 
 # Agent eval: the golden questions through an agent connected to one arm
 # (semantic or raw_sql). The claude-code provider runs on your Claude

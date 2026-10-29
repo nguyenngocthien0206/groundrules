@@ -26,3 +26,6 @@ dbt/dbt_packages/
 dbt/.user.yml
 *.duckdb
 *.duckdb.wal
+
+# Proposals filed by agents (the shadow table), local state
+var/
