@@ -20,7 +20,8 @@ to an agent, the agreement has to live somewhere a machine can read and a
 person can review.
 
 ## What you get
-Four homes for the knowledge that used to live in one person's head:
+Four homes for the knowledge that used to live in one person's head, and a
+fifth for what an agent may do with it:
 
 | | Where | What it holds |
 | --- | --- | --- |
@@ -28,6 +29,7 @@ Four homes for the knowledge that used to live in one person's head:
 | **Why** | [`decisions/`](decisions/) | a decision record for every rule: who decided, what else was considered, one case worked out by hand |
 | **Proof** | [`golden/`](golden/) | real business questions with signed-off answers, checked against an independent computation on every pull request |
 | **Ownership** | [`.github/CODEOWNERS`](.github/CODEOWNERS), [`governance/`](governance/) | the owning team must approve any change to its rules; a lint fails when a metric has no owner, no record or no test |
+| **Actions** | [`actions/`](actions/) | what an agent may propose, who approves it, and the rules as numbers; a proposal waits until a listed person approves it, then becomes one ERP request with an audit record |
 
 Nothing here is a new engine or a new standard. It is dbt, MetricFlow and
 Git, used so that a definition cannot change without its owner knowing and
@@ -117,13 +119,57 @@ Every answer, its tool calls and its grade are in
 [`agent_eval/results/v0.2.0/`](agent_eval/results/v0.2.0/summary.md).
 `make agent-eval` reruns it; see [Agents](adoption/agents.md).
 
+## An agent that acts, with and without a contract
+v0.3 lets an agent do one thing besides answer: propose a stock transfer
+from a store with spare stock to one about to run out. The rules are a
+decision record ([DR-012](decisions/DR-012.md): under 7 days of cover, a
+donor within 30 minutes' drive by the route table, whole boxes, never past
+60 days) and a contract that pins the certified metrics they read
+([`actions/propose_transfer.yml`](actions/propose_transfer.yml)). A proposal
+waits in a shadow table until someone listed in
+[`actions/approvers.yml`](actions/approvers.yml) approves it; only then does
+it become an ERP request, and every step is in an audit log.
+
+```bash
+make mcp-server-actions      # the server an agent connects to: find, simulate, propose
+make proposals               # what agents have proposed
+make approve ID=TP-... AS=planner.riverside@example.com
+```
+
+The same agent took 8 transfer requests, three times each, with DR-012's
+rules word for word in its prompt either way. One arm had the contract's
+tools; the other had SQL over the same tables and a write tool that checks
+nothing. The grade is what each run actually filed.
+
+| | SQL and an unchecked write tool | The contract's tools |
+| --- | --- | --- |
+| Filed the right transfer, or none when none was due | 21 of 24 (88%, 95% interval 62% to 100%) | **24 of 24** |
+| Right reason when none was due | 9 of 12 | **12 of 12** |
+| Filed something that breaks DR-012 | 0 of 24 | 0 of 24 |
+| Median tool calls | 13 | 2 |
+| Tokens in | 1.09 million | 0.26 million |
+
+With the rules in its prompt, the unguarded agent was careful: when unsure,
+it filed nothing. All of its misses had one cause. DR-012 counts available
+stock "as in DR-001", and DR-001's rule (stock within 90 days of expiry
+does not count) was not in the prompt, so the agent counted that stock,
+decided one store was not short, and left it without the box it needed. A
+policy in a prompt carries only what is written in it; the contract's tools
+compute with the certified metrics, so the rules they point to come along.
+On 8 questions the intervals are wide. Evidence:
+[`agent_eval/results/v0.3.0/`](agent_eval/results/v0.3.0/summary.md);
+adoption: [Actions](adoption/actions.md).
+
 ## The example company
 Northwind Pharmacy is fictional: a chain of 30 pharmacies in five invented
 districts, with 150 products and six months of data. Its extracts look like
 real ones: an ERP with codes and `YYYYMMDD` dates, two POS vendors with
 different formats and time zones, upload retries, returns that arrive weeks
 late, two new stores whose sync runs behind. Every name and number is
-generated from a fixed seed.
+generated from a fixed seed. A logistics provider's route table gives the
+drive time between stores across an invented city with a river and two
+bridges, so a store on a district's edge is often nearer the next
+district than its own.
 
 [`governance/registry.md`](governance/registry.md) lists the certified
 metrics, their owners, versions, decision records and when each is due for
@@ -134,10 +180,11 @@ changed.
 ```
 dbt/                the dbt project: staging, marts, semantic layer, owners (groups), exposures
 decisions/          decision records: the why behind every rule
+actions/            action contracts and who may approve them
 golden/             golden questions, the independent reference, the runner
 governance/         lint, registry, affected metrics
 dashboards/         optional Power BI report on certified exports
-mcp_server/         MCP servers for agents: governed access, and raw SQL as the eval's control arm
+mcp_server/         MCP servers for agents (governed metrics, actions, and raw SQL as the eval's control arms), the approval command
 agent_eval/         the golden questions through an agent, graded; results/ holds the evidence
 legacy/, demos/     the conflicting dashboards and the two demos
 example/            the synthetic data generator
@@ -163,15 +210,18 @@ docs/               the spec and build log
   governance around definitions, and it plugs into those products.
 - Not a hosted product. There is no service to run and no UI beyond the
   BI tool you already own.
+- Not an automation engine. An agent proposes; a person approves, and can
+  only approve or reject what the rules produced.
 
 ## Roadmap
 - **v0.1:** the core loop above, plus CI.
 - **v0.2, agent-ready:** an MCP server that answers only with certified
   metrics and refuses deprecated ones, and an agent eval on the golden
   questions (results above).
-- **v0.3, actions (not started):** one action an agent may propose, with
-  preconditions on certified metrics, a simulation, an approval step and an
-  audit log of the metric versions used.
+- **v0.3, actions:** one action an agent may propose (a stock transfer),
+  with rules on certified metrics, a simulation, an approval step, an
+  idempotent write to the ERP and an audit log of the versions used, and
+  an eval of a contract against rules in a prompt (results above).
 
 ## License
 [Apache-2.0](LICENSE).
