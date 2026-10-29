@@ -136,6 +136,7 @@ def test_filing_a_proposal_twice_keeps_one_row(plan, shadow_db):
     assert (first["donor_store"], first["quantity"], first["partial"], first["status"]) == ("NW003", 2, True, "proposed")
     assert first["metric_versions"] == {"available_stock": 3, "days_of_cover": 2}
     assert len(shadow.list_proposals()) == 1
+    assert [(e["event"], e["actor"]) for e in shadow.history(first["proposal_id"])] == [("proposed", "test")]
 
 
 def test_the_warehouse_is_never_the_shadow_table(shadow_db):

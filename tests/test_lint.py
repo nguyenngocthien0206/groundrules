@@ -258,6 +258,7 @@ def test_a_decision_linking_a_missing_action_fails(broken):
 
 def test_an_action_owner_must_be_a_group_with_a_team(broken):
     transfer(broken)["approver"] = "store_managers"
+    broken.approvers["propose_transfer"]["group"] = "store_managers"  # the list follows the contract
     assert errors(lint.check_actions(broken)) == [
         "actions/propose_transfer.yml: approver store_managers is not a group with a github_team in dbt/models/groups.yml"
     ]
@@ -281,6 +282,34 @@ def test_an_action_reading_a_model_without_a_contract_fails(broken):
 def test_an_action_file_is_owned_by_exactly_its_owner(broken):
     broken.codeowners.append(("/actions/", ["@your-org/data-platform"]))
     assert any("actions/propose_transfer.yml must be owned by @your-org/supply-chain-ops" in m
+               for m in errors(lint.check_codeowners(broken)))
+
+
+def test_an_action_nobody_may_approve_fails(broken):
+    del broken.approvers["propose_transfer"]
+    assert errors(lint.check_actions(broken)) == [
+        "actions/approvers.yml has no entry for propose_transfer: nobody could approve its proposals"
+    ]
+
+
+def test_approvers_from_another_group_or_none_at_all_fail(broken):
+    broken.approvers["propose_transfer"] = {"group": "finance", "people": ["not an address"]}
+    assert errors(lint.check_actions(broken)) == [
+        "actions/approvers.yml: propose_transfer lists group finance, but its contract's approver is supply_chain_ops",
+        "actions/approvers.yml: propose_transfer lists 'not an address', which is not an email address",
+    ]
+    broken.approvers["propose_transfer"] = {"group": "supply_chain_ops", "people": []}
+    assert errors(lint.check_actions(broken)) == ["actions/approvers.yml: propose_transfer lists nobody who may approve"]
+
+
+def test_approvers_for_an_action_that_does_not_exist_fail(broken):
+    broken.approvers["auto_reorder"] = {"group": "supply_chain_ops", "people": ["head.supply@example.com"]}
+    assert errors(lint.check_actions(broken)) == ["actions/approvers.yml lists approvers for auto_reorder, which is not in actions/"]
+
+
+def test_the_approver_list_is_owned_by_the_approver_group(broken):
+    broken.codeowners.append(("/actions/approvers.yml", ["@your-org/data-platform"]))
+    assert any("actions/approvers.yml must be owned by @your-org/supply-chain-ops" in m
                for m in errors(lint.check_codeowners(broken)))
 
 
