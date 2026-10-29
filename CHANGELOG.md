@@ -64,7 +64,12 @@ before this date are the owners' history and are not recorded here.
 
 ### [Unreleased]
 
-Nothing yet.
+#### Changed
+- `gross_margin`'s agent note now makes the VND amount the default and a
+  margin rate the exception, after it caused the governed arm's one miss
+  in the v0.2.0 eval. The number does not change, so the version stays.
+  The three margin questions, rerun three times each, came back right 9
+  of 9 (`agent_eval/results/followup-margin/`).
 
 ### [0.2.0] - 2026-10-27
 

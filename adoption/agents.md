@@ -143,6 +143,13 @@ two runs of the same question answered the amount. The lesson is that
 `agent_notes` are instructions an agent will act on, so they need the same
 review as the rule itself.
 
+After the release the note was rewritten to make the amount the default
+and a rate the exception, through finance's review like any rule change.
+All three margin questions, run three times each, then came back right
+9 times out of 9; one run explained "The question asks for margin, not a
+rate, so I report the VND amount"
+([results](../agent_eval/results/followup-margin/summary.md)).
+
 ## What to adapt in your company
 - **Point the server at your semantic layer.** It reuses
   `golden/semantic_client.py`, so it works wherever the golden runner works.
