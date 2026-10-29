@@ -68,8 +68,8 @@ def render(repo: Repo) -> str:
         "What an agent may propose. A person in the approver group signs off each\n",
         "proposal before anything is written.\n",
         "\n",
-        "| Action | Label | Owner | Approver | Version | Status | Decision | Reads |\n",
-        "| --- | --- | --- | --- | --- | --- | --- | --- |\n",
+        "| Action | Label | Owner | Approver | Version | Status | Decision | Reads | Golden questions |\n",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n",
     ]
     for name, action in sorted(repo.actions.items()):
         spec = action["spec"] or {}
@@ -80,7 +80,8 @@ def render(repo: Repo) -> str:
         lines.append(
             f"| `{name}` | {spec.get('label', '?')} | {owner} ({repo.group_teams.get(owner or '') or ''}) "
             f"| {approver} ({repo.group_teams.get(approver or '') or ''}) | {spec.get('version', '?')} "
-            f"| {spec.get('status', '?')} | {decision_link} | {reads or '-'} |\n"
+            f"| {spec.get('status', '?')} | {decision_link} | {reads or '-'} "
+            f"| {sum(1 for q in repo.action_questions if q.get('action') == name)} |\n"
         )
     lines += [
         "\n",
