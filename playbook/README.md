@@ -18,3 +18,4 @@ routine you settle on.
 | [Changing a rule](changing-a-rule.md) | a definition has to change | whoever opens the pull request, and its reviewers |
 | [When a golden question fails](when-a-golden-question-fails.md) | CI is red on `make golden` | the metric's owner and the on-call data person |
 | [Recertification](recertification.md) | a metric is due for review, or the lint warns that it is stale | business owners, data lead |
+| [Approving proposals](approving-proposals.md) | an agent has proposed an action, or the month's rejections are due for review | approvers, the action's owner |
