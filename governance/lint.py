@@ -29,6 +29,8 @@ DECISION_KEYS = {
 DECISION_STATUSES = {"proposed", "accepted", "superseded"}
 DECISION_SECTIONS = ["Context", "Decision", "Options considered", "Consequences", "Worked example"]
 EM_DASH = chr(0x2014)  # written as a code point so this file passes its own check
+APPROVERS_PATH = "actions/approvers.yml"
+EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 ACTION_KEYS = (
     "action", "label", "version", "status", "owner", "approver", "decision",
     "reads", "rules", "proposal", "writes", "agent_notes",
@@ -182,6 +184,11 @@ def required_rule_owners(repo: Repo) -> dict[str, set[str]]:
         team = repo.group_teams.get((action["spec"] or {}).get("owner") or "")
         if team:
             required.setdefault(action["path"], set()).add(team)
+    # Who may approve is the approver group's call.
+    for name, entry in repo.approvers.items():
+        team = repo.group_teams.get(entry.get("group") or "") if isinstance(entry, dict) else None
+        if team:
+            required.setdefault(APPROVERS_PATH, set()).add(team)
     return required
 
 
@@ -275,6 +282,30 @@ def check_actions(repo: Repo) -> list[Issue]:
         for name in (dr.front or {}).get("linked_actions") or []:
             if name not in repo.actions:
                 issues.append(_error("actions", f"{dr.path} links action {name}, which is not in actions/"))
+    return issues + check_approvers(repo)
+
+
+def check_approvers(repo: Repo) -> list[Issue]:
+    """Every action names the people who may approve it, in its approver group."""
+    if repo.approvers.get("_unreadable"):
+        return [_error("actions", f"{APPROVERS_PATH} is not a readable YAML mapping")]
+    issues = []
+    for name, action in sorted(repo.actions.items()):
+        entry = repo.approvers.get(name)
+        group = (action["spec"] or {}).get("approver")
+        if not isinstance(entry, dict):
+            issues.append(_error("actions", f"{APPROVERS_PATH} has no entry for {name}: nobody could approve its proposals"))
+            continue
+        if entry.get("group") != group:
+            issues.append(_error("actions", f"{APPROVERS_PATH}: {name} lists group {entry.get('group')}, but its contract's approver is {group}"))
+        people = entry.get("people") or []
+        if not people:
+            issues.append(_error("actions", f"{APPROVERS_PATH}: {name} lists nobody who may approve"))
+        for person in people:
+            if not EMAIL.match(str(person)):
+                issues.append(_error("actions", f"{APPROVERS_PATH}: {name} lists '{person}', which is not an email address"))
+    for name in sorted(set(repo.approvers) - set(repo.actions)):
+        issues.append(_error("actions", f"{APPROVERS_PATH} lists approvers for {name}, which is not in actions/"))
     return issues
 
 
