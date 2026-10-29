@@ -125,6 +125,19 @@ before this date are the owners' history and are not recorded here.
   stand-in ERP (`var/erp.duckdb`), however often approval runs, even after
   a crash halfway. An append-only audit log records every event with who,
   when and the versions.
+- Golden questions for the transfer action (`golden/actions/`, 8 of them,
+  linked from DR-012): the proposal the independent reference makes, or
+  none and why. `make golden` checks them against the engine; the lint
+  checks their links, files and owners, and the registry counts them.
+- The agent eval runs the action questions on two new arms: `actions` (the
+  contract's server) and `raw_actions` (raw SQL plus a write tool that
+  checks nothing, `mcp_server/raw_actions.py`). Both get DR-012's rules in
+  the prompt; the grade is what the agent filed: correct, safe and the
+  right reason. Measured on Sonnet 5.5 (8 questions x 3 reps x 2 arms, no
+  errors; `agent_eval/results/v0.3.0/`): the contract's arm 24/24 correct
+  and right reason every time; the unguarded arm 21/24 correct and 9/12
+  right reasons, every miss from counting short-dated stock (DR-001); no
+  unsafe filing on either arm.
 
 #### Changed
 - `days_of_cover` v2: a store that has run out has 0 days of cover instead

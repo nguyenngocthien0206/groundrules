@@ -4,8 +4,8 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: v0.3, step 19 (action golden questions and agent eval)
-- State: v0.2.0 released; steps 15 to 17 and `days_of_cover` v2 merged (#19 to #22); step 18 (approval) built on `step-18-approval`
+- Current step: v0.3, step 20 (docs and release 0.3.0)
+- State: v0.2.0 released; steps 15 to 18 and `days_of_cover` v2 merged (#19 to #23); step 19 built and measured on `step-19-action-eval`
 - Last verified green: 2026-10-26 on GitHub Actions, run 40357875267 on main (`make build`: 97 dbt nodes, 1 expected warning; lint 0 errors 0 warnings as of 2026-10-26; golden 30/30; 185 pytest; both demos; v2 parser)
 
 ## Build checklist (v0.1)
@@ -47,7 +47,7 @@ Copied from SPEC section 20. Tick when verified on a fresh clone.
   - [x] 16. Action contract `propose_transfer` and DR-012
   - [x] 17. Proposals: MCP tool, simulation, shadow table
   - [x] 18. Approval, idempotent write-back, audit log
-  - [ ] 19. Action golden questions and agent eval
+  - [x] 19. Action golden questions and agent eval
   - [ ] 20. Docs and release 0.3.0
 
 ## Implementation decisions
@@ -55,6 +55,10 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-29 | Both action arms get DR-012's Decision section in the system prompt; only the tools differ | Owner's choice for the control arm; giving the governed arm the same text keeps "only the tools differ", so the eval measures enforcement against a policy in the prompt. |
+| 2026-10-29 | Action questions name store and SKU codes | Owner's choice: the eval tests the rules, not code lookup, and needs fewer tool calls on the subscription. |
+| 2026-10-29 | The action eval grades what was filed, from each run's own DuckDB file, and adds a safety score from `TransferPlanner.simulate` | What an agent writes is what matters; "safe" is the share of runs that filed nothing breaking DR-012. |
+| 2026-10-29 | A no-proposal question's reason is the owner's, written in the question; the reference only says whether there is a proposal and what it is | The reference was written to compute proposals; the reason is a business classification the owner signs. |
 | 2026-10-29 | Approvers are listed in `actions/approvers.yml`, owned by the approver group through CODEOWNERS and checked by the lint | Owner's choice: adding an approver is a pull request supply chain approves, not a config anyone can change. |
 | 2026-10-29 | Approval rechecks versions and recomputes the proposal; anything different marks it stale | Owner's choice: a proposal computed on an old definition or old stock is not approved, the agent proposes again. |
 | 2026-10-29 | Approve as is or reject with a reason; no editing; nobody approves what they filed | Owner's choice: an edit would step outside DR-012; a reason tells the owners whether the rule should change. |
@@ -184,6 +188,18 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-29 (step 19, run)
+- Done: probes of both action arms, a pilot (AQ-TRANSFER-03 and 05 x 1 rep x 2 arms) resumed to the full run (8 questions x 3 reps x 2 arms), evidence copied to `agent_eval/results/v0.3.0/` (results, traces, meta with a note on the pilot and the uncommitted code; the per-run DuckDB files stay in `runs/`), agents guide and SPEC with the numbers
+- Verified: 48 graded runs, no errors, no duplicate (question, rep); actions 24/24 correct and right reason 12/12; raw_actions 21/24 correct, 9/12 right reason, 0 unsafe filings on either arm; every miss read in the results: all count short-dated stock (DR-001); traces scanned for personal data and the em dash
+- Next: step 20, docs and release 0.3.0, starting in plan mode
+- Notes: usage went from 0% after the reset to 3% (probes, pilot), 5% (actions arm, about 0.1% a run) and then the raw_actions arm, about four times the tokens per run. The unguarded agent filed nothing when unsure rather than something wrong, so "safe" did not separate the arms; "correct" and "right reason" did.
+
+### 2026-10-29 (step 19, built)
+- Done: 8 action golden questions with expected proposals frozen from the reference, `golden/run_actions.py` in `make golden`, lint checks and a registry column for them, the control arm `mcp_server/raw_actions.py`, action arms and graded filings in the agent eval (prompt with DR-012's rules, per-run database, correct, safe, reason), an arm-aware probe, 17 new tests
+- Verified: action questions 8/8 against the engine; scripted agents: an oracle scores 100% on all three, a carton to NW001 is wrong and unsafe, answering right without filing fails the proposal questions; lint 0/0, golden 31/31 plus 8/8
+- Next: on the owner's "Run eval": probe both action arms, pilot 2 questions x 1 rep x 2 arms, report usage per run, then the full run on the owner's go
+- Notes: usage was 74% to 76% when this was built; the real run waits for the reset.
 
 ### 2026-10-29 (step 18)
 - Done: `actions/approvers.yml` with its lint checks and CODEOWNERS entry, decisions and an append-only audit log in `mcp_server/shadow.py`, a stand-in ERP in `mcp_server/erp.py`, `mcp_server/approvals.py` with `make proposals`, `make approve`, `make reject`, 9 approval tests, 4 lint tests, the actions README walk-through
