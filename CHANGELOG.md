@@ -95,26 +95,33 @@ before this date are the owners' history and are not recorded here.
 
 ### [Unreleased]
 
+Nothing yet.
+
+### [0.3.0] - 2026-10-29
+
+Actions: an agent may propose a stock transfer under a written rule, a
+person approves it, and what the contract adds over a prompt is measured.
+
 #### Added
 - A logistics provider's route table (`logistics/store_routes.csv`): road
   distance and drive time between stores over an invented city with a
   river, staged and modelled as `fct_store_routes`. Existing extracts and
-  every golden value are unchanged.
+  every golden value are unchanged (#19).
 - Action contracts (`actions/`): `propose_transfer` v1 with its rules,
   owner, approver and the metric versions it reads, and DR-012 explaining
   them. The governance lint checks each contract (owner and approver
   groups, an accepted decision, certified metrics at their current
   version, consistent rules, CODEOWNERS, a changelog entry) and the
   registry lists it. An independent reference computes the expected
-  proposals from the raw extracts.
+  proposals from the raw extracts (#20).
 - Transfer proposals for agents (`mcp_server/actions.py`, `make
   mcp-server-actions`): find what the rules propose, simulate any what-if,
   and file the rules' proposal for a target store and SKU into a shadow
   table in its own file (`var/actions.duckdb`). The engine
   (`mcp_server/transfers.py`) reads the certified metrics at the versions
   the contract pins, refuses when they differ, and proposes exactly what
-  the raw reference does (108 proposals at the snapshot). Nothing reaches
-  the ERP yet.
+  the raw reference does (108 proposals at the snapshot). A proposal never
+  reaches the ERP on its own (#22).
 - Approval and write-back (`mcp_server/approvals.py`, `make proposals`,
   `make approve`, `make reject`): someone listed in `actions/approvers.yml`
   (owned by supply chain, checked by the lint) approves a proposal as it is
@@ -124,11 +131,11 @@ before this date are the owners' history and are not recorded here.
   quantity. An approved proposal becomes one transfer request in a
   stand-in ERP (`var/erp.duckdb`), however often approval runs, even after
   a crash halfway. An append-only audit log records every event with who,
-  when and the versions.
+  when and the versions (#23).
 - Golden questions for the transfer action (`golden/actions/`, 8 of them,
   linked from DR-012): the proposal the independent reference makes, or
   none and why. `make golden` checks them against the engine; the lint
-  checks their links, files and owners, and the registry counts them.
+  checks their links, files and owners, and the registry counts them (#24).
 - The agent eval runs the action questions on two new arms: `actions` (the
   contract's server) and `raw_actions` (raw SQL plus a write tool that
   checks nothing, `mcp_server/raw_actions.py`). Both get DR-012's rules in
@@ -137,16 +144,19 @@ before this date are the owners' history and are not recorded here.
   errors; `agent_eval/results/v0.3.0/`): the contract's arm 24/24 correct
   and right reason every time; the unguarded arm 21/24 correct and 9/12
   right reasons, every miss from counting short-dated stock (DR-001); no
-  unsafe filing on either arm.
+  unsafe filing on either arm (#24).
+- Docs for actions: a README section with the results, an adoption guide
+  (`adoption/actions.md`) and a playbook page for approvers
+  (`playbook/approving-proposals.md`) (#25).
 
 #### Changed
 - `days_of_cover` v2: a store that has run out has 0 days of cover instead
-  of no value. GQ-COVER-04 pins it; the transfer action reads v2.
+  of no value. GQ-COVER-04 pins it; the transfer action reads v2 (#21).
 - `gross_margin`'s agent note now makes the VND amount the default and a
   margin rate the exception, after it caused the governed arm's one miss
   in the v0.2.0 eval. The number does not change, so the version stays.
   The three margin questions, rerun three times each, came back right 9
-  of 9 (`agent_eval/results/followup-margin/`).
+  of 9 (`agent_eval/results/followup-margin/`) (#18).
 
 ### [0.2.0] - 2026-10-27
 
