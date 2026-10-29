@@ -1,0 +1,23 @@
+# Freshness note for the demo: see staging/pos/_pos__sources.yml. The
+# loaded_at_field adds (now - extract time) so freshness is measured as if
+# dbt ran at the extract. In your project, use the plain column.
+sources:
+  - name: logistics
+    description: >
+      The logistics provider's route table between stores, recomputed weekly.
+      Its own conventions: lower_snake columns, metres, seconds and UTC ISO
+      timestamps. It computes each direction separately (one-way streets),
+      re-sends some pairs with an update, and has no routes yet for stores
+      opened in the last month.
+    tables:
+      - name: store_routes
+        description: One row per origin and destination store, plus re-sent rows.
+        config:
+          meta:
+            external_location: "read_csv('{{ env_var('GROUNDRULES_DATA_DIR', '../example/data') }}/logistics/store_routes.csv', header = true, all_varchar = true)"
+          loaded_at_field: >-
+            cast(replace(substr(computed_at, 1, 19), 'T', ' ') as timestamp)
+            + ((now() at time zone 'UTC') - (timestamp '{{ var("extract_at") }}' - interval 7 hour))
+          freshness:
+            warn_after: {count: 14, period: day}
+            error_after: {count: 30, period: day}

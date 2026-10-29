@@ -2,8 +2,8 @@
 
 Usage: python example/generate.py --out example/data [--seed 20260915]
 
-The output looks like what a real chain's ERP, POS vendors and returns system
-drop into a landing folder: raw, inconsistent and a little late. Every name,
+The output looks like what a real chain's ERP, POS vendors, returns system
+and logistics provider drop into a landing folder: raw, inconsistent and a little late. Every name,
 number and rule is invented. The same seed always gives byte-identical files.
 """
 
@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from synth import config, extracts, manifest  # noqa: E402
+from synth import config, extracts, logistics, manifest  # noqa: E402
 from synth.master import build_skus, build_stores  # noqa: E402
 from synth.simulate import World, simulate  # noqa: E402
 
@@ -34,6 +34,7 @@ def generate(out: Path, seed: str = config.SEED) -> World:
     extracts.write_pos_b(out, world)
     extracts.write_pos_sync_log(out, world, seed)
     extracts.write_returns(out, world, seed)
+    logistics.write_store_routes(out, seed, stores)
     manifest.write(out)
     return world
 

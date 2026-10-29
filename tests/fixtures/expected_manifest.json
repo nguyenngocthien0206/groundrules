@@ -19,6 +19,10 @@
     "rows": 1281,
     "sha256": "a0971a50d14a471df21ec9a1e6ea97e0a6ec39f784c328cd54b00bd658b18d61"
   },
+  "logistics/store_routes.csv": {
+    "rows": 789,
+    "sha256": "4a4d14784862a720cdfe0023bbae9a1e4a146fa8e06dcddef4ff5a9fdb7e4e37"
+  },
   "pos_a/sales_20260314.csv": {
     "rows": 31,
     "sha256": "94669d641d2d79745493efb30f39c32eb270e5395962d8d2f669f57e38ffb983"

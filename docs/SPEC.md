@@ -49,7 +49,7 @@ groundrules/
   dbt/
     dbt_project.yml  profiles.yml (local DuckDB)  profiles.example.yml
     macros/                  # portable date parsing, schema naming, small generic tests
-    models/staging/          # one model per source, cleaning, dedup, unit tests
+    models/staging/          # one model per source (ERP, POS, returns, logistics), cleaning, dedup, unit tests
     models/intermediate/     # both POS vendors as one, base units, VAT split, returns matched to sales
     models/marts/            # SQL of dims and facts, plus the MetricFlow time spine
     models/semantic/         # one properties file per mart (contract, entities, dimensions, simple
@@ -93,6 +93,7 @@ Sources:
 | POS (two vendors) | sales lines | different column names and date formats per vendor; vendor A stamps UTC, vendor B stamps local time; duplicate lines from a retry; amounts in VND as integers, VAT included; `discount_amount` per line; sold in strips or tablets |
 | POS sync log | last sync per store | two newly opened stores lagging 3 days behind |
 | Returns system | returns | returns arriving weeks after the sale; some returns with no matching sale |
+| Logistics provider | store routes (v0.3) | road km and drive minutes per direction between stores, over an invented city with a river and two bridges, so district lines and travel time disagree; metres, seconds and UTC timestamps; pairs re-sent with an update; no routes yet for stores opened in the last month |
 
 Scale: about 30 stores in 5 districts, 150 SKUs across 6 categories, 6 months of sales. Small enough for DuckDB on a laptop, large enough that wrong rules produce visibly wrong numbers.
 

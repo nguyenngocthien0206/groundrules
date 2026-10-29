@@ -1,0 +1,47 @@
+# A mart with no semantic model: routes are reference data for actions, not
+# a metric. Its properties live here with the other marts'.
+models:
+  - name: fct_store_routes
+    description: >
+      Road distance and drive time between stores, one row per direction, from
+      the logistics provider. Stores opened in the last month have no routes yet.
+    config:
+      group: data_platform
+      contract:
+        enforced: true
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [origin_store_code, destination_store_code]
+    columns:
+      - name: origin_store_code
+        data_type: varchar
+        description: Store the trip starts from.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_store')
+                field: store_code
+      - name: destination_store_code
+        data_type: varchar
+        description: Store the trip ends at.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_store')
+                field: store_code
+      - name: distance_km
+        data_type: decimal(8, 3)
+        description: Road distance in km, through the nearer bridge when the river is in between.
+        data_tests:
+          - not_null
+      - name: drive_minutes
+        data_type: decimal(8, 2)
+        description: Drive time in minutes, loading included; slower in the Old Quarter.
+        data_tests:
+          - not_null
+      - name: computed_at_utc
+        data_type: timestamp
+        description: When the provider computed this route, UTC.

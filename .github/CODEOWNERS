@@ -35,6 +35,7 @@
 /dbt/models/marts/fct_inventory_batch.sql          @your-org/data-platform @your-org/supply-chain-ops
 /dbt/models/marts/fct_transfers.sql                @your-org/data-platform @your-org/supply-chain-ops
 /dbt/models/marts/fct_goods_received.sql           @your-org/data-platform @your-org/supply-chain-ops
+/dbt/models/marts/fct_store_routes.sql             @your-org/data-platform @your-org/supply-chain-ops
 /dbt/models/intermediate/int_store_sku_costs.sql   @your-org/data-platform @your-org/finance
 
 # The legacy dashboards belong to the teams that still use them (see the
