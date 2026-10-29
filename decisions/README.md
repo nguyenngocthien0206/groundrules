@@ -13,6 +13,7 @@ agents can read it.
 
 ## When to write one
 - A metric is created, or its definition changes in any way that moves a number.
+- An action (`actions/`) is created, or a rule changes that decides what it proposes.
 - Two teams give different answers to the same question.
 - Someone asks "why is it computed like this?" and the answer is not in the code.
 
@@ -29,7 +30,7 @@ A record is never edited to change its decision. To change a rule, write a
 new record that `supersedes` the old one and set `superseded_by` on the old one.
 
 ## Index
-| DR | Decision | Decided by | Metrics |
+| DR | Decision | Decided by | Metrics or actions |
 | --- | --- | --- | --- |
 | [DR-001](DR-001.md) | Available stock excludes batches under 90 days to expiry; near-expiry value counts them | Head of Supply Chain | available_stock, near_expiry_value |
 | [DR-002](DR-002.md) | Returns count in the month they come back | Chief Financial Officer | net_revenue |
@@ -42,3 +43,4 @@ new record that `supersedes` the old one and set `superseded_by` on the old one.
 | [DR-009](DR-009.md) | Sell-through divides units sold by units received net of transfers out (superseded by DR-011) | Head of Supply Chain | sell_through_rate |
 | [DR-010](DR-010.md) | Days of cover uses the pace of the 28 full days before the snapshot | Head of Supply Chain | days_of_cover |
 | [DR-011](DR-011.md) | Sell-through has no value when net received is not positive, and new stores are flagged | Head of Supply Chain | sell_through_rate |
+| [DR-012](DR-012.md) | Transfers come from the nearest store within 30 minutes that can spare whole boxes; supply chain approves | Head of Supply Chain | action: propose_transfer |
