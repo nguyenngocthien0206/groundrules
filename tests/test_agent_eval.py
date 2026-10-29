@@ -27,7 +27,7 @@ def answer(value=None, caveats=(), replacement=None):
 
 
 def test_every_golden_question_is_a_case_and_the_agent_sees_only_the_question():
-    assert len(CASES) == 30
+    assert len(CASES) == 31
     case = CASES["GQ-POS-04"]
     assert case["question"] == "What was Old Quarter's revenue in August 2026?"
     assert set(case) == {"id", "question", "kind", "metric", "tolerance", "decision", "expected", "expected_caveats"}
@@ -102,7 +102,7 @@ def scores(out_dir: Path) -> list[float]:
 
 def test_an_oracle_scores_every_question(out):
     runner.run_arm(Scripted(oracle), "semantic", list(CASES.values()), 1, out, 60, 4)
-    assert scores(out) == [1.0] * 30
+    assert scores(out) == [1.0] * len(CASES)
     trace = json.loads((out / "traces" / "GQ-REV-01_rep0.json").read_text(encoding="utf-8"))
     assert trace[0]["role"] == "tool_call"
 

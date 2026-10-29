@@ -74,6 +74,12 @@ def test_answers_match_the_golden_questions(expected, question, args):
     assert got["caveats"] == list(want["expected_caveats"])
 
 
+def test_a_store_that_ran_out_has_zero_days_of_cover_not_no_value():
+    # days_of_cover v1 gave no value here: no stock row, so empty stock / pace.
+    got = semantic.query_metric("days_of_cover", store="NW001", sku="100125")
+    assert got["value"] == 0 and got["version"] == 2 and "note" not in got
+
+
 def test_a_deprecated_metric_is_refused_with_its_replacement():
     got = semantic.query_metric("revenue_v1", month="2026-08")
     assert got["refused"] and got["use_instead"] == "net_revenue" and "value" not in got

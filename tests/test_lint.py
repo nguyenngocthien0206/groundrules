@@ -222,11 +222,11 @@ def transfer(repo) -> dict:
 
 
 def test_an_action_pinned_to_an_old_metric_version_fails(broken):
-    # The rules were checked against days_of_cover v1; v2 needs the owner to look again.
-    broken.metrics["days_of_cover"].meta["version"] = 2
+    # The rules were checked against days_of_cover v2; v3 needs the owner to look again.
+    broken.metrics["days_of_cover"].meta["version"] = 3
     assert errors(lint.check_actions(broken)) == [
-        "actions/propose_transfer.yml pins days_of_cover v1, but it is now v2: "
-        "re-check decisions/DR-012.md against v2 and bump the pin"
+        "actions/propose_transfer.yml pins days_of_cover v2, but it is now v3: "
+        "re-check decisions/DR-012.md against v3 and bump the pin"
     ]
 
 

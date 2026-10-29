@@ -42,3 +42,19 @@ questions:
     decision: DR-010
     signed_off_by: Head of Supply Chain
     signed_off_on: 2026-09-12
+
+  - id: GQ-COVER-04
+    question: How many days of stock does NW001 have of Kids multivitamin syrup 100ml?
+    kind: tacit_rule
+    metric: days_of_cover
+    filters: {store: NW001, sku: "100125"}
+    as_of: 2026-09-15
+    tolerance: 0.0001
+    why: >
+      NW001 holds no batch of SKU 100125 and sold 2 bottles from 2026-08-18
+      to 2026-09-14. 0 / (2 / 28) = 0 days: it has run out while it still
+      sells, the most urgent case there is. Before days_of_cover v2 the
+      semantic layer gave no value here, as if nothing had sold.
+    decision: DR-010
+    signed_off_by: Head of Supply Chain
+    signed_off_on: 2026-10-29
