@@ -4,8 +4,8 @@ Living status of the build. Claude reads this at the start of every session and 
 
 ## Current status
 - Phase: v0.1 Core
-- Current step: v0.3, step 18 (approval, idempotent write-back, audit log)
-- State: v0.2.0 released; steps 15 and 16 and `days_of_cover` v2 merged (#19, #20, #21); step 17 (proposals) built on `step-17-proposals`
+- Current step: v0.3, step 19 (action golden questions and agent eval)
+- State: v0.2.0 released; steps 15 to 17 and `days_of_cover` v2 merged (#19 to #22); step 18 (approval) built on `step-18-approval`
 - Last verified green: 2026-10-26 on GitHub Actions, run 40357875267 on main (`make build`: 97 dbt nodes, 1 expected warning; lint 0 errors 0 warnings as of 2026-10-26; golden 30/30; 185 pytest; both demos; v2 parser)
 
 ## Build checklist (v0.1)
@@ -46,7 +46,7 @@ Copied from SPEC section 20. Tick when verified on a fresh clone.
   - [x] 15. Logistics routes (invented city, `fct_store_routes`)
   - [x] 16. Action contract `propose_transfer` and DR-012
   - [x] 17. Proposals: MCP tool, simulation, shadow table
-  - [ ] 18. Approval, idempotent write-back, audit log
+  - [x] 18. Approval, idempotent write-back, audit log
   - [ ] 19. Action golden questions and agent eval
   - [ ] 20. Docs and release 0.3.0
 
@@ -55,6 +55,11 @@ Technical choices made during the build that are not already in SPEC.md. One lin
 
 | Date | Decision | Why |
 | --- | --- | --- |
+| 2026-10-29 | Approvers are listed in `actions/approvers.yml`, owned by the approver group through CODEOWNERS and checked by the lint | Owner's choice: adding an approver is a pull request supply chain approves, not a config anyone can change. |
+| 2026-10-29 | Approval rechecks versions and recomputes the proposal; anything different marks it stale | Owner's choice: a proposal computed on an old definition or old stock is not approved, the agent proposes again. |
+| 2026-10-29 | Approve as is or reject with a reason; no editing; nobody approves what they filed | Owner's choice: an edit would step outside DR-012; a reason tells the owners whether the rule should change. |
+| 2026-10-29 | The stand-in ERP is its own DuckDB file; the request is written first, keyed by the proposal id, then the decision | Two systems cannot share a transaction, so the write is idempotent and a retry after a crash finishes the approval with one request. |
+| 2026-10-29 | The audit log lives next to the proposals and is only ever appended to | One place to answer "who approved this, when, on which versions", including refusals. |
 | 2026-10-29 | The agent names a target store and SKU; the rules choose donor and quantity. `simulate_transfer` answers any what-if and writes nothing | Owner's choice: an agent cannot pick a farther donor or a bigger quantity than DR-012 allows, but can still explore alternatives. |
 | 2026-10-29 | Actions get their own MCP server (`mcp_server/actions.py`) and their own DuckDB file (`var/actions.duckdb`) | Owner's choice: the v0.2 semantic server and its measured eval stay as they were, and the warehouse stays read-only for every reader. |
 | 2026-10-29 | The engine compares thresholds on whole numbers (available x 28 against sold x days) and refuses if `days_of_cover` disagrees | Keeps 7.0 and 60.0 exact like the reference, and turns a silent change in what cover means into a refusal. |
@@ -179,6 +184,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-29 (step 18)
+- Done: `actions/approvers.yml` with its lint checks and CODEOWNERS entry, decisions and an append-only audit log in `mcp_server/shadow.py`, a stand-in ERP in `mcp_server/erp.py`, `mcp_server/approvals.py` with `make proposals`, `make approve`, `make reject`, 9 approval tests, 4 lint tests, the actions README walk-through
+- Verified: by hand on scratch files, a stranger was refused (and logged), a planner's approval wrote one ERP request (TRQ-..., 2 boxes of 100025 from NW003 to NW014, lots with 90 days or more), a second approval changed nothing, a rejection kept its reason, `show` printed the history; tests cover the crash between the two writes and the three ways a proposal goes stale; lint 0/0, golden 31/31
+- Next: step 19, action golden questions and the agent eval, starting in plan mode, with usage measured first
+- Notes: `at` is a keyword in DuckDB, so the audit timestamp column is `logged_at`.
 
 ### 2026-10-29 (step 17)
 - Done: `mcp_server/transfers.py` (engine under the contract, version and cover guards, reasons, simulation), `mcp_server/shadow.py` (shadow table, idempotent filing), `mcp_server/actions.py` (five tools), `make mcp-server-actions`, `var/` ignored, 15 tests, an agents guide section

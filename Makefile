@@ -1,4 +1,4 @@
-.PHONY: setup data data-manifest build metrics export-osi golden golden-freeze lint registry affected dashboard-data mcp-server mcp-server-raw mcp-server-actions agent-eval agent-eval-probe agent-eval-summary demo-conflict demo-drift check-v2 test
+.PHONY: setup data data-manifest build metrics export-osi golden golden-freeze lint registry affected dashboard-data mcp-server mcp-server-raw mcp-server-actions proposals approve reject agent-eval agent-eval-probe agent-eval-summary demo-conflict demo-drift check-v2 test
 
 DATA_DIR := example/data
 export DBT_SEND_ANONYMOUS_USAGE_STATS := false
@@ -76,6 +76,20 @@ mcp-server-raw:
 # Transfer proposals (v0.3): writes proposals to var/actions.duckdb, never the warehouse.
 mcp-server-actions:
 	uv run python mcp_server/actions.py
+
+# Decide on transfer proposals, as someone listed in actions/approvers.yml.
+#   make proposals [STATUS=all]
+#   make approve ID=TP-... AS=planner.riverside@example.com
+#   make reject ID=TP-... AS=planner.riverside@example.com REASON="..."
+STATUS ?= proposed
+proposals:
+	uv run python mcp_server/approvals.py list --status $(STATUS)
+
+approve:
+	uv run python mcp_server/approvals.py approve $(ID) --as $(AS)
+
+reject:
+	uv run python mcp_server/approvals.py reject $(ID) --as $(AS) --reason "$(REASON)"
 
 # Agent eval: the golden questions through an agent connected to one arm
 # (semantic or raw_sql). The claude-code provider runs on your Claude

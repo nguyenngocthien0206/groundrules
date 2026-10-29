@@ -89,6 +89,13 @@ refuses to propose anything. Proposals go to a separate file,
 and nothing reaches the ERP until a person in supply chain approves it.
 Filing the same proposal twice keeps one row.
 
+The agent has no tool that approves. A person listed in
+`actions/approvers.yml` runs `make proposals`, then `make approve` or
+`make reject` with a reason. A proposal that no longer stands (a metric or
+the contract moved, or the rules now give another donor or quantity) is
+marked stale instead, and the agent proposes again. `actions/README.md`
+walks through the whole path, from proposal to ERP request and audit log.
+
 ## The control arm, and why not to ship it
 `mcp_server/raw_sql.py` gives an agent what it is commonly given today:
 the reporting tables, their column descriptions and a read-only SQL tool.

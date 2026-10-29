@@ -115,6 +115,16 @@ before this date are the owners' history and are not recorded here.
   the contract pins, refuses when they differ, and proposes exactly what
   the raw reference does (108 proposals at the snapshot). Nothing reaches
   the ERP yet.
+- Approval and write-back (`mcp_server/approvals.py`, `make proposals`,
+  `make approve`, `make reject`): someone listed in `actions/approvers.yml`
+  (owned by supply chain, checked by the lint) approves a proposal as it is
+  or rejects it with a reason, never on what they filed. Approval is
+  refused and the proposal marked stale when a metric or the contract has
+  moved to a new version, or the rules no longer give the same donor and
+  quantity. An approved proposal becomes one transfer request in a
+  stand-in ERP (`var/erp.duckdb`), however often approval runs, even after
+  a crash halfway. An append-only audit log records every event with who,
+  when and the versions.
 
 #### Changed
 - `days_of_cover` v2: a store that has run out has 0 days of cover instead

@@ -35,7 +35,34 @@ Each file here is the contract for one action. It names:
   with more cover than a donor needs to start with, so that stock could
   be sent back and forth;
 - CODEOWNERS does not give the file to exactly its owner's team, or
-  CHANGELOG.md has no entry for the current version.
+  CHANGELOG.md has no entry for the current version;
+- `approvers.yml` has no entry for the action, names another group than
+  the contract's approver, lists nobody, or is not owned by that group's
+  team.
+
+## From proposal to transfer request
+1. **An agent proposes.** `propose_transfer` on the actions server
+   (`mcp_server/actions.py`) files the rules' proposal into the shadow
+   table, `var/actions.duckdb`, with the metric and contract versions it
+   was computed with. Nothing else is written.
+2. **A person decides.** Someone listed in `approvers.yml` runs
+   `make proposals`, then `make approve ID=... AS=...` or
+   `make reject ID=... AS=... REASON="..."`. They approve the proposal as
+   it is or reject it with a reason; they cannot edit it, because an edit
+   would step outside the decision record. Nobody approves what they filed.
+3. **The proposal is checked again.** Approval is refused, and the
+   proposal marked stale, when a metric or the contract has moved to a new
+   version since it was filed, or when the rules, run again on today's
+   data, no longer give the same donor and quantity. The agent proposes
+   again.
+4. **The ERP gets a request.** An approved proposal becomes one transfer
+   request in the ERP (here a stand-in, `var/erp.duckdb`), asking the
+   warehouse to pick lots with at least 90 days left. Approving twice, or
+   again after a crash halfway, still gives one request.
+5. **Everything is on record.** The audit log keeps every event (proposed,
+   approved, rejected, stale, refused, written to the ERP) with who, when
+   and the versions. `python mcp_server/approvals.py show ID` prints a
+   proposal's history. Rows are only ever added.
 
 ## Why it is built this way
 An agent that can write is a new kind of risk, and the answer is the same

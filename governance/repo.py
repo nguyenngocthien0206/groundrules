@@ -64,6 +64,7 @@ class Repo:
     saved_queries: dict[str, dict] = field(default_factory=dict)  # name -> {file, metrics}
     powerbi: dict = field(default_factory=dict)  # {"model": text, "tables": [parsed TMDL tables]}
     actions: dict[str, dict] = field(default_factory=dict)  # action file stem -> {"path": ..., "spec": parsed YAML or None}
+    approvers: dict = field(default_factory=dict)  # actions/approvers.yml: action -> {"group", "people"}
 
     def teams_for(self, path: str) -> list[str]:
         return owners_of(self.codeowners, path)
@@ -158,15 +159,30 @@ def parse_tmdl_table(path: Path) -> dict:
     return table
 
 
+APPROVERS = ROOT / "actions" / "approvers.yml"
+
+
 def load_actions() -> dict[str, dict]:
     actions = {}
     for path in sorted((ROOT / "actions").glob("*.yml")):
+        if path == APPROVERS:
+            continue
         try:
             spec = yaml.safe_load(path.read_text(encoding="utf-8"))
         except yaml.YAMLError:
             spec = None
         actions[path.stem] = {"path": path.relative_to(ROOT).as_posix(), "spec": spec if isinstance(spec, dict) else None}
     return actions
+
+
+def load_approvers() -> dict:
+    if not APPROVERS.exists():
+        return {}
+    try:
+        found = yaml.safe_load(APPROVERS.read_text(encoding="utf-8"))
+    except yaml.YAMLError:
+        return {"_unreadable": True}
+    return found if isinstance(found, dict) else {"_unreadable": True}
 
 
 def load_powerbi() -> dict:
@@ -266,6 +282,7 @@ def load(with_text_files: bool = True) -> Repo:
         },
         powerbi=load_powerbi(),
         actions=load_actions(),
+        approvers=load_approvers(),
     )
 
 

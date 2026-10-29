@@ -29,6 +29,8 @@
 /dbt/models/semantic/saved_queries_supply_chain.yml @your-org/supply-chain-ops
 # What an agent may propose, and the rules it proposes by.
 /actions/propose_transfer.yml                      @your-org/supply-chain-ops
+# Who may approve those proposals.
+/actions/approvers.yml                             @your-org/supply-chain-ops
 
 # The data under the rules: the data platform builds it, the teams that rely
 # on it can approve too.
