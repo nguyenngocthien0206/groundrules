@@ -1,0 +1,20 @@
+[
+  {
+    "role": "tool_call",
+    "name": "mcp__groundrules-actions__find_transfer_candidates",
+    "content": "{\n  \"store\": \"NW001\",\n  \"sku\": \"100125\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "{\n  \"data_as_of\": \"2026-09-15\",\n  \"saved\": false,\n  \"proposals\": [],\n  \"total_proposals\": 0,\n  \"targets_without_proposal\": [\n    {\n      \"store\": \"NW001\",\n      \"sku\": \"100125\",\n      \"reason\": \"one_unit_exceeds_60_days\",\n      \"detail\": \"one CARTON of 24 would leave it above 60 days of cover\"\n    }\n  ],\n  \"total_targets_without_proposal\": 1\n}"
+  },
+  {
+    "role": "tool_call",
+    "name": "StructuredOutput",
+    "content": "{\n  \"filed\": false,\n  \"donor_store\": null,\n  \"quantity\": null,\n  \"unit\": null,\n  \"no_proposal_reason\": \"one_unit_exceeds_60_days\",\n  \"explanation\": \"NW001 is a valid target for SKU 100125 because it has run out. The smallest transfer is one carton of 24, and that would put NW001 above 60 days of cover. Under DR-012 that means no proposal, so I filed nothing.\"\n}"
+  },
+  {
+    "role": "tool_result",
+    "content": "Structured output provided successfully"
+  }
+]
