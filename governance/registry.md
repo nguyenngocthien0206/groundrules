@@ -13,7 +13,7 @@ deprecated one points to its replacement.
 | `gross_margin` | Gross margin | finance (@your-org/finance) | 1 | certified | 2026-09-10 | 2026-12-09 | [DR-008](../decisions/DR-008.md) | 3 | - |
 | `net_revenue` | Net revenue | finance (@your-org/finance) | 2 | certified | 2026-09-10 | 2026-12-09 | [DR-002](../decisions/DR-002.md) | 9 | - |
 | `available_stock` | Available stock | supply_chain_ops (@your-org/supply-chain-ops) | 3 | certified | 2026-09-10 | 2027-03-09 | [DR-001](../decisions/DR-001.md) | 5 | - |
-| `days_of_cover` | Days of cover | supply_chain_ops (@your-org/supply-chain-ops) | 1 | certified | 2026-09-10 | 2027-03-09 | [DR-010](../decisions/DR-010.md) | 3 | - |
+| `days_of_cover` | Days of cover | supply_chain_ops (@your-org/supply-chain-ops) | 2 | certified | 2026-10-29 | 2027-04-27 | [DR-010](../decisions/DR-010.md) | 4 | - |
 | `near_expiry_value` | Near-expiry stock value | supply_chain_ops (@your-org/supply-chain-ops) | 1 | certified | 2026-09-10 | 2027-03-09 | [DR-001](../decisions/DR-001.md) | 3 | - |
 | `sell_through_rate` | Sell-through rate | supply_chain_ops (@your-org/supply-chain-ops) | 2 | certified | 2026-10-26 | 2027-04-24 | [DR-011](../decisions/DR-011.md) | 5 | - |
 | `revenue_v1` | Revenue (v1, deprecated) | finance (@your-org/finance) | 1 | deprecated | 2026-03-01 | 2026-05-30 | [DR-005](../decisions/DR-005.md) | 2 | net_revenue |
@@ -27,7 +27,7 @@ proposal before anything is written.
 
 | Action | Label | Owner | Approver | Version | Status | Decision | Reads |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `propose_transfer` | Propose a stock transfer between stores | supply_chain_ops (@your-org/supply-chain-ops) | supply_chain_ops (@your-org/supply-chain-ops) | 1 | certified | [DR-012](../decisions/DR-012.md) | `available_stock` v3, `days_of_cover` v1 |
+| `propose_transfer` | Propose a stock transfer between stores | supply_chain_ops (@your-org/supply-chain-ops) | supply_chain_ops (@your-org/supply-chain-ops) | 1 | certified | [DR-012](../decisions/DR-012.md) | `available_stock` v3, `days_of_cover` v2 |
 
 ## What reads the data
 
