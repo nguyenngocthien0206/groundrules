@@ -5,7 +5,7 @@ Living status of the build. Claude reads this at the start of every session and 
 ## Current status
 - Phase: v0.1 Core
 - Current step: none; v0.3 is complete
-- State: v0.3.0 released on 2026-10-29 (#19 to #25, release PR `release-0.3.0`)
+- State: v0.3.0 released on 2026-10-29 (#19 to #26); a use-case guide built on `docs-use-case-guide`
 - Last verified green: 2026-10-26 on GitHub Actions, run 40357875267 on main (`make build`: 97 dbt nodes, 1 expected warning; lint 0 errors 0 warnings as of 2026-10-26; golden 30/30; 185 pytest; both demos; v2 parser)
 
 ## Build checklist (v0.1)
@@ -188,6 +188,12 @@ One entry per working session. Format:
 - Next: the very next action
 - Notes: anything surprising, worked around, or worth knowing next time
 ```
+
+### 2026-10-30 (use-case guide)
+- Done: `GUIDE.md` (nine use cases with who, steps and done-when, and a table mapping every playbook and adoption page to its use cases), `playbook/a-new-metric.md`, "Where else the rules hide" in the golden questions page, pointers from README, `adoption/README.md` and `playbook/README.md`, a docs test that every playbook and adoption page is linked from the guide
+- Verified: every behavior the new pages describe read against the code (the MCP server refuses draft metrics, the registry lists them, the lint asks a draft for its CODEOWNERS entry and CHANGELOG entry and fails a link to a record still proposed, golden questions are required for certified metrics only); summaries of other pages checked against those pages; docs tests, lint, `make test`
+- Next: nothing planned
+- Notes: the owner asked for the guide after asking how to run two situations (extracting the rules on joining a company, and a new metric for a new dashboard); the second had no page until now.
 
 ### 2026-10-29 (release 0.3.0)
 - Done: CHANGELOG `[0.3.0]` with the PR behind each entry, version 0.3.0 in `pyproject.toml` and `uv.lock`, v0.3 checked

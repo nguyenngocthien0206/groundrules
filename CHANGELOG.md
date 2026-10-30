@@ -95,7 +95,19 @@ before this date are the owners' history and are not recorded here.
 
 ### [Unreleased]
 
-Nothing yet.
+#### Added
+- A guide to the docs by use case (`GUIDE.md`): nine situations, from
+  "you just joined and the rules live in people's heads" to "an agent
+  proposed something", each with who is involved, the steps in order and
+  what done looks like. A docs test fails when a playbook or adoption page
+  is missing from it.
+- A playbook page for a new metric a dashboard needs
+  (`playbook/a-new-metric.md`): check the registry first, settle the edge
+  cases with the owner, add it as a draft agents refuse, then certify it in
+  one pull request.
+- "Where else the rules hide" in the playbook page on golden questions:
+  compare dashboards, read the filters in the old SQL, ask about the edge
+  cases.
 
 ### [0.3.0] - 2026-10-29
 

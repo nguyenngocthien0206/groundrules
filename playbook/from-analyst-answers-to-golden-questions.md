@@ -20,6 +20,28 @@ Good places to harvest from:
 An afternoon of reading gives you more than a week of interviews, and it
 costs the analyst an hour of review instead of a week of their time.
 
+## Where else the rules hide
+Answers are the richest source, not the only one. Three more places give up
+rules nobody would think to mention:
+
+- **Ask every dashboard the same question.** Pick one number people quote
+  ("revenue in August") and read it off every report that shows it. Each
+  gap is a rule one team applies and another does not. `make demo-conflict`
+  does exactly this: four revenue numbers, and every gap traces to one
+  decision record (returns, VAT, the business day).
+- **Read the filters in the old SQL.** The queries behind existing reports
+  (here [`legacy/`](../legacy/)) are written-down rules nobody calls rules.
+  Every unusual `WHERE`, `CASE` or join condition was a decision someone
+  made once; ask who, and whether it still holds.
+- **Ask about the edge cases directly.** Returns, VAT, time zones, stores
+  that just opened or whose data arrives late, units (box or tablet), stock
+  that cannot be sold. People answer these in seconds when asked and never
+  mention them otherwise.
+
+Each rule found this way needs the same treatment as one found in an
+answer: an owner, a decision record if it is contested, and a golden
+question that would fail if it changed.
+
 ## Turning one answer into a question
 Take a real exchange: "How many bottles of the 70ml saline spray can NW001
 sell today?" The analyst answered 48, not 49, because one bottle expires in

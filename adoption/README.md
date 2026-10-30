@@ -20,6 +20,9 @@ there.
 | [Actions](actions.md) | when and how to let an agent propose changes, who approves, and what a contract adds to a prompt |
 | [Cost and roles](cost-and-roles.md) | where the hours go and who to involve |
 
+For the docs ordered by situation (just joined, a new dashboard, a rule
+change, a red CI, an agent), start from [GUIDE.md](../GUIDE.md).
+
 ## If you only have one afternoon
 Copy two things and leave the rest for later:
 

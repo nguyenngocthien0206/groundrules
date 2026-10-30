@@ -194,6 +194,10 @@ docs/               the spec and build log
 ```
 
 ## Adopting it
+- [Guide by use case](GUIDE.md): start here. Find your situation (you just
+  joined and the rules live in people's heads, a dashboard needs a new
+  number, a rule must change, CI is red, an agent should answer or act)
+  and follow the steps in order.
 - [Adoption guide](adoption/): a 30-day plan for your first ten numbers,
   what to copy into an existing dbt project, what changes on Snowflake,
   BigQuery, Databricks or Postgres, and what it costs (mostly business
