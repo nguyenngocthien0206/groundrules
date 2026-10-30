@@ -33,7 +33,7 @@ Build v0.1 completely before starting v0.2. Ask me before starting v0.2 or v0.3.
 ## 4. Repo structure (v0.1)
 ```
 groundrules/
-  README.md  LICENSE (Apache-2.0)  CHANGELOG.md
+  README.md  LICENSE (Apache-2.0)  CHANGELOG.md  GUIDE.md (the docs by use case)
   Makefile  pyproject.toml           # exact pinned versions
   docs/
     CLAUDE.md  SPEC.md  PROGRESS.md
