@@ -1,8 +1,8 @@
-"""The README, changelog, playbook and adoption guide stay true as the repo changes.
+"""The README, changelog, use-case guide, playbook and adoption guide stay true as the repo changes.
 
 Docs that name files and commands rot without anyone noticing. These checks
 fail when a link points nowhere, a `make` target does not exist, or a page
-is missing from its folder's index.
+is missing from its folder's index or from the use-case guide.
 """
 
 import re
@@ -12,7 +12,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 FOLDERS = ("playbook", "adoption")
-PAGES = [ROOT / "README.md", ROOT / "CHANGELOG.md"] + sorted(p for folder in FOLDERS for p in (ROOT / folder).glob("*.md"))
+PAGES = [ROOT / "README.md", ROOT / "CHANGELOG.md", ROOT / "GUIDE.md"] + sorted(p for folder in FOLDERS for p in (ROOT / folder).glob("*.md"))
 
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 # `make target` in inline code, or a fenced line that starts with make.
@@ -53,3 +53,11 @@ def test_every_page_is_in_its_folder_index(folder):
     for page in (ROOT / folder).glob("*.md"):
         if page.name != "README.md":
             assert f"]({page.name})" in index, f"{folder}/README.md does not list {page.name}"
+
+
+def test_the_use_case_guide_links_every_page():
+    """A new playbook or adoption page that GUIDE.md does not mention is a page nobody finds."""
+    guide = (ROOT / "GUIDE.md").read_text(encoding="utf-8")
+    for folder in FOLDERS:
+        for page in (ROOT / folder).glob("*.md"):
+            assert f"]({folder}/{page.name}" in guide, f"GUIDE.md does not link {folder}/{page.name}"
